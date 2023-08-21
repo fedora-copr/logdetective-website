@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark" id="menu">
+      <div class="container">
+        <a class="navbar-brand" href="#">Brand</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mb-2 mb-lg-0 ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="#">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="#">Contact</a>
+            </li>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container" id="content-wide">
+      <div class="row">
+        <div class="col-3">
+          <h4>Instructions</h4>
+          <ul>
+            <li>We fetched logs for Copr build <a href="">#123456</a></li>
+            <li>Write why do you think the build failed</li>
+            <li>Find log snippets relevant to the failure</li>
+            <li>Anotate snippets by selecting them, and clicking "Anotate selection"</li>
+            <li>Submit</li>
+          </ul>
+        </div>
+        <div class="col-6">
+          <div id="log">
+            <pre>
+INFO: chroot_scan: 3 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
+INFO: /var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.rpm.log
+/var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.librepo.log
+/var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.log
+<span class="snippet">
+ERROR:
+Exception(/var/lib/copr-rpmbuild/results/copr-rpmbuild-0.69-1.fc37.src.rpm)
+</span>
+Config(fedora-37-x86_64) 0 minutes 28 seconds
+INFO: Results and/or logs in: /var/lib/copr-rpmbuild/results
+INFO: Cleaning up build root ('cleanup_on_failure=True')
+Start: clean chroot
+INFO: unmounting tmpfs.
+Finish: clean chroot
+ERROR: Command failed:
+ # /usr/bin/systemd-nspawn -q -M
+15916d5fd0524fe090a40cbc09f15279 -D
+/var/lib/mock/fedora-37-x86_64-bootstrap-1692181166.067366/root
+-a --capability=cap_ipc_lock --rlimit=RLIMIT_NOFILE=10240
+--capability=cap_ipc_lock
+--bind=/tmp/mock-resolv.0pyv_f8p:/etc/resolv.conf
+/var/lib/mock/fedora-37-x86_64-1692181166.067366/root/
+--releasever 37 --setopt=deltarpm=False
+--setopt=allow_vendor_change=yes --allowerasing
+--disableplugin=local --disableplugin=spacewalk
+--disableplugin=versionlock
+/var/lib/mock/fedora-37-x86_64-1692181166.067366/root//builddir/build/SRPMS/
+copr-rpmbuild-0.69-1.fc37.src.rpm
+--setopt=tsflags=nocontexts --setopt=tsflags=nocontexts
+--setopt=tsflags=nocontexts
+No matches found for the following disable plugin patterns: local, spacewalk, versionlock
+Copr repository                                  55 kB/s | 1.8 kB     00:00
+fedora                                          299 kB/s |  26 kB     00:00
+updates                                         403 kB/s |  19 kB     00:00
+<span class="snippet">
+No matching package to install: 'python3-specfile >= 0.21.0'
+Not all dependencies satisfied
+Error: Some packages could not be found.
+</span>
+
+Copr build error: Build failed
+            </pre>
+          </div>
+        </div>
+        <div class="col-3">
+
+          <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Copr build ID</label>
+            <input type="text" class="form-control"
+                   value="123456" disabled readonly>
+          </div>
+          <div class="mb-3">
+            <label for="exampleFormControlTextarea1"
+            class="form-label">Fail reason</label>
+            <textarea class="form-control" class="" rows="3"
+                      placeholder="Please describe why the build failed"></textarea>
+          </div>
+
+          <label for="" class="form-label">Interesting snippets</label>
+          <div class="accordion" id="accordionPanelsStayOpenExample">
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#panelsStayOpen-collapseOne"
+                  aria-expanded="true"
+                  aria-controls="panelsStayOpen-collapseOne">
+                  Snippet 1
+                </button>
+              </h2>
+              <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <textarea class="form-control" class="" rows="3"
+                            placeholder="What makes this snippet
+                            relevant?">
+There is an exception, so that's the error, right?
+                  </textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed"
+                  type="button" data-bs-toggle="collapse"
+                  data-bs-target="#panelsStayOpen-collapseTwo"
+                  aria-expanded="false"
+                  aria-controls="panelsStayOpen-collapseTwo">
+                  Snippet 2
+                </button>
+              </h2>
+              <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show">
+                <div class="accordion-body">
+                  <textarea class="form-control" class="" rows="3"
+                            placeholder="What makes this snippet
+                            relevant?">
+The python3-specfile package was not available in 0.21.0 version or higher.
+                  </textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed"
+                  type="button" data-bs-toggle="collapse"
+                  data-bs-target="#panelsStayOpen-collapseThree"
+                  aria-expanded="false"
+                  aria-controls="panelsStayOpen-collapseThree">
+                  Snippet 3
+                </button>
+              </h2>
+              <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <textarea class="form-control" class="" rows="3"
+                            placeholder="What makes this snippet relevant?"></textarea>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <br>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-primary btn-lg ">Submit</button>
+          </div>
+
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
