@@ -17,7 +17,8 @@
  :dependencies [[reagent "0.8.1"]
                 [devcards "0.2.6"]
                 [org.clojure/core.match "1.0.1"]
-                [clojure-interop/cljs-web-api "1.0.10"]]
+                [clojure-interop/cljs-web-api "1.0.10"]
+                [lambdaisland/fetch "1.2.69"]]
  :dev-http {3000 "public"}
  :nrepl {:port 3333}
  :source-paths ["src"]}
