@@ -6,7 +6,7 @@ This is not packaged, and probably never will be. Install dependencies
 manually:
 
 ```
-dnf install TODO
+dnf install npm
 ```
 
 
