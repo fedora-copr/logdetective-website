@@ -1,5 +1,12 @@
 # Lightspeed build website
 
+## Development
+
+See README files for frontend and backend:
+
+- [frontend](frontend/README.md)
+- [backend](backend/README.md)
+
 
 ## Features:
 
