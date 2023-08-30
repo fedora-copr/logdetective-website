@@ -47,7 +47,16 @@
   /* background-color: #eda987; */
   /* background-color: #ddb26f; */
   background-color: #e1a3ee;
+}
 
+#right-column label {
+  margin-top: 15px;
+}
 
+#right-column #submit {
+  margin-top: 20px;
+}
 
+#right-column .accordion-body {
+  padding: 0px;
 }

@@ -15,7 +15,9 @@
         :output-to "out/e2e.js"
         :target :node-test}}
  :dependencies [[reagent "0.8.1"]
-                [devcards "0.2.6"]]
+                [devcards "0.2.6"]
+                [org.clojure/core.match "1.0.1"]
+                [clojure-interop/cljs-web-api "1.0.10"]]
  :dev-http {3000 "public"}
  :nrepl {:port 3333}
  :source-paths ["src"]}
