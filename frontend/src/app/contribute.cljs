@@ -16,8 +16,11 @@
 (def build-id-title (r/atom nil))
 
 
+(defn current-path []
+  (.-pathname (.-location js/window)))
+
 (defn fetch-logs []
-  (let [url "http://127.0.0.1:5020/frontend/fetch-logs/"]
+  (let [url (str "/frontend" (current-path))]
     (-> (fetch/get url {:accept :json :content-type :json})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
