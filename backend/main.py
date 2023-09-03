@@ -1,5 +1,6 @@
 import flask
 import requests
+from pprint import pprint
 from .data import LOG_OUTPUT
 
 
@@ -45,3 +46,13 @@ def frontend_contribute_get(source, build_id):
         "build_id_title": "Copr build ID",
         "logs": logs,
     })
+
+
+@app.route("/frontend/contribute/<source>/<int:build_id>", methods=["POST"])
+def frontend_contribute_post(source, build_id):
+    # TODO Validate and store
+    print("Submitted data for {0} build #{1}".format(source, build_id))
+    pprint(flask.request.json)
+
+    # TODO A reasonable JSON response
+    return flask.jsonify({})

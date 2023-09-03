@@ -6,7 +6,8 @@
             [web.Range :refer [surround-contents]]))
 
 
-(def snippets (r/atom nil))
+(def how-to-fix (r/atom nil))
+(def snippets (r/atom []))
 (def files (r/atom nil))
 (def active-file (r/atom 0))
 
@@ -29,6 +30,14 @@
                  (reset! build-id (:build_id data))
                  (reset! build-id-title (:build-id-title data))
                  (reset! files (:logs data)))))))
+
+(defn submit-form []
+  (let [url (str "/frontend" (current-path))
+        body {:how-to-fix @how-to-fix
+              :snippets @snippets}]
+    (-> (fetch/post url {:accept :json :content-type :json :body body})
+        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
+        (.then (fn [data] data)))))
 
 (defn init-data []
   (fetch-logs)
@@ -53,6 +62,17 @@
   ;;   "Third snippet"])
 
   )
+
+
+(defn on-how-to-fix-textarea-change [target]
+  (reset! how-to-fix (.-value target)))
+
+;; For some reason, compiler complains it cannot infer type of the `target`
+;; variable, so I am specifying it as a workaround
+(defn on-snippet-textarea-change [^js/HTMLTextAreaElement target]
+  (let [index (int (.-indexNumber (.-dataset target)))
+        value (.-value target)]
+    (reset! snippets (assoc-in @snippets [index :comment] value))))
 
 (defn render-tab [name, key]
   (let [active? (= name (:name (get @files @active-file)))]
@@ -104,8 +124,9 @@
      [:textarea
       {:class "form-control"
        :rows "3"
-       :placeholder
-       "What makes this snippet relevant?"}]
+       :placeholder "What makes this snippet relevant?"
+       :data-index-number i
+       :on-change #(on-snippet-textarea-change (.-target %))}]
      [:div {}
       [:button {:type "button" :class "btn btn-outline-danger"} "Delete"]]]]])
 
@@ -148,7 +169,12 @@
     (let [log (.-innerHTML (.getElementById js/document "log"))]
       (reset! files (assoc-in @files [@active-file :content] log)))
 
-    (swap! snippets conj (.toString (.getSelection js/window)))
+    (let [snippet
+          {:text (.toString (.getSelection js/window))
+           :comment nil
+           :file (:name (get @files @active-file))}]
+      (swap! snippets conj snippet))
+
     (clear-selection)))
 
 (defn render-right-column []
@@ -162,7 +188,8 @@
     [:label {:class "form-label"} "How to fix the issue?"]
     [:textarea {:class "form-control" :rows 3
                 :placeholder (str "Please describe how to fix the issue in "
-                                  "order for the build to succeed.")}]]
+                                  "order for the build to succeed.")
+                :on-change #(on-how-to-fix-textarea-change (.-target %))}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]
    [:br]
@@ -189,7 +216,10 @@
    [:div {:class "col-auto row-gap-3" :id "submit"}
     [:label {:class "form-label"} "Ready to submit the results?"]
     [:br]
-    [:button {:type "submit" :class "btn btn-primary btn-lg"} "Submit"]]])
+    [:button {:type "submit"
+              :class "btn btn-primary btn-lg"
+              :on-click #(submit-form)}
+     "Submit"]]])
 
 ;; We might need this function for enabling/disabling the "new snippet" button
 ;; based on whether user selected something (within the <pre>log</pre> area)
