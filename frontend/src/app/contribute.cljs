@@ -130,7 +130,8 @@
 
    [:div {:id (str "snippetCollapse" i)
           :class ["accordion-collapse collapse" (if show? "show" nil)]
-          :data-bs-parent "#accordionSnippets"}
+          :data-bs-parent "#accordionSnippets"
+          :data-index-number i}
 
     [:div {:class "accordion-body"}
      [:textarea
@@ -241,11 +242,29 @@
 ;;     (js/console.log selection.anchorOffset)
 ;;     (js/console.log selection.focusOffset)))
 
+(defn file-id [name]
+  (loop [i 0 files @files]
+    (cond
+      (empty? files) nil
+      (= name (:name (first files))) i
+      :else (recur (inc i) (rest files)))))
+
+;; For some reason, compiler complains it cannot infer type of the `event`
+;; variable, so I am specifying it as a workaround
+(defn on-accordion-item-show [^js/Event event]
+  (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
+        snippet (nth @snippets snippet-id)
+        file-name (:file snippet)]
+  (reset! active-file (file-id file-name))))
+
 (defn contribute []
   ;; I don't know why we need to do it this way,
   ;; instead of like :on-click is done
   ;; (js/document.addEventListener "selectionchange" on-selection-change)
 
+  (when (not-empty @snippets)
+    (let [accordion (.getElementById js/document "accordionSnippets")]
+      (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
 
   ;; TODO Else fancy loading screen
   (if @files
