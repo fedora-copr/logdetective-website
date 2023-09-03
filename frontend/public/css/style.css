@@ -49,6 +49,26 @@
   background-color: #e1a3ee;
 }
 
+#left-column ul {
+  list-style: none;
+}
+
+#left-column ul li::before {
+  content: "\2022";
+  font-weight: bold;
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+}
+
+#left-column li.todo::before {
+  color: red;
+}
+
+#left-column li.done::before {
+  color: green;
+}
+
 #right-column label {
   margin-top: 15px;
 }

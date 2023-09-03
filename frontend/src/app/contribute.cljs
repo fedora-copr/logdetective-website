@@ -88,16 +88,28 @@
             (render-tab (:name file) i)))])
 
 (defn render-left-column []
-  [:div {:class "col-3"}
+  [:div {:class "col-3" :id "left-column"}
    [:h4 {} "Instructions"]
    [:ul {}
-    [:li {}
+    [:li {:class (if @files "done" "todo")}
      "We fetched logs for Copr build "
      [:a {:href "#"} "#123456"]]
-    [:li {} "Write why do you think the build failed"]
-    [:li {} "Find log snippets relevant to the failure"]
-    [:li {} "Anotate snippets by selecting them, and clicking 'Anotate selection'"]
-    [:li {} "Submit"]]])
+
+    ;; Maybe "Write why do you think the build failed"
+
+    [:li {:class (if @how-to-fix "done" "todo")}
+     "Describe how to fix the issue"]
+
+    [:li {:class (if (not-empty @snippets) "done" "todo")}
+     "Find log snippets relevant to the failure"]
+
+    [:li {:class (if (not-empty @snippets) "done" "todo")}
+     "Anotate snippets by selecting them, and clicking 'Anotate selection'"]
+
+    [:li {:class (if (:comment (first @snippets)) "done" "todo")}
+     "Describe what makes the snippets interesting"]
+
+    [:li {:class "todo"} "Submit"]]])
 
 (defn render-middle-column []
   [:div {:class "col-6"}
