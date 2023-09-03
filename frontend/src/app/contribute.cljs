@@ -6,9 +6,9 @@
             [web.Range :refer [surround-contents]]))
 
 
-(def active-tab (r/atom "backend.log"))
 (def snippets (r/atom nil))
 (def files (r/atom nil))
+(def active-file (r/atom 0))
 
 (def backend-data (r/atom nil))
 (def log (r/atom nil))
@@ -25,25 +25,26 @@
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
                  (reset! backend-data data)
-                 (reset! log (:log data))
+                 (reset! log (:content (:log data)))
                  (reset! build-id (:build_id data))
-                 (reset! build-id-title (:build-id-title data)))))))
+                 (reset! build-id-title (:build-id-title data))
+                 (reset! files (:logs data)))))))
 
 (defn init-data []
   (fetch-logs)
-  (reset!
-   files
-   [{:name "builder-live.log"
-     :content nil}
+  ;; (reset!
+  ;;  files
+  ;;  [{:name "builder-live.log"
+  ;;    :content nil}
 
-    {:name "import.log"
-     :content nil}
+  ;;   {:name "import.log"
+  ;;    :content nil}
 
-    {:name "backend.log"
-     :content nil}
+  ;;   {:name "backend.log"
+  ;;    :content nil}
 
-    {:name "root.log"
-     :content nil}])
+  ;;   {:name "root.log"
+  ;;    :content nil}])
 
   ;; (reset!
   ;;  snippets
@@ -53,18 +54,18 @@
 
   )
 
-(defn render-tab [name]
-  (let [active? (= name @active-tab)]
-    [:li {:class "nav-item" :key name}
+(defn render-tab [name, key]
+  (let [active? (= name (:name (get @files @active-file)))]
+    [:li {:class "nav-item" :key key}
      [:a {:class ["nav-link" (if active? "active" nil)]
-          :on-click #(reset! active-tab name)
+          :on-click #(reset! active-file key)
           :href "#"}
       name]]))
 
 (defn render-tabs []
   [:ul {:class "nav nav-tabs"}
-   (doall (for [file @files]
-     (render-tab (:name file))))])
+   (doall (for [[i file] (map-indexed list @files)]
+            (render-tab (:name file) i)))])
 
 (defn render-left-column []
   [:div {:class "col-3"}
@@ -81,7 +82,8 @@
 (defn render-middle-column []
   [:div {:class "col-6"}
    (render-tabs)
-   [:pre {:id "log" :dangerouslySetInnerHTML {:__html @log}}]])
+   (let [log (:content (get @files @active-file))]
+     [:pre {:id "log" :dangerouslySetInnerHTML {:__html log}}])])
 
 (defn render-snippet [i snippet show?]
   [:div {:class "accordion-item" :key i}
@@ -196,7 +198,10 @@
   ;; instead of like :on-click is done
   ;; (js/document.addEventListener "selectionchange" on-selection-change)
 
-  [:div {:class "row"}
-   (render-left-column)
-   (render-middle-column)
-   (render-right-column)])
+
+  ;; TODO Else fancy loading screen
+  (if @files
+    [:div {:class "row"}
+     (render-left-column)
+     (render-middle-column)
+     (render-right-column)]))

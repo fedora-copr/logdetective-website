@@ -28,16 +28,20 @@ def frontend_contribute_get(source, build_id):
     It fetches logs from the outside world and returns them as JSON, so that
     JavaScript can display them to the user
     """
-    log = LOG_OUTPUT
+    logs = [{"name": "fake-builder-live.log", "content": LOG_OUTPUT}]
+
     if source == "copr":
         url = "https://download.copr.fedorainfracloud.org/results/"
         url += "@copr/copr/fedora-38-x86_64/06302362-copr-dist-git/"
-        url += "builder-live.log.gz"
-        response = requests.get(url)
-        log = response.text
+
+        logs = []
+        names = ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]
+        for name in names:
+            response = requests.get("{0}/{1}".format(url, name))
+            logs.append({"name": name, "content": response.text})
 
     return flask.jsonify({
         "build_id": 12345,
         "build_id_title": "Copr build ID",
-        "log": log,
+        "logs": logs,
     })
