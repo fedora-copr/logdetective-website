@@ -142,6 +142,12 @@
 (defn add-snippet []
   (when (= (selection-node-id) "log")
     (highlight-current-snippet)
+
+    ;; Save the log with highlights, so they are remembered when switching
+    ;; between file tabs
+    (let [log (.-innerHTML (.getElementById js/document "log"))]
+      (reset! files (assoc-in @files [@active-file :content] log)))
+
     (swap! snippets conj (.toString (.getSelection js/window)))
     (clear-selection)))
 
