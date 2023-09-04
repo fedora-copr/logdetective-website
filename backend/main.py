@@ -42,8 +42,8 @@ def frontend_contribute_get(source, build_id):
             logs.append({"name": name, "content": response.text})
 
     return flask.jsonify({
-        "build_id": 12345,
-        "build_id_title": "Copr build ID",
+        "build_id": build_id,
+        "build_id_title": "Copr build",
         "logs": logs,
     })
 

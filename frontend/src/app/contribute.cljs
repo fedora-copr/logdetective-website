@@ -28,7 +28,7 @@
                  (reset! backend-data data)
                  (reset! log (:content (:log data)))
                  (reset! build-id (:build_id data))
-                 (reset! build-id-title (:build-id-title data))
+                 (reset! build-id-title (:build_id_title data))
                  (reset! files (:logs data)))))))
 
 (defn submit-form []
@@ -92,8 +92,8 @@
    [:h4 {} "Instructions"]
    [:ul {}
     [:li {:class (if @files "done" "todo")}
-     "We fetched logs for Copr build "
-     [:a {:href "#"} "#123456"]]
+     (str "We fetched logs for " @build-id-title " ")
+     [:a {:href "#"} (str "#" @build-id)]]
 
     ;; Maybe "Write why do you think the build failed"
 
@@ -193,7 +193,7 @@
 (defn render-right-column []
   [:div {:class "col-3" :id "right-column"}
    [:div {:class "mb-3"}
-    [:label {:class "form-label"} "Copr build ID"]
+    [:label {:class "form-label"} (str @build-id-title " ID")]
     [:input {:type "text" :class "form-control" :value (or @build-id "")
              :disabled true :readOnly true}]]
 
