@@ -2,6 +2,12 @@
 
 ## Development
 
+Easily run on your machine:
+
+```
+docker-compose up -d
+```
+
 See README files for frontend and backend:
 
 - [frontend](frontend/README.md)
