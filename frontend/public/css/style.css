@@ -1,5 +1,12 @@
 #menu {
   background-color: #52a2da;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+#menu #logo {
+  height: 50px;
+  filter: invert(100%) sepia(96%) saturate(15%) hue-rotate(212deg) brightness(104%) contrast(104%);
 }
 
 .card-img-top {
