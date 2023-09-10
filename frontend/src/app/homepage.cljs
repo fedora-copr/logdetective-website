@@ -4,18 +4,31 @@
             [cljs.core.match :refer-macros [match]]))
 
 
+(def input (r/atom nil))
 (def current-hash-atom (r/atom nil))
 
 
 (defn current-hash []
   (. (. js/document -location) -hash))
 
+(defn homepage-submit []
+  (let [source (str/replace @current-hash-atom "#" "")
+        url (str/join "/" ["/contribute" source @input])]
+    (set! (.-href (.-location js/window)) url)))
+
+(defn on-tab-click [href]
+  (reset! current-hash-atom href)
+  (reset! input ""))
+
+(defn on-input-change [target]
+  (reset! input (.-value target)))
+
 (defn render-navigation-item [title href]
   (let [active? (= href @current-hash-atom)]
     [:li {:class "nav-item ml-auto"}
      [:a {:class ["nav-link" (if active? "active" nil)]
           :href href
-          :on-click #(reset! current-hash-atom href)}
+          :on-click #(on-tab-click href)}
       title]]))
 
 (defn render-navigation []
@@ -35,10 +48,13 @@
     [:input
      {:type "text",
       :class "form-control",
-      :placeholder placeholder}]
+      :placeholder placeholder
+      :value @input
+      :on-change #(on-input-change (.-target %))}]
     [:button
      {:class "btn btn-outline-secondary",
-      :type "button", :id "button-addon2"}
+      :type "button", :id "button-addon2"
+      :on-click #(homepage-submit)}
      "Let's go"]]])
 
 (defn render-copr-card []
