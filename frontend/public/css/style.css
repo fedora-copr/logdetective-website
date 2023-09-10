@@ -1,3 +1,7 @@
+body {
+  background-color: #F3F4F6;
+}
+
 #menu {
   background-color: #52a2da;
   padding-top: 0px;
@@ -29,6 +33,10 @@
 #content-wide {
   margin-top: 30px;
   max-width: 1700px;
+}
+
+.card-header {
+  background-color: #F3F4F6;
 }
 
 .input-group {
