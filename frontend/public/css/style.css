@@ -4,6 +4,10 @@
   padding-bottom: 0px;
 }
 
+#menu > .container{
+  max-width: 1700px;
+}
+
 #menu #logo {
   height: 50px;
   filter: invert(100%) sepia(96%) saturate(15%) hue-rotate(212deg) brightness(104%) contrast(104%);
