@@ -87,29 +87,46 @@
    (doall (for [[i file] (map-indexed list @files)]
             (render-tab (:name file) i)))])
 
+(defn fontawesome-icon [name]
+  [:i {:class ["fa-regular" name]}])
+
+(defn instructions-item [done? text]
+  (let [class (if done? "done" "todo")
+        icon-name (if done? "fa-square-check" "fa-square")]
+    [:li {:class class}
+     [:span {:class "fa-li"}
+      (fontawesome-icon icon-name)]
+     text]))
+
 (defn render-left-column []
   [:div {:class "col-3" :id "left-column"}
    [:h4 {} "Instructions"]
-   [:ul {}
-    [:li {:class (if @files "done" "todo")}
-     (str "We fetched logs for " @build-id-title " ")
-     [:a {:href "#"} (str "#" @build-id)]]
+   [:ul {:class "fa-ul"}
+    (instructions-item
+     (not-empty @files)
+     [:<>
+      (str "We fetched logs for " @build-id-title " ")
+      [:a {:href "#"} (str "#" @build-id)]])
 
     ;; Maybe "Write why do you think the build failed"
 
-    [:li {:class (if @how-to-fix "done" "todo")}
-     "Describe how to fix the issue"]
+    (instructions-item
+     (not-empty @how-to-fix)
+     "Describe how to fix the issue")
 
-    [:li {:class (if (not-empty @snippets) "done" "todo")}
-     "Find log snippets relevant to the failure"]
+    (instructions-item
+     (not-empty @snippets)
+     "Find log snippets relevant to the failure")
 
-    [:li {:class (if (not-empty @snippets) "done" "todo")}
-     "Anotate snippets by selecting them, and clicking 'Anotate selection'"]
+    (instructions-item
+     (not-empty @snippets)
+     "Anotate snippets by selecting them, and clicking 'Anotate selection'")
 
-    [:li {:class (if (:comment (first @snippets)) "done" "todo")}
-     "Describe what makes the snippets interesting"]
+    (instructions-item
+     (not-empty (:comment (first @snippets)))
+     "Describe what makes the snippets interesting")
 
-    [:li {:class "todo"} "Submit"]]])
+    (instructions-item nil "Submit")]])
 
 (defn render-middle-column []
   [:div {:class "col-6"}
