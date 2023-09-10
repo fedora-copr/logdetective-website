@@ -39,6 +39,7 @@
   background-color: #f8f9fa;
   border: 1px solid #ced4da;
   padding: 20px;
+  height: 84vh;
 }
 
 .accordion-button:not(.collapsed) {

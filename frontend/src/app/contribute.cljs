@@ -132,7 +132,8 @@
   [:div {:class "col-6"}
    (render-tabs)
    (let [log (:content (get @files @active-file))]
-     [:pre {:id "log" :dangerouslySetInnerHTML {:__html log}}])])
+     [:pre {:id "log" :class "overflow-auto"
+            :dangerouslySetInnerHTML {:__html log}}])])
 
 (defn render-snippet [i snippet show?]
   [:div {:class "accordion-item" :key i}
