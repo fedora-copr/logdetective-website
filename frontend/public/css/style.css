@@ -93,3 +93,13 @@ body {
 #right-column .accordion-body {
   padding: 0px;
 }
+
+#about {
+  margin-top: 100px;
+  margin-bottom: 100px;
+}
+
+#about .card {
+  background-color: #F3F4F6;
+  border: none;
+}

@@ -19,12 +19,44 @@
   <div id="app-homepage"></div>
   <noscript>You need to enable JavaScript to run this app.</noscript>
 
-  <div class="container text-center" style="margin-top: 100px;">
-    <h2>TODO</h2>
-    <p>
-      Section with weird log samples on the left, and AI output on the
-      right. Basically the thing that @ttomecek prepared for sharktank.
-    </p>
+  <div id="about" class="container">
+    <h2 class="text-center">About the project</h2>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Debugging failed builds is hard</h5>
+        Each build produces thousands of lines of output split among
+        multiple log files. And the relevant error message can be anywhere.
+        It's just like a needle in a haystack.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Does it matter?</h5>
+        Veteran packagers have an intuition where the error message will most
+        likely be, but the process is tedious regardless. Newbies are often
+        overwhelmed by the complexity and miss the error message completely.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">What is our goal?</h5>
+        Train an AI model to understand RPM build logs and explain the failure
+        in simple words, with recommendations how to fix it. You won't need to
+        open the logs at all.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">How can I help?</h5>
+        We cannot do this without your help. A large set of RPM build logs
+        needs to be collected and anotated to serve as training data. Please
+        help us to improve the RPM packaging ecosystem by contributing your
+        failed build logs or reviewing the data we already have.
+      </div>
+    </div>
   </div>
 </div>
 
