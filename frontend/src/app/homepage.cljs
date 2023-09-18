@@ -43,42 +43,51 @@
      (render-navigation-item "Packit" "#packit")
      (render-navigation-item "URL" "#url")]])
 
-(defn render-card [title img text placeholder & chroot?]
+(defn render-card [provider url title img text placeholder & chroot?]
   [:div {:class "card-body"}
-   [:img {:src img, :class "card-img-top", :alt "..."}]
-   [:h4 {:class "card-title"} title]
-   [:p {:class "card-text"} text]
+   [:div {:class "row"}
+    [:div {:class "col-2"}
+     [:a {:href url :title (if provider (str "Go to " provider) nil)}
+      [:img {:src img, :class "card-img-top", :alt "..."}]]]
 
-   ;; We do some ugly shenanigans with the position of the submit button
-   ;; depending on how many inputs we have. Also the chroot input is kinda
-   ;; hardcoded for Copr. We should do it more inteligently.
-   (let [submit [:button
-                 {:class "btn btn-outline-primary",
-                  :type "button", :id "button-addon2"
-                  :on-click #(homepage-submit)}
-                 "Let's go"]]
-     [:<>
-      [:div {:class "input-group mb-3 container"}
-       [:input
-        {:type "text",
-         :class "form-control",
-         :placeholder placeholder
-         :value @input-id
-         :on-change #(on-input-id-change (.-target %))}]
-       (when-not chroot? submit)]
+    [:div {:class "col-8"}
+     [:h4 {:class "card-title"} title]
+     [:p {:class "card-text"} text]
 
-      (when chroot?
+     ;; We do some ugly shenanigans with the position of the submit button
+     ;; depending on how many inputs we have. Also the chroot input is kinda
+     ;; hardcoded for Copr. We should do it more inteligently.
+     (let [submit [:button
+                   {:class "btn btn-outline-primary",
+                    :type "button", :id "button-addon2"
+                    :on-click #(homepage-submit)}
+                   "Let's go"]]
+       [:<>
         [:div {:class "input-group mb-3 container"}
          [:input
           {:type "text",
            :class "form-control",
-           :placeholder "Chroot name, e.g. fedora-rawhide-x86_64"
-           :value @input-chroot
-           :on-change #(on-input-chroot-change (.-target %))}]
-         submit])])])
+           :placeholder placeholder
+           :value @input-id
+           :on-change #(on-input-id-change (.-target %))}]
+         (when-not chroot? submit)]
+
+        (when chroot?
+          [:div {:class "input-group mb-3 container"}
+           [:input
+            {:type "text",
+             :class "form-control",
+             :placeholder "Chroot name, e.g. fedora-rawhide-x86_64"
+             :value @input-chroot
+             :on-change #(on-input-chroot-change (.-target %))}]
+           submit])])]
+
+    [:div {:class "col-2"}]]])
 
 (defn render-copr-card []
   (render-card
+   "Copr"
+   "https://copr.fedorainfracloud.org"
    "Submit logs from Copr"
    "img/copr-logo.png"
    "Specify a Copr build ID and we will fetch and display all relevant logs."
@@ -87,6 +96,8 @@
 
 (defn render-packit-card []
   (render-card
+   "Packit"
+   "https://dashboard.packit.dev"
    "Submit logs from Packit"
    "img/packit-logo.png"
    (str/join "" ["Specify a Packit job ID, we will match it to a build, "
@@ -95,6 +106,8 @@
 
 (defn render-koji-card []
   (render-card
+   "Koji"
+   "https://koji.fedoraproject.org"
    "Submit logs from Koji"
    "img/koji-logo.png"
    "Specify a Koji task ID or build ID to fetch and display all relevant logs."
@@ -102,6 +115,8 @@
 
 (defn render-url-card []
   (render-card
+   nil
+   nil
    "Submit logs from URL"
    "img/url-icon.png"
    (str/join "" ["Paste an URL to a log file, or a build in some build system. "
