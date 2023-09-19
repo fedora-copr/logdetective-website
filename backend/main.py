@@ -1,6 +1,15 @@
+import base64
 import flask
 from pprint import pprint
-from .providers import fetch_debug_logs, fetch_copr_logs
+from .providers import (
+    fetch_debug_logs,
+    fetch_copr_logs,
+    fetch_koji_logs,
+    fetch_packit_logs,
+    fetch_url_logs,
+)
+
+# TODO All routes should work with trailing slashes and without trailing slashes
 
 
 app = flask.Flask(
@@ -28,6 +37,12 @@ def contribute(args):
 
 @app.route("/frontend/contribute/copr/<int:build_id>/<chroot>",
            defaults={"source": "copr"})
+@app.route("/frontend/contribute/koji/<int:build_id>/<arch>",
+           defaults={"source": "koji"})
+@app.route("/frontend/contribute/packit/<int:packit_id>/",
+           defaults={"source": "packit"})
+@app.route("/frontend/contribute/url/<base64>/",
+           defaults={"source": "url"})
 @app.route("/frontend/contribute/debug", defaults={"source": "debug"})
 def frontend_contribute_copr(source=None, *args, **kwargs):
     """
@@ -39,6 +54,19 @@ def frontend_contribute_copr(source=None, *args, **kwargs):
         build_title = "Copr build"
         build_id = kwargs["build_id"]
         logs = fetch_copr_logs(kwargs["build_id"], kwargs["chroot"])
+    elif source == "koji":
+        build_title = "Koji build"
+        build_id = kwargs["build_id"]
+        logs = fetch_koji_logs(kwargs["build_id"], kwargs["arch"])
+    elif source == "packit":
+        build_title = "Packit build"
+        build_id = kwargs["packit_id"]
+        logs = fetch_packit_logs(kwargs["packit_id"])
+    elif source == "url":
+        build_title = "URL"
+        build_id = None
+        url = base64.b64decode(kwargs["base64"])
+        logs = fetch_url_logs(url)
     else:
         build_title = "Debug output"
         build_id = "123456"

@@ -1,6 +1,7 @@
 (ns app.homepage
   (:require [reagent.core :as r]
             [clojure.string :as str]
+            [cljs.source-map.base64 :as base64 :refer [encode]]
             [cljs.core.match :refer-macros [match]]))
 
 
@@ -14,7 +15,8 @@
 
 (defn homepage-submit []
   (let [source (str/replace @current-hash-atom "#" "")
-        url (str/join "/" ["/contribute" source @input-id @input-chroot])]
+        input (if (not= source "url") @input-id (js/btoa @input-id))
+        url (str/join "/" ["/contribute" source input @input-chroot])]
     (set! (.-href (.-location js/window)) url)))
 
 (defn on-tab-click [href]
@@ -102,7 +104,7 @@
    "img/packit-logo.png"
    (str/join "" ["Specify a Packit job ID, we will match it to a build, "
                  "fetch, and display all relevant logs."])
-   "Packit job ID, e.g. TODO"))
+   "Packit job ID, e.g. 1015788"))
 
 (defn render-koji-card []
   (render-card
@@ -110,8 +112,8 @@
    "https://koji.fedoraproject.org"
    "Submit logs from Koji"
    "img/koji-logo.png"
-   "Specify a Koji task ID or build ID to fetch and display all relevant logs."
-   "Koji task ID, e.g. 6302362"))
+   "Specify a Koji build ID to fetch and display all relevant logs."
+   "Koji build ID, e.g. 2274591"))
 
 (defn render-url-card []
   (render-card
@@ -121,7 +123,7 @@
    "img/url-icon.png"
    (str/join "" ["Paste an URL to a log file, or a build in some build system. "
                  "If recognized, we will fetch and display all relevant logs."])
-   "TODO"))
+   "https://paste.centos.org/view/raw/5ba21754"))
 
 (defn render-cards []
   (match @current-hash-atom
