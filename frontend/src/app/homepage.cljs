@@ -51,7 +51,7 @@
       [:img {:src img, :class "card-img-top", :alt "..."}]]]
 
     [:div {:class "col-8"}
-     [:h4 {:class "card-title"} title]
+     [:h2 {:class "card-title"} title]
      [:p {:class "card-text"} text]
 
      ;; We do some ugly shenanigans with the position of the submit button
