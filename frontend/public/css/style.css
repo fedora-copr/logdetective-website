@@ -20,6 +20,7 @@
   --purple:      #603e79;
   --lightpurple: #cfbddd;  /* This one is from the main palette */
 
+  --white:       #f8f9fa;  /* This one isn't in any Fedora scheme */
   --gray-0:      #eff0f1;
   --gray-1:      #dfe0e3;
   --gray-2:      #dedede;
@@ -77,6 +78,10 @@ h2 {
   color: var(--gray-8) !important;
 }
 
+#app-homepage .card {
+  border-color: var(--gray-3);
+}
+
 .card-header {
   background-color: var(--gray-0);
 }
@@ -85,9 +90,12 @@ h2 {
   font-weight: 500;
   --bs-nav-link-color: var(--newblue);
   --bs-nav-link-hover-color: var(--newblue);
-  --bs-nav-tabs-border-color: var(--gray-3);
-  --bs-nav-tabs-link-active-bg: var(--gray-0);
+  --bs-nav-tabs-link-active-bg: var(--white);
   --bs-nav-tabs-link-active-border-color: var(--gray-3);
+}
+
+a.nav-link {
+  border-bottom-color: var(--gray-1) !important;
 }
 
 .btn-outline-primary {
@@ -98,6 +106,26 @@ h2 {
   --bs-btn-hover-border-color: var(--newblue);
   --bs-btn-active-bg: var(--newblue);
   --bs-btn-active-border-color: var(--newblue);
+}
+
+.btn-secondary {
+  font-weight: 500;
+  --bs-btn-bg: var(--gray-4);
+  --bs-btn-border-color: var(--gray-4);
+  --bs-btn-hover-bg: var(--gray-4);
+  --bs-btn-hover-border-color: var(--gray-4);
+  --bs-btn-active-bg: var(--gray-4);
+  --bs-btn-active-border-color: var(--gray-4);
+}
+
+.btn-outline-danger {
+  font-weight: 500;
+  --bs-btn-color: var(--magenta);
+  --bs-btn-border-color: var(--magenta);
+  --bs-btn-hover-bg: var(--magenta);
+  --bs-btn-hover-border-color: var(--magenta);
+  --bs-btn-active-bg: var(--magenta);
+  --bs-btn-active-border-color: var(--magenta);
 }
 
 #app-homepage .card-title {
@@ -120,18 +148,22 @@ a, a:hover {
 }
 
 #log {
-  background-color: var(--gray-0);
-  border: 1px solid var(--gray-3);
+  background-color: var(--white);
+  border: 1px solid var(--gray-2);
   padding: 20px;
   height: 84vh;
 }
 
+#right-column .form-control:disabled {
+  background-color: var(--gray-1);
+}
+
 .accordion-button:not(.collapsed) {
-    background-color: #f8f9fa;
+  background-color: var(--gray-1);
 }
 
 .accordion-button {
-    background-color: #f8f9fa;
+  background-color: var(--gray-1);
 }
 
 .btn-primary {
@@ -145,6 +177,10 @@ a, a:hover {
 
 .snippet {
   background-color: var(--lightpurple);
+}
+
+#left-column h4 {
+  color: var(--darkblue);
 }
 
 #left-column .fa-li {
@@ -161,6 +197,10 @@ a, a:hover {
 
 #right-column label {
   margin-top: 15px;
+}
+
+#right-column textarea {
+  background-color: var(--white);
 }
 
 #right-column #submit {
@@ -180,4 +220,8 @@ a, a:hover {
   background-color: var(--gray-0);
   border: none;
   color: var(--gray-8);
+}
+
+#about h5 {
+  color: var(--darkblue);
 }
