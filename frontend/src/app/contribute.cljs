@@ -11,6 +11,8 @@
 (def files (r/atom nil))
 (def active-file (r/atom 0))
 
+(def error-description (r/atom nil))
+(def error-title (r/atom nil))
 (def backend-data (r/atom nil))
 (def log (r/atom nil))
 (def build-id (r/atom nil))
@@ -23,13 +25,21 @@
 (defn fetch-logs []
   (let [url (str "/frontend" (current-path))]
     (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
+        (.then (fn [resp]
+                 (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
-                 (reset! backend-data data)
-                 (reset! log (:content (:log data)))
-                 (reset! build-id (:build_id data))
-                 (reset! build-id-title (:build_id_title data))
-                 (reset! files (:logs data)))))))
+                 (if (:error data)
+                   (do
+                     (reset! error-title (:error data))
+                     (reset! error-description (:description data)))
+                   (do
+                     (reset! backend-data data)
+                     (reset! log (:content (:log data)))
+                     (reset! build-id (:build_id data))
+                     (reset! build-id-title (:build_id_title data))
+                     (reset! files (:logs data))
+                     (reset! error-title nil)
+                     (reset! error-description nil))))))))
 
 (defn submit-form []
   (let [url (str "/frontend" (current-path))
@@ -275,6 +285,13 @@
         file-name (:file snippet)]
   (reset! active-file (file-id file-name))))
 
+(defn render-error [title description]
+  [:div {:id "error" :class "py-5 text-center container rounded"}
+   [:h1 "Oops!"]
+   [:p {:class "lead text-body-secondary"} title]
+   [:p {:class "text-body-secondary"} description]
+   [:i {:class "fa-solid fa-bug"}]])
+
 (defn contribute []
   ;; I don't know why we need to do it this way,
   ;; instead of like :on-click is done
@@ -285,7 +302,11 @@
       (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
 
   ;; TODO Else fancy loading screen
-  (if @files
+  (cond
+    @error-description
+    (render-error @error-title @error-description)
+
+    @files
     [:div {:class "row"}
      (render-left-column)
      (render-middle-column)

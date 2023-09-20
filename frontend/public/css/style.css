@@ -225,3 +225,16 @@ a, a:hover {
 #about h5 {
   color: var(--darkblue);
 }
+
+#error {
+  margin-top: 100px;
+  background-color: white;
+  max-width: 720px;
+  border: 1px solid var(--magenta);
+}
+
+#error i {
+  color: var(--magenta);
+  margin-top: 20px;
+  font-size: 80px;
+}
