@@ -227,14 +227,29 @@ a, a:hover {
 }
 
 #error {
+  --color: var(--magenta);
+}
+
+#loading {
+  --color: var(--newblue);
+}
+
+#error, #loading {
   margin-top: 100px;
   background-color: white;
   max-width: 720px;
-  border: 1px solid var(--magenta);
+  border: 1px solid var(--color);
+  min-height: 340px;
 }
 
 #error i {
-  color: var(--magenta);
+  color: var(--color);
   margin-top: 20px;
   font-size: 80px;
+}
+
+#loading .spinner-border {
+  color: var(--color);
+  --bs-spinner-width: 80px;
+  --bs-spinner-height: 80px;
 }

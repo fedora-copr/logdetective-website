@@ -285,12 +285,29 @@
         file-name (:file snippet)]
   (reset! active-file (file-id file-name))))
 
-(defn render-error [title description]
-  [:div {:id "error" :class "py-5 text-center container rounded"}
-   [:h1 "Oops!"]
+(defn render-jumbotron [id h1 title description icon]
+  [:div {:id id :class "py-5 text-center container rounded"}
+   [:h1 h1]
    [:p {:class "lead text-body-secondary"} title]
    [:p {:class "text-body-secondary"} description]
-   [:i {:class "fa-solid fa-bug"}]])
+   icon])
+
+(defn render-error [title description]
+  (render-jumbotron
+   "error"
+   "Oops!"
+   title
+   description
+   [:i {:class "fa-solid fa-bug"}]))
+
+(defn loading-screen []
+  (render-jumbotron
+   "loading"
+   "Loading"
+   "Please wait, fetching logs from the outside world."
+   "..."
+   [:div {:class "spinner-border", :role "status"}
+    [:span {:class "sr-only"} "Loading..."]]))
 
 (defn contribute []
   ;; I don't know why we need to do it this way,
@@ -301,7 +318,6 @@
     (let [accordion (.getElementById js/document "accordionSnippets")]
       (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
 
-  ;; TODO Else fancy loading screen
   (cond
     @error-description
     (render-error @error-title @error-description)
@@ -310,4 +326,7 @@
     [:div {:class "row"}
      (render-left-column)
      (render-middle-column)
-     (render-right-column)]))
+     (render-right-column)]
+
+    :else
+    (loading-screen)))
