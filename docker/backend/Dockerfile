@@ -18,4 +18,6 @@ RUN dnf -y update && \
     && dnf -y install \
                    python3-flask \
                    python3-requests \
+                   python3-koji \
+                   python3-copr \
     && dnf clean all
