@@ -94,8 +94,18 @@ h2 {
   --bs-nav-tabs-link-active-border-color: var(--gray-3);
 }
 
-a.nav-link {
-  border-bottom-color: var(--gray-1) !important;
+#app-homepage a.nav-link:hover {
+  border-bottom-color: var(--gray-3) !important;
+  border-left-color: var(--gray-0) !important;
+  border-top-color: var(--gray-0) !important;
+  border-right-color: var(--gray-0) !important;
+}
+
+#app-homepage a.active:hover {
+  border-bottom-color: white !important;
+  border-left-color: var(--gray-3) !important;
+  border-top-color: var(--gray-3) !important;
+  border-right-color: var(--gray-3) !important;
 }
 
 .btn-outline-primary {
