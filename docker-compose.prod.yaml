@@ -1,0 +1,17 @@
+version: "3"
+services:
+
+  website:
+    build:
+      context: docker/production
+    image: quay.io/jkadlcik/lightspeed-build
+    hostname: lightspeed-build
+    stdin_open: true
+    tty: true
+    ports:
+      - 8080:80
+    volumes:
+      - persistent:/persistent:z
+
+volumes:
+  persistent:

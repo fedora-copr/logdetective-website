@@ -1,0 +1,85 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: lightspeed-build-website
+spec:
+  selector:
+    matchLabels:
+      component: lightspeed-build-website
+  template:
+    metadata:
+      labels:
+        component: lightspeed-build-website
+    spec:
+      volumes:
+        - name: persistent
+          persistentVolumeClaim:
+            claimName: persistent
+      containers:
+        - name: lightspeed-build-website
+          image: quay.io/jkadlcik/lightspeed-build:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: persistent
+              mountPath: /persistent
+          resources:
+            requests:
+              memory: "400Mi"
+              cpu: "50m"
+            limits:
+              memory: "800Mi"
+              cpu: "1"
+  replicas: 1
+  strategy:
+    type: Recreate
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: persistent
+  name: persistent
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: lightspeed-build-website
+spec:
+  ports:
+    - name: lightspeed-build-website
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    component: lightspeed-build-website
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: lightspeed-build-website
+  namespace: communishift-lightspeed-build
+spec:
+  host: >-
+    lightspeed-build-website-communishift-lightspeed-build.apps.fedora.cj14.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: lightspeed-build-website
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+status: {}
