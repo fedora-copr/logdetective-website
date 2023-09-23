@@ -38,4 +38,4 @@ RUN npx shadow-cljs release app
 
 # TODO We need to use an actual httpd server
 WORKDIR /src/backend
-CMD flask --app main run --host 0.0.0.0 --port 80
+CMD flask --app main run --host 0.0.0.0 --port 8080
