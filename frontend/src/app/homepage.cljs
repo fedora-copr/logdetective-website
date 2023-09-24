@@ -5,8 +5,7 @@
             [cljs.core.match :refer-macros [match]]))
 
 
-(def input-id (r/atom nil))
-(def input-chroot (r/atom nil))
+(def input-values (r/atom nil))
 (def current-hash-atom (r/atom nil))
 
 
@@ -15,19 +14,23 @@
 
 (defn homepage-submit []
   (let [source (str/replace @current-hash-atom "#" "")
-        input (if (not= source "url") @input-id (js/btoa @input-id))
-        url (str/join "/" ["/contribute" source input @input-chroot])]
+        params (match @current-hash-atom
+                      "#copr"   [(get @input-values :copr-build-id)
+                                 (get @input-values :copr-chroot)]
+                      "#packit" [(get @input-values :packit-id)]
+                      "#koji"   [(get @input-values :koji-build-id)
+                                 (get @input-values :koji-arch)]
+                      "#url"    [(js/btoa (get @input-values :url))])
+        url (str/join "/" (concat ["/contribute" source] params))]
     (set! (.-href (.-location js/window)) url)))
 
 (defn on-tab-click [href]
-  (reset! current-hash-atom href)
-  (reset! input-id ""))
+  (reset! current-hash-atom href))
 
-(defn on-input-id-change [target]
-  (reset! input-id (.-value target)))
-
-(defn on-input-chroot-change [target]
-  (reset! input-chroot (.-value target)))
+(defn on-input-change [target]
+  (swap! input-values assoc
+         (keyword (.-name target))
+         (.-value target)))
 
 (defn render-navigation-item [title href]
   (let [active? (= href @current-hash-atom)]
@@ -45,7 +48,7 @@
      (render-navigation-item "Packit" "#packit")
      (render-navigation-item "URL" "#url")]])
 
-(defn render-card [provider url title img text placeholder & chroot?]
+(defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
    [:div {:class "row"}
     [:div {:class "col-2"}
@@ -56,35 +59,27 @@
      [:h2 {:class "card-title"} title]
      [:p {:class "card-text"} text]
 
-     ;; We do some ugly shenanigans with the position of the submit button
-     ;; depending on how many inputs we have. Also the chroot input is kinda
-     ;; hardcoded for Copr. We should do it more inteligently.
-     (let [submit [:button
-                   {:class "btn btn-outline-primary",
-                    :type "button", :id "button-addon2"
-                    :on-click #(homepage-submit)}
-                   "Let's go"]]
-       [:<>
-        [:div {:class "input-group mb-3 container"}
-         [:input
-          {:type "text",
-           :class "form-control",
-           :placeholder placeholder
-           :value @input-id
-           :on-change #(on-input-id-change (.-target %))}]
-         (when-not chroot? submit)]
-
-        (when chroot?
-          [:div {:class "input-group mb-3 container"}
-           [:input
-            {:type "text",
-             :class "form-control",
-             :placeholder "Chroot name, e.g. fedora-rawhide-x86_64"
-             :value @input-chroot
-             :on-change #(on-input-chroot-change (.-target %))}]
-           submit])])]
+     (for [[i input] (map-indexed vector inputs)]
+       ^{:key i}
+       [:div {:class "input-group mb-3 container"}
+        input
+        (when (= (- (count inputs) 1) i)
+          [:button
+           {:class "btn btn-outline-primary",
+            :type "button", :id "button-addon2"
+            :on-click #(homepage-submit)}
+           "Let's go"])])]
 
     [:div {:class "col-2"}]]])
+
+(defn input [name placeholder]
+  [:input
+   {:type "text",
+    :class "form-control",
+    :name name
+    :placeholder placeholder
+    :value (get @input-values (keyword name))
+    :on-change #(on-input-change (.-target %))}])
 
 (defn render-copr-card []
   (render-card
@@ -93,8 +88,8 @@
    "Submit logs from Copr"
    "img/copr-logo.png"
    "Specify a Copr build ID and we will fetch and display all relevant logs."
-   "Copr build ID, e.g. 6302362"
-   true))
+   [(input "copr-build-id" "Copr build ID, e.g. 6302362")
+    (input "copr-chroot" "Chroot name, e.g. fedora-rawhide-x86_64")]))
 
 (defn render-packit-card []
   (render-card
@@ -104,7 +99,7 @@
    "img/packit-logo.png"
    (str/join "" ["Specify a Packit job ID, we will match it to a build, "
                  "fetch, and display all relevant logs."])
-   "Packit job ID, e.g. 1015788"))
+   [(input "packit-id" "Packit job ID, e.g. 1015788")]))
 
 (defn render-koji-card []
   (render-card
@@ -113,7 +108,8 @@
    "Submit logs from Koji"
    "img/koji-logo.png"
    "Specify a Koji build ID to fetch and display all relevant logs."
-   "Koji build ID, e.g. 2274591"))
+   [(input "koji-build-id" "Koji build ID, e.g. 2274591")
+    (input "koji-arch" "Architecture, e.g. x86_64")]))
 
 (defn render-url-card []
   (render-card
@@ -123,7 +119,7 @@
    "img/url-icon.png"
    (str/join "" ["Paste an URL to a log file, or a build in some build system. "
                  "If recognized, we will fetch and display all relevant logs."])
-   "https://paste.centos.org/view/raw/5ba21754"))
+   [(input "url" "https://paste.centos.org/view/raw/5ba21754")]))
 
 (defn render-cards []
   (match @current-hash-atom
