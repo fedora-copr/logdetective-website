@@ -43,7 +43,7 @@ so commit and push your changes.
 Build the container image:
 
 ```
-docker-compose -f docker-compose.prod.yaml build
+docker-compose -f docker-compose.prod.yaml build --no-cache
 ```
 
 Push the image to quay.io
