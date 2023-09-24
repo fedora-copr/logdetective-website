@@ -98,15 +98,16 @@ def frontend_contribute_copr(source=None, *args, **kwargs):
         return error(title, str(ex))
 
 
-@app.route("/frontend/contribute/<source>/<int:build_id>", methods=["POST"])
-def frontend_contribute_post(source, build_id):
+# path allows optional number of params
+@app.route("/frontend/contribute/<source>/<path:args>", methods=["POST"])
+def frontend_contribute_post(source, args):
     """
     This route is called from JavaScript, after clicking the submit button
     It saves the user provided data to our storage
     """
 
     # TODO Validate and store
-    print("Submitted data for {0} build #{1}".format(source, build_id))
+    print("Submitted data for {0}: #{1}".format(source, args))
     pprint(flask.request.json)
 
     # TODO A reasonable JSON response
