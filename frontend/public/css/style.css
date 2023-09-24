@@ -148,6 +148,10 @@ h2 {
   min-height: 250px;
 }
 
+#app-homepage input.validation-error {
+  border-color: var(--magenta);
+}
+
 .input-group {
   max-width: 600px;
 }

@@ -2,10 +2,12 @@
   (:require [reagent.core :as r]
             [clojure.string :as str]
             [cljs.source-map.base64 :as base64 :refer [encode]]
-            [cljs.core.match :refer-macros [match]]))
+            [cljs.core.match :refer-macros [match]]
+            [app.homepage-validation :refer [validate]]))
 
 
 (def input-values (r/atom nil))
+(def input-errors (r/atom []))
 (def current-hash-atom (r/atom nil))
 
 
@@ -13,6 +15,7 @@
   (. (. js/document -location) -hash))
 
 (defn homepage-submit []
+  (validate current-hash-atom input-values input-errors)
   (let [source (str/replace @current-hash-atom "#" "")
         params (match @current-hash-atom
                       "#copr"   [(get @input-values :copr-build-id)
@@ -22,10 +25,12 @@
                                  (get @input-values :koji-arch)]
                       "#url"    [(js/btoa (get @input-values :url))])
         url (str/join "/" (concat ["/contribute" source] params))]
-    (set! (.-href (.-location js/window)) url)))
+    (when (empty? @input-errors)
+      (set! (.-href (.-location js/window)) url))))
 
 (defn on-tab-click [href]
-  (reset! current-hash-atom href))
+  (reset! current-hash-atom href)
+  (reset! input-errors []))
 
 (defn on-input-change [target]
   (swap! input-values assoc
@@ -74,8 +79,10 @@
 
 (defn input [name placeholder]
   [:input
-   {:type "text",
-    :class "form-control",
+   {:type "text"
+    :class ["form-control"
+            (when (some #{name} @input-errors)
+              "validation-error")]
     :name name
     :placeholder placeholder
     :value (get @input-values (keyword name))
