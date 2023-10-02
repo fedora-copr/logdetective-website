@@ -3,7 +3,8 @@
             [clojure.string :as str]
             [cljs.core.match :refer-macros [match]]
             [lambdaisland.fetch :as fetch]
-            [web.Range :refer [surround-contents]]))
+            [web.Range :refer [surround-contents]]
+            ["html-entities" :as html-entities]))
 
 
 (def how-to-fix (r/atom nil))
@@ -39,7 +40,16 @@
                      (reset! build-id (:build_id data))
                      (reset! build-id-title (:build_id_title data))
                      (reset! build-url (:build_url data))
-                     (reset! files (:logs data))
+
+                     (reset!
+                      files
+                      (vec (map (fn [log]
+                                  ;; We must html encode all HTML characters
+                                  ;; because we are going to render the log
+                                  ;; files dangerously
+                                  (update log :content #(.encode html-entities %)))
+                                (:logs data))))
+
                      (reset! error-title nil)
                      (reset! error-description nil))))))))
 
