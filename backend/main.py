@@ -2,12 +2,18 @@ import flask
 from pprint import pprint
 from .providers import (
     FetchError,
+    decode_base64_url,
     fetch_debug_logs,
     fetch_copr_logs,
     fetch_koji_logs,
     fetch_packit_logs,
     fetch_url_logs,
 )
+
+
+COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
+KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
+
 
 # TODO All routes should work with trailing slashes and without trailing slashes
 
@@ -71,27 +77,41 @@ def frontend_contribute_copr(source=None, *args, **kwargs):
         if source == "copr":
             build_title = "Copr build"
             build_id = kwargs["build_id"]
+            build_url = COPR_BUILD_URL.format(build_id)
             logs = fetch_copr_logs(kwargs["build_id"], kwargs["chroot"])
+
         elif source == "koji":
             build_title = "Koji build"
             build_id = kwargs["build_id"]
+            build_url = KOJI_BUILD_URL.format(build_id)
             logs = fetch_koji_logs(kwargs["build_id"], kwargs["arch"])
+
         elif source == "packit":
             build_title = "Packit build"
             build_id = kwargs["packit_id"]
+            # TODO Packit probably doesn't have a Web UI for showing a single
+            # packit build. We could instead point directly to Copr or Koji but
+            # that would require refactoring the code (and making it more
+            # complex) and I don't want to do that right now.
+            build_url = "https://dashboard.packit.dev/jobs/copr-builds"
             logs = fetch_packit_logs(kwargs["packit_id"])
+
         elif source == "url":
             build_title = "URL"
             build_id = None
-            logs = fetch_url_logs(kwargs["base64"])
+            build_url = decode_base64_url(kwargs["base64"])
+            logs = fetch_url_logs(build_url)
+
         else:
             build_title = "Debug output"
             build_id = "123456"
+            build_url = "#"
             logs = fetch_debug_logs()
 
         return flask.jsonify({
             "build_id": build_id,
             "build_id_title": build_title,
+            "build_url": build_url,
             "logs": logs,
         })
     except FetchError as ex:

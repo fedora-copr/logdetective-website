@@ -17,6 +17,7 @@
 (def log (r/atom nil))
 (def build-id (r/atom nil))
 (def build-id-title (r/atom nil))
+(def build-url (r/atom nil))
 
 
 (defn current-path []
@@ -37,6 +38,7 @@
                      (reset! log (:content (:log data)))
                      (reset! build-id (:build_id data))
                      (reset! build-id-title (:build_id_title data))
+                     (reset! build-url (:build_url data))
                      (reset! files (:logs data))
                      (reset! error-title nil)
                      (reset! error-description nil))))))))
@@ -114,9 +116,15 @@
    [:ul {:class "fa-ul"}
     (instructions-item
      (not-empty @files)
-     [:<>
-      (str "We fetched logs for " @build-id-title " ")
-      [:a {:href "#"} (str "#" @build-id)]])
+
+     (if (= @build-id-title "URL")
+       [:<>
+        (str "We fetched logs from ")
+        [:a {:href @build-url} "this URL"]]
+
+       [:<>
+        (str "We fetched logs for " @build-id-title " ")
+        [:a {:href @build-url} (str "#" @build-id)]]))
 
     ;; Maybe "Write why do you think the build failed"
 
@@ -221,9 +229,12 @@
 (defn render-right-column []
   [:div {:class "col-3" :id "right-column"}
    [:div {:class "mb-3"}
-    [:label {:class "form-label"} (str @build-id-title " ID")]
-    [:input {:type "text" :class "form-control" :value (or @build-id "")
-             :disabled true :readOnly true}]]
+    [:label {:class "form-label"} (str @build-id-title ":")]
+    [:input {:type "text"
+             :class "form-control"
+             :value (or @build-id @build-url "")
+             :disabled true
+             :readOnly true}]]
 
    [:div {:class "mb-3"}
     [:label {:class "form-label"} "How to fix the issue?"]

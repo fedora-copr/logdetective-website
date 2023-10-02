@@ -123,10 +123,13 @@ def fetch_packit_logs(packit_id):
 
 
 @handle_errors
-def fetch_url_logs(url, base64=True):
+def decode_base64_url(encoded_url):
+    return b64decode(encoded_url).decode("utf-8")
+
+
+@handle_errors
+def fetch_url_logs(url):
     # TODO Can we recognize a directory listing and show _all_ logs?
-    if base64:
-        url = b64decode(url).decode("utf-8")
     response = requests.get(url)
     response.raise_for_status()
     if response.headers["Content-Type"] != "text/plain":
