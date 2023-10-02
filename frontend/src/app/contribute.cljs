@@ -207,7 +207,8 @@
     :else nil))
 
 (defn selection-node-id []
-  (.-id (.-parentNode (.-baseNode (.getSelection js/window)))))
+  (let [base (.-baseNode (.getSelection js/window))]
+    (if base (.-id (.-parentNode base)) nil)))
 
 (defn add-snippet []
   (when (= (selection-node-id) "log")
