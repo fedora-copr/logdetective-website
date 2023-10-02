@@ -25,13 +25,14 @@ def handle_exceptions(ex):
 
 
 def error(title, description):
+    # TODO We need to handle exceptions when there is a syntax error in the
+    # code, etc.
+    print(title)
+    print(description)
+
     if flask.request.path.startswith("/frontend"):
         data = {"error": title, "description": description}
         return flask.jsonify(data), 200
-    # This happens for example when there is a syntax error in the code
-    # TODO Handle the exceptions properly
-    print(title)
-    print(description)
     return "SERVER ERROR", 500
 
 
