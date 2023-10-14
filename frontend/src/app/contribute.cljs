@@ -7,6 +7,7 @@
    [web.Range :refer [surround-contents]]
    ["html-entities" :as html-entities]
    [app.helpers :refer [current-path]]
+   [app.three-column-layout.core :refer [three-column-layout]]
    [app.contribute-atoms :refer
     [how-to-fix
      snippets
@@ -107,7 +108,7 @@
      text]))
 
 (defn render-left-column []
-  [:div {:class "col-3" :id "left-column"}
+  [:<>
    [:h4 {} "Instructions"]
    [:ul {:class "fa-ul"}
     (instructions-item
@@ -143,7 +144,7 @@
     (instructions-item nil "Submit")]])
 
 (defn render-middle-column []
-  [:div {:class "col-6"}
+  [:<>
    (render-tabs)
    (let [log (:content (get @files @active-file))]
      [:pre {:id "log" :class "overflow-auto"
@@ -189,7 +190,7 @@
             (render-snippet i snippet show?))))
 
 (defn render-right-column []
-  [:div {:class "col-3" :id "right-column"}
+  [:<>
    [:div {:class "mb-3"}
     [:label {:class "form-label"} (str @build-id-title ":")]
     [:input {:type "text"
@@ -273,10 +274,10 @@
     (render-error @error-title @error-description)
 
     @files
-    [:div {:class "row"}
+    (three-column-layout
      (render-left-column)
      (render-middle-column)
-     (render-right-column)]
+     (render-right-column))
 
     :else
     (loading-screen)))
