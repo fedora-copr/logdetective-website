@@ -6,8 +6,11 @@
    [lambdaisland.fetch :as fetch]
    [web.Range :refer [surround-contents]]
    ["html-entities" :as html-entities]
-   [app.helpers :refer [current-path]]
-   [app.three-column-layout.core :refer [three-column-layout]]
+   [app.helpers :refer [current-path fontawesome-icon]]
+   [app.three-column-layout.core :refer
+    [three-column-layout
+     instructions-item
+     instructions]]
    [app.editor.core :refer [editor]]
    [app.contribute-atoms :refer
     [how-to-fix
@@ -82,22 +85,9 @@
 
   )
 
-(defn fontawesome-icon [name]
-  [:i {:class ["fa-regular" name]}])
-
-(defn instructions-item [done? text]
-  (let [class (if done? "done" "todo")
-        icon-name (if done? "fa-square-check" "fa-square")]
-    [:li {:class class}
-     [:span {:class "fa-li"}
-      (fontawesome-icon icon-name)]
-     text]))
-
 (defn render-left-column []
-  [:<>
-   [:h4 {} "Instructions"]
-   [:ul {:class "fa-ul"}
-    (instructions-item
+  (instructions
+   [(instructions-item
      (not-empty @files)
 
      (if (= @build-id-title "URL")
@@ -127,7 +117,7 @@
      (not-empty @how-to-fix)
      "Describe how to fix the issue")
 
-    (instructions-item nil "Submit")]])
+    (instructions-item nil "Submit")]))
 
 (defn render-middle-column []
   (editor @files))
