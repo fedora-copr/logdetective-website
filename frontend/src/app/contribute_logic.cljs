@@ -1,7 +1,8 @@
 (ns app.contribute-logic
   (:require
    [app.contribute-atoms :refer
-    [files]]))
+    [files
+     snippets]]))
 
 
 (defn clear-selection []
@@ -21,6 +22,8 @@
   (def rangee (.getRangeAt (.getSelection js/window) 0))
   (def span (.createElement js/document "span"))
   (set! (.-className span) "snippet")
+  (set! (.-id span) (str "snippet-" (count @snippets)))
+  (set! (.-index-number (.-dataset span)) (count @snippets))
   (.appendChild span (.extractContents rangee))
   (.insertNode rangee span))
 

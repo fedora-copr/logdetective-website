@@ -23,7 +23,7 @@
     [submit-form
      add-snippet
      on-accordion-item-show
-     ]]))
+     on-click-delete-snippet]]))
 
 
 (defn fetch-logs []
@@ -180,14 +180,20 @@
        :data-index-number i
        :on-change #(on-snippet-textarea-change (.-target %))}]
      [:div {}
-      [:button {:type "button" :class "btn btn-outline-danger"} "Delete"]]]]])
+      [:button {:type "button"
+                :class "btn btn-outline-danger"
+                :data-index-number i
+                :on-click #(on-click-delete-snippet %)}
+       "Delete"]]]]])
 
 (defn render-snippets []
-   (doall (for [enumerated-snippet (map-indexed list @snippets)]
-            (render-snippet (first enumerated-snippet)
-                            (second enumerated-snippet)
-                            (= (first enumerated-snippet)
-                               (- (count @snippets) 1))))))
+   (doall (for [enumerated-snippet (map-indexed list @snippets)
+                :let [i (first enumerated-snippet)
+                      snippet (second enumerated-snippet)
+                      show? (= (first enumerated-snippet)
+                               (- (count @snippets) 1))]
+                :when snippet]
+            (render-snippet i snippet show?))))
 
 (defn render-right-column []
   [:div {:class "col-3" :id "right-column"}

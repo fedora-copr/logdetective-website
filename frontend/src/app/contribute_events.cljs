@@ -55,3 +55,14 @@
 ;;     (js/console.log selection)
 ;;     (js/console.log selection.anchorOffset)
 ;;     (js/console.log selection.focusOffset)))
+
+(defn on-click-delete-snippet [^js/Event event]
+  (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))]
+    ;; We don't want to remove the element entirely because we want to preserve
+    ;; snippet numbers that follows
+    (swap! snippets assoc snippet-id nil)
+
+    ;; Remove the highlight
+    (let [span (.getElementById js/document (str "snippet-" snippet-id))
+          text (.-innerHTML span)]
+      (.replaceWith span text))))
