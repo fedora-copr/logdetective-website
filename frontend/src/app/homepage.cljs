@@ -96,7 +96,7 @@
    "img/copr-logo.png"
    "Specify a Copr build ID and we will fetch and display all relevant logs."
    [(input "copr-build-id" "Copr build ID, e.g. 6302362")
-    (input "copr-chroot" "Chroot name, e.g. fedora-rawhide-x86_64")]))
+    (input "copr-chroot" "Chroot name, e.g. fedora-39-x86_64 or srpm-builds")]))
 
 (defn render-packit-card []
   (render-card

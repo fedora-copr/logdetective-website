@@ -1,3 +1,4 @@
+import os
 import binascii
 import requests
 from functools import lru_cache
@@ -54,12 +55,19 @@ def fetch_debug_logs():
 def fetch_copr_logs(build_id, chroot):
     copr_url = "https://copr.fedorainfracloud.org"
     client = copr.v3.Client({"copr_url": copr_url})
-    build_chroot = client.build_chroot_proxy.get(build_id, chroot)
+    names = ["builder-live.log.gz", "backend.log.gz"]
+
+    if chroot == "srpm-builds":
+        build = client.build_proxy.get(build_id)
+        baseurl = os.path.dirname(build.source_package["url"])
+    else:
+        build_chroot = client.build_chroot_proxy.get(build_id, chroot)
+        baseurl = build_chroot.result_url
+        names.append("build.log.gz")
 
     logs = []
-    names = ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]
     for name in names:
-        url = "{0}/{1}".format(build_chroot.result_url, name)
+        url = "{0}/{1}".format(baseurl, name)
         response = requests.get(url)
         response.raise_for_status()
         logs.append({
