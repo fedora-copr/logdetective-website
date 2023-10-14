@@ -5,7 +5,6 @@
 (def how-to-fix (r/atom nil))
 (def snippets (r/atom []))
 (def files (r/atom nil))
-(def active-file (r/atom 0))
 
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))

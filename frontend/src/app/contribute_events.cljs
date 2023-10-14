@@ -4,6 +4,7 @@
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
     [current-path]]
+   [app.editor.core :refer [active-file]]
    [app.contribute-logic :refer
     [file-id
      clear-selection
@@ -12,7 +13,6 @@
    [app.contribute-atoms :refer
     [how-to-fix
      snippets
-     active-file
      files]]))
 
 

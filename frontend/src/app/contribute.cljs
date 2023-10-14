@@ -8,11 +8,11 @@
    ["html-entities" :as html-entities]
    [app.helpers :refer [current-path]]
    [app.three-column-layout.core :refer [three-column-layout]]
+   [app.editor.core :refer [editor]]
    [app.contribute-atoms :refer
     [how-to-fix
      snippets
      files
-     active-file
      error-description
      error-title
      backend-data
@@ -82,20 +82,6 @@
 
   )
 
-
-(defn render-tab [name, key]
-  (let [active? (= name (:name (get @files @active-file)))]
-    [:li {:class "nav-item" :key key}
-     [:a {:class ["nav-link" (if active? "active" nil)]
-          :on-click #(reset! active-file key)
-          :href "#"}
-      name]]))
-
-(defn render-tabs []
-  [:ul {:class "nav nav-tabs"}
-   (doall (for [[i file] (map-indexed list @files)]
-            (render-tab (:name file) i)))])
-
 (defn fontawesome-icon [name]
   [:i {:class ["fa-regular" name]}])
 
@@ -144,11 +130,7 @@
     (instructions-item nil "Submit")]])
 
 (defn render-middle-column []
-  [:<>
-   (render-tabs)
-   (let [log (:content (get @files @active-file))]
-     [:pre {:id "log" :class "overflow-auto"
-            :dangerouslySetInnerHTML {:__html log}}])])
+  (editor @files))
 
 (defn render-snippet [i snippet show?]
   [:div {:class "accordion-item" :key i}
