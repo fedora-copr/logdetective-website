@@ -55,6 +55,11 @@ def contribute(args):
     return flask.render_template("contribute.html")
 
 
+@app.route("/review/")
+def review():
+    return flask.render_template("review.html")
+
+
 # Frontend API routes
 # These are called from JavaScript to asynchronously fetch or post data
 
@@ -133,3 +138,10 @@ def frontend_contribute_post(source, args):
 
     # TODO A reasonable JSON response
     return flask.jsonify({})
+
+
+@app.route("/frontend/review/")
+def frontend_review():
+    # TODO Random log results with anotations
+    logs = fetch_debug_logs()
+    return flask.jsonify({"logs": logs})

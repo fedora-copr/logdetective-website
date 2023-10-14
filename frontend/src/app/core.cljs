@@ -2,7 +2,8 @@
   "This namespace contains your application and is the entrypoint for 'yarn start'."
   (:require [reagent.core :as r]
             [app.homepage :refer [homepage]]
-            [app.contribute :refer [contribute init-data]]))
+            [app.contribute :refer [contribute init-data]]
+            [app.review.core :refer [review init-data-review]]))
 
 
 (defn ^:dev/after-load render
@@ -16,7 +17,12 @@
         (.getElementById js/document "app-contribute")
         (do
           (init-data)
-          (r/render [contribute] (.getElementById js/document "app-contribute")))))
+          (r/render [contribute] (.getElementById js/document "app-contribute")))
+
+        (.getElementById js/document "app-review")
+        (do
+          (init-data-review)
+          (r/render [review] (.getElementById js/document "app-review")))))
 
 (defn ^:export main
   "Run application startup logic."
