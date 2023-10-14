@@ -1,28 +1,30 @@
 (ns app.contribute
-  (:require [reagent.core :as r]
-            [clojure.string :as str]
-            [cljs.core.match :refer-macros [match]]
-            [lambdaisland.fetch :as fetch]
-            [web.Range :refer [surround-contents]]
-            ["html-entities" :as html-entities]))
+  (:require
+   [reagent.core :as r]
+   [clojure.string :as str]
+   [cljs.core.match :refer-macros [match]]
+   [lambdaisland.fetch :as fetch]
+   [web.Range :refer [surround-contents]]
+   ["html-entities" :as html-entities]
+   [app.helpers :refer [current-path]]
+   [app.contribute-atoms :refer
+    [how-to-fix
+     snippets
+     files
+     active-file
+     error-description
+     error-title
+     backend-data
+     log
+     build-id
+     build-id-title
+     build-url]]
+   [app.contribute-events :refer
+    [submit-form
+     add-snippet
+     on-accordion-item-show
+     ]]))
 
-
-(def how-to-fix (r/atom nil))
-(def snippets (r/atom []))
-(def files (r/atom nil))
-(def active-file (r/atom 0))
-
-(def error-description (r/atom nil))
-(def error-title (r/atom nil))
-(def backend-data (r/atom nil))
-(def log (r/atom nil))
-(def build-id (r/atom nil))
-(def build-id-title (r/atom nil))
-(def build-url (r/atom nil))
-
-
-(defn current-path []
-  (.-pathname (.-location js/window)))
 
 (defn fetch-logs []
   (let [url (str "/frontend" (current-path))]
@@ -53,14 +55,6 @@
                      (reset! error-title nil)
                      (reset! error-description nil))))))))
 
-(defn submit-form []
-  (let [url (str "/frontend" (current-path))
-        body {:how-to-fix @how-to-fix
-              :snippets @snippets}]
-    (-> (fetch/post url {:accept :json :content-type :json :body body})
-        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data] data)))))
-
 (defn init-data []
   (fetch-logs)
   ;; (reset!
@@ -84,7 +78,6 @@
   ;;   "Third snippet"])
 
   )
-
 
 (defn on-how-to-fix-textarea-change [target]
   (reset! how-to-fix (.-value target)))
@@ -196,47 +189,6 @@
                             (= (first enumerated-snippet)
                                (- (count @snippets) 1))))))
 
-(defn highlight-current-snippet []
-  ;; The implementation heavily relies on JavaScript interop. I took the
-  ;; "Best Solution" code from:
-  ;; https://itecnote.com/tecnote/javascript-selected-text-highlighting-prob/
-  ;; and translated it from Javascript to ClojureScript using:
-  ;; https://roman01la.github.io/javascript-to-clojurescript/
-  (def rangee (.getRangeAt (.getSelection js/window) 0))
-  (def span (.createElement js/document "span"))
-  (set! (.-className span) "snippet")
-  (.appendChild span (.extractContents rangee))
-  (.insertNode rangee span))
-
-(defn clear-selection []
-  ;; Generated from
-  ;; https://stackoverflow.com/a/13415236/3285282
-  (cond
-    (.-getSelection js/window) (.removeAllRanges (.getSelection js/window))
-    (.-selection js/document) (.empty (.-selection js/document))
-    :else nil))
-
-(defn selection-node-id []
-  (let [base (.-anchorNode (.getSelection js/window))]
-    (if base (.-id (.-parentNode base)) nil)))
-
-(defn add-snippet []
-  (when (= (selection-node-id) "log")
-    (highlight-current-snippet)
-
-    ;; Save the log with highlights, so they are remembered when switching
-    ;; between file tabs
-    (let [log (.-innerHTML (.getElementById js/document "log"))]
-      (reset! files (assoc-in @files [@active-file :content] log)))
-
-    (let [snippet
-          {:text (.toString (.getSelection js/window))
-           :comment nil
-           :file (:name (get @files @active-file))}]
-      (swap! snippets conj snippet))
-
-    (clear-selection)))
-
 (defn render-right-column []
   [:div {:class "col-3" :id "right-column"}
    [:div {:class "mb-3"}
@@ -283,29 +235,6 @@
               :class "btn btn-primary btn-lg"
               :on-click #(submit-form)}
      "Submit"]]])
-
-;; We might need this function for enabling/disabling the "new snippet" button
-;; based on whether user selected something (within the <pre>log</pre> area)
-;; (defn on-selection-change [event]
-;;   (let [selection (js/window.getSelection)]
-;;     (js/console.log selection)
-;;     (js/console.log selection.anchorOffset)
-;;     (js/console.log selection.focusOffset)))
-
-(defn file-id [name]
-  (loop [i 0 files @files]
-    (cond
-      (empty? files) nil
-      (= name (:name (first files))) i
-      :else (recur (inc i) (rest files)))))
-
-;; For some reason, compiler complains it cannot infer type of the `event`
-;; variable, so I am specifying it as a workaround
-(defn on-accordion-item-show [^js/Event event]
-  (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
-        snippet (nth @snippets snippet-id)
-        file-name (:file snippet)]
-  (reset! active-file (file-id file-name))))
 
 (defn render-jumbotron [id h1 title description icon]
   [:div {:id id :class "py-5 text-center container rounded"}
