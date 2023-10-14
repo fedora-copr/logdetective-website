@@ -40,6 +40,16 @@
       (swap! snippets conj snippet))
     (clear-selection)))
 
+(defn on-how-to-fix-textarea-change [target]
+  (reset! how-to-fix (.-value target)))
+
+;; For some reason, compiler complains it cannot infer type of the `target`
+;; variable, so I am specifying it as a workaround
+(defn on-snippet-textarea-change [^js/HTMLTextAreaElement target]
+  (let [index (int (.-indexNumber (.-dataset target)))
+        value (.-value target)]
+    (reset! snippets (assoc-in @snippets [index :comment] value))))
+
 ;; For some reason, compiler complains it cannot infer type of the `event`
 ;; variable, so I am specifying it as a workaround
 (defn on-accordion-item-show [^js/Event event]

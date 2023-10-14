@@ -22,6 +22,8 @@
    [app.contribute-events :refer
     [submit-form
      add-snippet
+     on-snippet-textarea-change
+     on-how-to-fix-textarea-change
      on-accordion-item-show
      on-click-delete-snippet]]))
 
@@ -79,15 +81,6 @@
 
   )
 
-(defn on-how-to-fix-textarea-change [target]
-  (reset! how-to-fix (.-value target)))
-
-;; For some reason, compiler complains it cannot infer type of the `target`
-;; variable, so I am specifying it as a workaround
-(defn on-snippet-textarea-change [^js/HTMLTextAreaElement target]
-  (let [index (int (.-indexNumber (.-dataset target)))
-        value (.-value target)]
-    (reset! snippets (assoc-in @snippets [index :comment] value))))
 
 (defn render-tab [name, key]
   (let [active? (= name (:name (get @files @active-file)))]
