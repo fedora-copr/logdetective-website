@@ -217,7 +217,7 @@
     :else nil))
 
 (defn selection-node-id []
-  (let [base (.-baseNode (.getSelection js/window))]
+  (let [base (.-anchorNode (.getSelection js/window))]
     (if base (.-id (.-parentNode base)) nil)))
 
 (defn add-snippet []
