@@ -132,10 +132,6 @@
     ;; Maybe "Write why do you think the build failed"
 
     (instructions-item
-     (not-empty @how-to-fix)
-     "Describe how to fix the issue")
-
-    (instructions-item
      (not-empty @snippets)
      "Find log snippets relevant to the failure")
 
@@ -146,6 +142,10 @@
     (instructions-item
      (not-empty (:comment (first @snippets)))
      "Describe what makes the snippets interesting")
+
+    (instructions-item
+     (not-empty @how-to-fix)
+     "Describe how to fix the issue")
 
     (instructions-item nil "Submit")]])
 
@@ -199,13 +199,6 @@
              :disabled true
              :readOnly true}]]
 
-   [:div {:class "mb-3"}
-    [:label {:class "form-label"} "How to fix the issue?"]
-    [:textarea {:class "form-control" :rows 3
-                :placeholder (str "Please describe how to fix the issue in "
-                                  "order for the build to succeed.")
-                :on-change #(on-how-to-fix-textarea-change (.-target %))}]]
-
    [:label {:class "form-label"} "Interesting snippets:"]
    [:br]
    (when @snippets
@@ -227,6 +220,13 @@
        [:button {:class "btn btn-secondary btn-lg"
                  :on-click #(add-snippet)}
         "Add"]]])
+
+   [:div {:class "mb-3"}
+    [:label {:class "form-label"} "How to fix the issue?"]
+    [:textarea {:class "form-control" :rows 3
+                :placeholder (str "Please describe how to fix the issue in "
+                                  "order for the build to succeed.")
+                :on-change #(on-how-to-fix-textarea-change (.-target %))}]]
 
    [:div {:class "col-auto row-gap-3" :id "submit"}
     [:label {:class "form-label"} "Ready to submit the results?"]
