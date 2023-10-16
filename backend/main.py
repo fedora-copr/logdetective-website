@@ -72,7 +72,7 @@ def review():
 @app.route("/frontend/contribute/url/<base64>/",
            defaults={"source": "url"})
 @app.route("/frontend/contribute/debug", defaults={"source": "debug"})
-def frontend_contribute_copr(source=None, *args, **kwargs):
+def frontend_contribute(source=None, *args, **kwargs):
     """
     This route is called from JavaScript, right after the page is loaded.
     It fetches logs from the outside world and returns them as JSON, so that

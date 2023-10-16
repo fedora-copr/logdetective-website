@@ -62,30 +62,9 @@
                      (reset! error-description nil))))))))
 
 (defn init-data []
-  (fetch-logs)
-  ;; (reset!
-  ;;  files
-  ;;  [{:name "builder-live.log"
-  ;;    :content nil}
+  (fetch-logs))
 
-  ;;   {:name "import.log"
-  ;;    :content nil}
-
-  ;;   {:name "backend.log"
-  ;;    :content nil}
-
-  ;;   {:name "root.log"
-  ;;    :content nil}])
-
-  ;; (reset!
-  ;;  snippets
-  ;;  ["There is an exception, so that's the error, right?"
-  ;;   "The python3-specfile package was not available in 0.21.0 version or higher."
-  ;;   "Third snippet"])
-
-  )
-
-(defn render-left-column []
+(defn left-column []
   (instructions
    [(instructions-item
      (not-empty @files)
@@ -119,7 +98,7 @@
 
     (instructions-item nil "Submit")]))
 
-(defn render-middle-column []
+(defn middle-column []
   (editor @files))
 
 (defn render-snippet [i snippet show?]
@@ -153,15 +132,15 @@
        "Delete"]]]]])
 
 (defn render-snippets []
-   (doall (for [enumerated-snippet (map-indexed list @snippets)
-                :let [i (first enumerated-snippet)
-                      snippet (second enumerated-snippet)
-                      show? (= (first enumerated-snippet)
-                               (- (count @snippets) 1))]
-                :when snippet]
-            (render-snippet i snippet show?))))
+  (doall (for [enumerated-snippet (map-indexed list @snippets)
+               :let [i (first enumerated-snippet)
+                     snippet (second enumerated-snippet)
+                     show? (= (first enumerated-snippet)
+                              (- (count @snippets) 1))]
+               :when snippet]
+           (render-snippet i snippet show?))))
 
-(defn render-right-column []
+(defn right-column []
   [:<>
    [:div {:class "mb-3"}
     [:label {:class "form-label"} (str @build-id-title ":")]
@@ -175,9 +154,9 @@
    [:br]
    (when @snippets
      [:div {}
-     [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
-     [:br]
-     [:br]])
+      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
+      [:br]
+      [:br]])
 
    (if @snippets
      [:div {:class "accordion" :id "accordionSnippets"}
@@ -247,9 +226,9 @@
 
     @files
     (three-column-layout
-     (render-left-column)
-     (render-middle-column)
-     (render-right-column))
+     (left-column)
+     (middle-column)
+     (right-column))
 
     :else
     (loading-screen)))
