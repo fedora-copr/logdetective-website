@@ -45,8 +45,9 @@
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
 ;; variable, so I am specifying it as a workaround
-(defn on-snippet-textarea-change [^js/HTMLTextAreaElement target]
-  (let [index (int (.-indexNumber (.-dataset target)))
+(defn on-snippet-textarea-change [^js/Event event]
+  (let [target (.-target event)
+        index (int (.-indexNumber (.-dataset (.-parentElement target))))
         value (.-value target)]
     (reset! snippets (assoc-in @snippets [index :comment] value))))
 

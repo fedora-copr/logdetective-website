@@ -117,13 +117,12 @@
           :data-bs-parent "#accordionSnippets"
           :data-index-number i}
 
-    [:div {:class "accordion-body"}
+    [:div {:class "accordion-body" :data-index-number i}
      [:textarea
       {:class "form-control"
        :rows "3"
        :placeholder "What makes this snippet relevant?"
-       :data-index-number i
-       :on-change #(on-snippet-textarea-change (.-target %))}]
+       :on-change #(on-snippet-textarea-change %)}]
      [:div {}
       [:button {:type "button"
                 :class "btn btn-outline-danger"
