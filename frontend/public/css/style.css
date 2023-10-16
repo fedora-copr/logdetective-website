@@ -225,6 +225,10 @@ a, a:hover {
   padding: 0px;
 }
 
+#right-column #no-snippets {
+  background-color: var(--white);
+}
+
 #about {
   margin-top: 80px;
   margin-bottom: 100px;

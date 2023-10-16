@@ -5,6 +5,7 @@
   [lambdaisland.fetch :as fetch]
   [app.helpers :refer [current-path]]
   [app.editor.core :refer [editor]]
+  [app.components.accordion :refer [accordion]]
   [app.three-column-layout.core :refer
    [three-column-layout
     instructions-item
@@ -43,8 +44,32 @@
 (defn middle-column []
   (editor @files))
 
+
+(defn snippet [text]
+  {:title "Snippet"
+   :body
+   [:textarea
+    {:class "form-control"
+     :rows "3"
+     :placeholder text
+     :on-change nil}]
+   :buttons
+   [[:button {:type "button"
+              :class "btn btn-outline-primary"
+              :on-click nil}
+       "+1"]
+    [:button {:type "button"
+              :class "btn btn-outline-danger"
+              :on-click nil}
+       "-1"]]})
+
 (defn right-column []
-  [:h2 {} "TODO"])
+  [:<>
+   [:h2 {} "TODO"]
+   (accordion
+    "ID"
+    [(snippet "TEXT 1")
+     (snippet "TEXT 2")])])
 
 (defn review []
   (three-column-layout

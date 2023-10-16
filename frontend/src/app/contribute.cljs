@@ -12,6 +12,7 @@
      instructions-item
      instructions]]
    [app.editor.core :refer [editor]]
+   [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
     [how-to-fix
      snippets
@@ -101,43 +102,20 @@
 (defn middle-column []
   (editor @files))
 
-(defn render-snippet [i snippet show?]
-  [:div {:class "accordion-item" :key i}
-   [:h2 {:class "accordion-header"}
-    [:button
-     {:class "accordion-button"
-      :type "button"
-      :data-bs-toggle "collapse"
-      :data-bs-target (str "#snippetCollapse" i)
-      :aria-controls (str "snippetCollapse" i)}
-     (str "Snippet " (+ i 1))]]
-
-   [:div {:id (str "snippetCollapse" i)
-          :class ["accordion-collapse collapse" (if show? "show" nil)]
-          :data-bs-parent "#accordionSnippets"
-          :data-index-number i}
-
-    [:div {:class "accordion-body" :data-index-number i}
+(defn accordion-snippet [snippet]
+  (when snippet
+    {:title "Snippet"
+     :body
      [:textarea
       {:class "form-control"
        :rows "3"
        :placeholder "What makes this snippet relevant?"
        :on-change #(on-snippet-textarea-change %)}]
-     [:div {}
-      [:button {:type "button"
+     :buttons
+     [[:button {:type "button"
                 :class "btn btn-outline-danger"
-                :data-index-number i
                 :on-click #(on-click-delete-snippet %)}
-       "Delete"]]]]])
-
-(defn render-snippets []
-  (doall (for [enumerated-snippet (map-indexed list @snippets)
-               :let [i (first enumerated-snippet)
-                     snippet (second enumerated-snippet)
-                     show? (= (first enumerated-snippet)
-                              (- (count @snippets) 1))]
-               :when snippet]
-           (render-snippet i snippet show?))))
+       "Delete"]]}))
 
 (defn right-column []
   [:<>
@@ -151,17 +129,18 @@
 
    [:label {:class "form-label"} "Interesting snippets:"]
    [:br]
-   (when @snippets
+   (when (not-empty @snippets)
      [:div {}
       [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
       [:br]
       [:br]])
 
-   (if @snippets
-     [:div {:class "accordion" :id "accordionSnippets"}
-      (render-snippets)]
+   (accordion
+    "accordionItems"
+    (vec (map (fn [snippet] (accordion-snippet snippet)) @snippets)))
 
-     [:div {:class "card"}
+   (when (empty? @snippets)
+     [:div {:class "card" :id "no-snippets"}
       [:div {:class "card-body"}
        [:h5 {:class "card-title"} "No snippets yet"]
        [:p {:class "card-text"}
@@ -216,7 +195,7 @@
   ;; (js/document.addEventListener "selectionchange" on-selection-change)
 
   (when (not-empty @snippets)
-    (let [accordion (.getElementById js/document "accordionSnippets")]
+    (let [accordion (.getElementById js/document "accordionItems")]
       (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
 
   (cond
