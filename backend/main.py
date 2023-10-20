@@ -126,6 +126,8 @@ def frontend_contribute(source=None, *args, **kwargs):
 
 # path allows optional number of params
 @app.route("/frontend/contribute/<source>/<path:args>", methods=["POST"])
+@app.route("/frontend/contribute/debug", methods=["POST"],
+           defaults={"source": "debug", "args": "/"})
 def frontend_contribute_post(source, args):
     """
     This route is called from JavaScript, after clicking the submit button
