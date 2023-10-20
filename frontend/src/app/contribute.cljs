@@ -21,6 +21,7 @@
      error-title
      backend-data
      log
+     fas
      build-id
      build-id-title
      build-url]]
@@ -29,6 +30,7 @@
      add-snippet
      on-snippet-textarea-change
      on-how-to-fix-textarea-change
+     on-change-fas
      on-accordion-item-show
      on-click-delete-snippet]]))
 
@@ -126,6 +128,13 @@
              :value (or @build-id @build-url "")
              :disabled true
              :readOnly true}]]
+
+   [:div {:class "mb-3"}
+    [:label {:class "form-label"} "Your FAS username:"]
+    [:input {:type "text"
+             :class "form-control"
+             :placeholder "Optional - Your FAS username"
+             :on-change #(on-change-fas %)}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]
    [:br]

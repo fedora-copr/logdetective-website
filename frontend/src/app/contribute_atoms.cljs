@@ -10,6 +10,7 @@
 (def error-title (r/atom nil))
 (def backend-data (r/atom nil))
 (def log (r/atom nil))
+(def fas (r/atom nil))
 (def build-id (r/atom nil))
 (def build-id-title (r/atom nil))
 (def build-url (r/atom nil))

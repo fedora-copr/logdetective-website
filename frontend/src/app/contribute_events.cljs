@@ -1,5 +1,6 @@
 (ns app.contribute-events
   (:require
+   [clojure.set :refer [rename-keys]]
    [reagent.core :as r]
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
@@ -13,13 +14,34 @@
    [app.contribute-atoms :refer
     [how-to-fix
      snippets
+     fas
      files]]))
 
 
 (defn submit-form []
   (let [url (str "/frontend" (current-path))
-        body {:how-to-fix @how-to-fix
-              :snippets @snippets}]
+        ;; Clojure typically uses dashes instead of underscores in keyword
+        ;; names. However, this is going to be dumped as JSON and we expect
+        ;; underscores there
+        body {:how_to_fix @how-to-fix
+              :username (if @fas (str "FAS:" @fas) nil)
+              :logs
+              (map (fn [file]
+                      {:name (:name file)
+                       :log nil
+                       :snippets
+                       (map (fn [snippet]
+                              (-> snippet
+                                  (rename-keys {:comment :user_comment
+                                                :start-index :start_index
+                                                :end-index :end_index})
+                                  (dissoc :text :file)))
+                            ;; Only snippets for this file
+                            (filter
+                             (fn [snippet]
+                               (= (:file snippet) (:name file)))
+                             @snippets))})
+                   @files)}]
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data] data)))))
@@ -33,8 +55,14 @@
     (let [log (.-innerHTML (.getElementById js/document "log"))]
       (reset! files (assoc-in @files [@active-file :content] log)))
 
-    (let [snippet
-          {:text (.toString (.getSelection js/window))
+    (let [selection (.getSelection js/window)
+          content (.toString selection)
+          start (.-anchorOffset selection)
+          end (+ start (count content) -1)
+          snippet
+          {:text content
+           :start-index start
+           :end-index end
            :comment nil
            :file (:name (get @files @active-file))}]
       (swap! snippets conj snippet))
@@ -42,6 +70,11 @@
 
 (defn on-how-to-fix-textarea-change [target]
   (reset! how-to-fix (.-value target)))
+
+(defn on-change-fas [event]
+  (let [target (.-target event)
+        value (.-value target)]
+    (reset! fas value)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
 ;; variable, so I am specifying it as a workaround
