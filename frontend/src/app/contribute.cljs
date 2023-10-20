@@ -15,6 +15,7 @@
    [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
     [how-to-fix
+     fail-reason
      snippets
      files
      error-description
@@ -31,6 +32,7 @@
      on-snippet-textarea-change
      on-how-to-fix-textarea-change
      on-change-fas
+     on-change-fail-reason
      on-accordion-item-show
      on-click-delete-snippet]]))
 
@@ -121,15 +123,7 @@
 
 (defn right-column []
   [:<>
-   [:div {:class "mb-3"}
-    [:label {:class "form-label"} (str @build-id-title ":")]
-    [:input {:type "text"
-             :class "form-control"
-             :value (or @build-id @build-url "")
-             :disabled true
-             :readOnly true}]]
-
-   [:div {:class "mb-3"}
+   [:div {}
     [:label {:class "form-label"} "Your FAS username:"]
     [:input {:type "text"
              :class "form-control"
@@ -137,7 +131,6 @@
              :on-change #(on-change-fas %)}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]
-   [:br]
    (when (not-empty @snippets)
      [:div {}
       [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
@@ -159,14 +152,20 @@
                  :on-click #(add-snippet)}
         "Add"]]])
 
-   [:div {:class "mb-3"}
+   [:div {}
+    [:label {:class "form-label"} "Why did the build fail?"]
+    [:textarea {:class "form-control" :rows 3
+                :placeholder "Please describe what caused the build to fail."
+                :on-change #(on-change-fail-reason %)}]]
+
+   [:div {}
     [:label {:class "form-label"} "How to fix the issue?"]
     [:textarea {:class "form-control" :rows 3
                 :placeholder (str "Please describe how to fix the issue in "
                                   "order for the build to succeed.")
                 :on-change #(on-how-to-fix-textarea-change (.-target %))}]]
 
-   [:div {:class "col-auto row-gap-3" :id "submit"}
+   [:div {}
     [:label {:class "form-label"} "Ready to submit the results?"]
     [:br]
     [:button {:type "submit"

@@ -13,6 +13,7 @@
      highlight-current-snippet]]
    [app.contribute-atoms :refer
     [how-to-fix
+     fail-reason
      snippets
      fas
      files]]))
@@ -23,7 +24,8 @@
         ;; Clojure typically uses dashes instead of underscores in keyword
         ;; names. However, this is going to be dumped as JSON and we expect
         ;; underscores there
-        body {:how_to_fix @how-to-fix
+        body {:fail_reason @fail-reason
+              :how_to_fix @how-to-fix
               :username (if @fas (str "FAS:" @fas) nil)
               :logs
               (map (fn [file]
@@ -75,6 +77,11 @@
   (let [target (.-target event)
         value (.-value target)]
     (reset! fas value)))
+
+(defn on-change-fail-reason [event]
+  (let [target (.-target event)
+        value (.-value target)]
+    (reset! fail-reason value)))
 
 ;; For some reason, compiler complains it cannot infer type of the `target`
 ;; variable, so I am specifying it as a workaround

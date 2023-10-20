@@ -3,6 +3,7 @@
 
 
 (def how-to-fix (r/atom nil))
+(def fail-reason (r/atom nil))
 (def snippets (r/atom []))
 (def files (r/atom nil))
 

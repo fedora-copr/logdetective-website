@@ -210,15 +210,11 @@ a, a:hover {
 }
 
 #right-column label {
-  margin-top: 15px;
+  margin-top: 20px;
 }
 
 #right-column textarea {
   background-color: var(--white);
-}
-
-#right-column #submit {
-  margin-top: 20px;
 }
 
 #right-column .accordion-body {
