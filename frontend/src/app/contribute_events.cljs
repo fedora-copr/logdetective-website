@@ -30,7 +30,7 @@
               :logs
               (map (fn [file]
                       {:name (:name file)
-                       :log nil
+                       :log (:content file)
                        :snippets
                        (map (fn [snippet]
                               (-> snippet
