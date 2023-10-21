@@ -10,6 +10,7 @@
     [file-id
      clear-selection
      selection-node-id
+     selection-contains-snippets?
      highlight-current-snippet]]
    [app.contribute-atoms :refer
     [how-to-fix
@@ -49,7 +50,8 @@
         (.then (fn [data] data)))))
 
 (defn add-snippet []
-  (when (= (selection-node-id) "log")
+  (when (and (= (selection-node-id) "log")
+             (not (selection-contains-snippets?)))
     (highlight-current-snippet)
 
     ;; Save the log with highlights, so they are remembered when switching

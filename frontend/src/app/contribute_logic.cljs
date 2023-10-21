@@ -37,3 +37,10 @@
       (empty? files) nil
       (= name (:name (first files))) i
       :else (recur (inc i) (rest files)))))
+
+(defn selection-contains-snippets? []
+  (let [selection (.getSelection js/window)
+        spans (.getElementsByClassName js/document "snippet")]
+    (when (not-empty spans)
+     (some (fn [span] (.containsNode selection span true))
+           spans))))
