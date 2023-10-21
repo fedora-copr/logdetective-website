@@ -221,7 +221,7 @@ a, a:hover {
   padding: 0px;
 }
 
-#right-column #no-snippets {
+#right-column .card {
   background-color: var(--white);
 }
 

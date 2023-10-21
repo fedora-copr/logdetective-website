@@ -37,39 +37,79 @@
 
 (defn left-column []
   (instructions
-   [(instructions-item nil "TODO 1")
-    (instructions-item nil "TODO 2")
+   [(instructions-item
+     true
+     "We fetched a random sample from our collected data set")
+
+    (instructions-item
+     nil
+     "Go through all snippets and either upvote or downvote them")
+
+    (instructions-item
+     nil
+     "Is the explanation why did the build fail correct?")
+
+    (instructions-item
+     nil
+     "Is the explanation how to fix the issue correct?")
+
     (instructions-item nil "Submit")]))
 
 (defn middle-column []
   (editor @files))
 
+(defn buttons []
+  [[:button {:type "button"
+             :class "btn btn-outline-primary"
+             :on-click nil}
+    "+1"]
+   [:button {:type "button"
+             :class "btn btn-outline-danger"
+             :on-click nil}
+    "-1"]])
 
 (defn snippet [text]
   {:title "Snippet"
-   :body
-   [:textarea
-    {:class "form-control"
-     :rows "3"
-     :placeholder text
-     :on-change nil}]
-   :buttons
-   [[:button {:type "button"
-              :class "btn btn-outline-primary"
-              :on-click nil}
-       "+1"]
-    [:button {:type "button"
-              :class "btn btn-outline-danger"
-              :on-click nil}
-       "-1"]]})
+   :body [:p {} text]
+   :buttons (buttons)})
+
+(defn card [title text]
+  [:div {:class "card"}
+   [:div {:class "card-body"}
+       [:h5 {:class "card-title"} title]
+    [:p {:class "card-text"} text]
+    (into [:<>] (buttons))]])
 
 (defn right-column []
   [:<>
-   [:h2 {} "TODO"]
+   [:br]
+   [:br]
+
+   ;; TODO When clicking any of the accordion items, the snippet should display
+   ;; in the middle column log file. That will be the only currently highlighted
+   ;; snippet, so that it is easily understandable.
    (accordion
     "ID"
-    [(snippet "TEXT 1")
-     (snippet "TEXT 2")])])
+    [(snippet "This is the annotation for the first snippet")
+     (snippet "And this is for the second snippet")])
+
+   [:br]
+   (card
+    "Why did the build fail?"
+    "Here is some explanation why the build failed")
+
+   [:br]
+   (card
+    "How to fix the issue?"
+    "Here is some explanation how to fix the issue")
+
+   [:div {}
+    [:label {:class "form-label"} "Ready to submit the results?"]
+    [:br]
+    [:button {:type "submit"
+              :class "btn btn-primary btn-lg"
+              :on-click nil}
+     "Submit"]]])
 
 (defn review []
   (three-column-layout

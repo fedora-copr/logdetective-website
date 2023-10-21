@@ -30,8 +30,7 @@
   (doall (for [enumerated-item (map-indexed list items)
                :let [i (first enumerated-item)
                      item (second enumerated-item)
-                     show? (= (first enumerated-item)
-                              (- (count items) 1))]
+                     show? (= i (- (count items) 1))]
                :when item]
            (accordion-item i item show?))))
 
