@@ -18,6 +18,7 @@ RUN dnf -y update && \
     && dnf -y install \
                    python3-fastapi \
                    python3-uvicorn \
+                   python3-jinja2 \
                    python3-requests \
                    python3-koji \
                    python3-copr \

@@ -6,6 +6,8 @@ services:
       context: docker/backend
     hostname: backend
     working_dir: /opt/lightspeed-build-website/backend
+    environment:
+      PYTHONPATH: "/opt/lightspeed-build-website"
     command: "uvicorn api:app --host 0.0.0.0 --port 5020"
     stdin_open: true
     tty: true
