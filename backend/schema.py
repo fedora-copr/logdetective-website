@@ -96,6 +96,8 @@ def _get_result_log_schema(log_schema: LogSchema) -> ResultLogSchema:
             {
                 "user_comment": snippet.user_comment,
                 "log_part": log_part,
+                "start_indnex": snippet.start_index,
+                "end_indnex": snippet.end_index,
             }
         )
 
