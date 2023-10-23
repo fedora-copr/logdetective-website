@@ -248,7 +248,11 @@ a, a:hover {
   --color: var(--newblue);
 }
 
-#error, #loading {
+#succeeded {
+  --color: var(--green);
+}
+
+#error, #loading, #succeeded {
   margin-top: 100px;
   background-color: white;
   max-width: 720px;

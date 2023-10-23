@@ -1,6 +1,7 @@
 (ns app.components.jumbotron
  (:require
-  [reagent.core :as r]))
+  [reagent.core :as r]
+  [app.helpers :refer [fontawesome-icon]]))
 
 
 (defn render-jumbotron [id h1 title description icon]
@@ -26,3 +27,14 @@
    "..."
    [:div {:class "spinner-border", :role "status"}
     [:span {:class "sr-only"} "Loading..."]]))
+
+(defn render-succeeded []
+  (render-jumbotron
+   "succeeded"
+   "Thank you!"
+   "Successfully submitted, thank you for your contribution."
+   "..."
+   [:a {:type "submit"
+        :class "btn btn-primary btn-lg"
+        :href "/"}
+     [:<> (fontawesome-icon "fa-plus") " Add another log"]]))

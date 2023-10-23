@@ -14,7 +14,10 @@
      highlight-current-snippet]]
    [app.contribute-atoms :refer
     [how-to-fix
+     error-title
+     error-description
      fail-reason
+     submitted
      snippets
      fas
      files]]))
@@ -47,7 +50,18 @@
                    @files)}]
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data] data)))))
+        (.then (fn [data]
+                 (cond (:error data)
+                       (do
+                         (reset! error-title (:error data))
+                         (reset! error-description (:description data)))
+
+                       (= (:status data) "ok")
+                       (do
+                         (reset! submitted true))
+
+                       :else nil))))))
+
 
 (defn add-snippet []
   (when (and (= (selection-node-id) "log")

@@ -15,11 +15,13 @@
    [app.components.jumbotron :refer
     [render-jumbotron
      render-error
-     loading-screen]]
+     loading-screen
+     render-succeeded]]
    [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
     [how-to-fix
      fail-reason
+     submitted
      snippets
      files
      error-description
@@ -189,6 +191,9 @@
   (cond
     @error-description
     (render-error @error-title @error-description)
+
+    @submitted
+    (render-succeeded)
 
     @files
     (three-column-layout
