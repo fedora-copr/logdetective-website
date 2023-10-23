@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from backend.constants import FEEDBACK_DIR, ProvidersEnum
+from backend.exceptions import NoDataFound
 from backend.schema import ResultSchema
 
 
@@ -35,9 +36,11 @@ class Storator3000:
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
         #  and deprioritize those with reviews
-        random_day_dir = random.choice(
-            [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
-        )
+        day_dirs = [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
+        if not day_dirs:
+            raise NoDataFound("No data found to get random results")
+
+        random_day_dir = random.choice(day_dirs)
         random_provider_dir = random.choice(
             [d for d in random_day_dir.iterdir() if d.is_dir()]
         )
