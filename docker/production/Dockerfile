@@ -20,7 +20,8 @@ RUN dnf -y update && \
                    java \
     # Backend
     && dnf -y install \
-                   python3-flask \
+                   python3-fastapi \
+                   python3-uvicorn \
                    python3-requests \
                    python3-koji \
                    python3-copr \

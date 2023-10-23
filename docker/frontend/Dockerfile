@@ -20,6 +20,7 @@ RUN dnf -y update && \
                    java \
     && dnf clean all
 
+RUN npm install
 RUN npm install -g shadow-cljs
 
 # TODO First run is slow because of downloading dependencies
