@@ -1,5 +1,4 @@
 import os
-import json
 import random
 from datetime import datetime
 from pathlib import Path
@@ -30,15 +29,14 @@ class Storator3000:
         timestamp_seconds = int(datetime.now().timestamp())
         file_name = self.build_dir / f"{timestamp_seconds}.json"
         with open(file_name, "w") as json_file:
-            json_output = json.dumps(feedback_result.json())
-            json_file.write(json_output)
+            json_file.write(feedback_result.json())
 
     @classmethod
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
         #  and deprioritize those with reviews
         if not os.path.exists(FEEDBACK_DIR):
-            raise NoDataFound("Directory doesn't exist: {0}".format(FEEDBACK_DIR))
+            raise NoDataFound("Directory doesn't exist: {}".format(FEEDBACK_DIR))
 
         day_dirs = [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
         if not day_dirs:

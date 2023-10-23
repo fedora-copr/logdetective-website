@@ -178,6 +178,5 @@ def frontend_contribute_post(
 def frontend_review():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
-        # FIXME: I converted dict to string before dumps...
-        content = json.loads(json.loads(random_file.read()))
+        content = json.loads(random_file.read())
         return ResultSchema(**content)
