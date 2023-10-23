@@ -145,6 +145,13 @@ def _get_provider_cls(provider_enum: ProvidersEnum) -> Type[Provider]:
     return provider_cls
 
 
+# TODO: delete this once in production
+@app.post("/frontend/contribute/debug")
+def frontend_debug_contribute():
+    logger.info("Debug data were fakely stored.")
+    return {"status": "ok"}
+
+
 # TODO: split urls for args or use enums
 @app.post("/frontend/contribute/{provider}/{args:path}")
 def frontend_contribute_post(
