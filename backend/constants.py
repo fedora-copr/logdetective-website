@@ -20,3 +20,4 @@ class BuildIdTitleEnum(StrEnum):
     koji = "Koji build"
     packit = "Packit build"
     url = "URL"
+    debug = "Debug output"

@@ -56,9 +56,10 @@ def home(request: Request):
     return template_response("index.html", {"request": request})
 
 
-@app.get("/contribute/{provider}/{build_id}/{chroot}", response_class=HTMLResponse)
-def contribute(request: Request, provider: ProvidersEnum, build_id: int, chroot: str):
-    _ = provider, build_id, chroot
+@app.get("/contribute/{args:path}", response_class=HTMLResponse)
+def contribute(request: Request, args: str):
+    # TODO: once ready for production, drop path and use proper paths
+    _ = args
     return template_response("contribute.html", {"request": request})
 
 
@@ -119,11 +120,12 @@ def get_build_logs_from_url(base64: str):
     }
 
 
-@app.get("/frontend/contribute/debug", response_model=BuildLogsSchema)
+# TODO: no response checking here, it will be deleted anyway
+@app.get("/frontend/contribute/debug")
 def get_debug_build_logs():
     return {
         "build_id": 123456,
-        "build_id_title": "Debug output",
+        "build_id_title": BuildIdTitleEnum.debug,
         "build_url": "#",
         "logs": fetch_debug_logs(),
     }
