@@ -67,6 +67,8 @@ class ResultSchema(BaseModel):
     reviewers: list[str]
     specfile: SpecfileSchema
     logs: dict[str, ResultLogSchema]
+    fail_reason: str
+    how_to_fix: str
 
 
 def _find_line_for_index(log_lines: list[str], index: int) -> Optional[int]:
@@ -108,10 +110,11 @@ def schema_inp_to_out(
     for log_schema in inp.logs:
         parsed_log_schema[log_schema.name] = _get_result_log_schema(log_schema)
 
-    inp_to_result = {
-        "username": inp.username,
-        "logs": parsed_log_schema,
-    }
     return ResultSchema(
-        **inp_to_result, reviewers=[], specfile={"content": spec_file_lines}
+        username=inp.username,
+        reviewers=[],
+        specfile={"content": spec_file_lines},
+        logs=parsed_log_schema,
+        fail_reason=inp.fail_reason,
+        how_to_fix=inp.how_to_fix,
     )
