@@ -156,9 +156,13 @@ def frontend_contribute_post(
     result_to_store = schema_inp_to_out(request, provider_kls.fetch_spec_file())
     storator.store(result_to_store)
 
-    # TODO: parse args_list for url
+    # TODO: parse args_list for url and packit
+    if len(args_list) > 1:
+        chroot_info = args_list[1]
+    else:
+        chroot_info = "unknown arch"
     logger.info(
-        "Submitted data for {%s}: #{%s/%s}", provider, args_list[0], args_list[1]
+        "Submitted data for {%s}: #{%s/%s}", provider, args_list[0], chroot_info
     )
     return {"status": "ok"}
 
