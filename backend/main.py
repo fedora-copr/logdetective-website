@@ -1,18 +1,18 @@
+import json
+
 import flask
-from pprint import pprint
+
+from .constants import COPR_BUILD_URL, KOJI_BUILD_URL
 from .providers import (
     FetchError,
     decode_base64_url,
-    fetch_debug_logs,
     fetch_copr_logs,
+    fetch_debug_logs,
     fetch_koji_logs,
     fetch_packit_logs,
     fetch_url_logs,
 )
-
-
-COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
-KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
+from backend.store import Storator3000
 
 
 # TODO All routes should work with trailing slashes and without trailing slashes
@@ -133,10 +133,9 @@ def frontend_contribute_post(source, args):
     This route is called from JavaScript, after clicking the submit button
     It saves the user provided data to our storage
     """
-
-    # TODO Validate and store
-    print("Submitted data for {0}: #{1}".format(source, args))
-    pprint(flask.request.json)
+    storator = Storator3000(source, args)
+    print("Submitted data for {}: #{}".format(source, args))
+    storator.store(flask.request.json)
 
     # TODO A reasonable JSON response
     return flask.jsonify({})
@@ -144,6 +143,7 @@ def frontend_contribute_post(source, args):
 
 @app.route("/frontend/review/")
 def frontend_review():
-    # TODO Random log results with anotations
-    logs = fetch_debug_logs()
-    return flask.jsonify({"logs": logs})
+    random_feedback_file = Storator3000.get_random()
+    with open(random_feedback_file, "r") as random_file:
+        content = json.loads(random_file.read())
+        return flask.jsonify(content)
