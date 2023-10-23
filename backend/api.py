@@ -194,6 +194,9 @@ def frontend_contribute_post(
 
 @app.get("/frontend/review", response_model=ResultSchema)
 def frontend_review():
+    if os.environ.get("ENV") == "production":
+        raise NotImplementedError("Reviewing is not ready yet")
+
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())

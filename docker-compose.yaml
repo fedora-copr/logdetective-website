@@ -16,6 +16,8 @@ services:
     volumes:
       - .:/opt/lightspeed-build-website:z
       - persistent:/persistent
+    environment:
+      - ENV=devel
 
   # The frontend container is only a quality of life for development.
   # For production, we will simply compile the ClojureScript into JavaScript
@@ -34,6 +36,8 @@ services:
       - 3333:3333
     volumes:
       - .:/opt/lightspeed-build-website:z
+    environment:
+      - ENV=devel
 
 volumes:
   persistent:

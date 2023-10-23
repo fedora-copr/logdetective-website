@@ -12,6 +12,10 @@
      instructions-item
      instructions]]
    [app.editor.core :refer [editor]]
+   [app.components.jumbotron :refer
+    [render-jumbotron
+     render-error
+     loading-screen]]
    [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
     [how-to-fix
@@ -172,30 +176,6 @@
               :class "btn btn-primary btn-lg"
               :on-click #(submit-form)}
      "Submit"]]])
-
-(defn render-jumbotron [id h1 title description icon]
-  [:div {:id id :class "py-5 text-center container rounded"}
-   [:h1 h1]
-   [:p {:class "lead text-body-secondary"} title]
-   [:p {:class "text-body-secondary"} description]
-   icon])
-
-(defn render-error [title description]
-  (render-jumbotron
-   "error"
-   "Oops!"
-   title
-   description
-   [:i {:class "fa-solid fa-bug"}]))
-
-(defn loading-screen []
-  (render-jumbotron
-   "loading"
-   "Loading"
-   "Please wait, fetching logs from the outside world."
-   "..."
-   [:div {:class "spinner-border", :role "status"}
-    [:span {:class "sr-only"} "Loading..."]]))
 
 (defn contribute []
   ;; I don't know why we need to do it this way,

@@ -6,6 +6,10 @@
   [app.helpers :refer [current-path]]
   [app.editor.core :refer [editor]]
   [app.components.accordion :refer [accordion]]
+   [app.components.jumbotron :refer
+    [render-jumbotron
+     render-error
+     loading-screen]]
   [app.three-column-layout.core :refer
    [three-column-layout
     instructions-item
@@ -13,6 +17,8 @@
 
 
 (def files (r/atom nil))
+(def error-description (r/atom nil))
+(def error-title (r/atom nil))
 
 
 (defn init-data-review []
@@ -23,8 +29,8 @@
         (.then (fn [data]
                  (if (:error data)
                    (do
-                     (js/console.log (:error data))
-                     (js/console.log (:description data)))
+                     (reset! error-title (:error data))
+                     (reset! error-description (:description data)))
                    (do
                      (reset!
                       files
@@ -112,7 +118,16 @@
      "Submit"]]])
 
 (defn review []
-  (three-column-layout
-   (left-column)
-   (middle-column)
-   (right-column)))
+  (cond
+    @error-description
+    (render-error @error-title @error-description)
+
+    true
+    ;; @files
+    (three-column-layout
+     (left-column)
+     (middle-column)
+     (right-column))
+
+    :else
+    (loading-screen)))

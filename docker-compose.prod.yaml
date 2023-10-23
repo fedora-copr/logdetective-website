@@ -12,6 +12,8 @@ services:
       - 8080:80
     volumes:
       - persistent:/persistent:z
+    environment:
+      - ENV=production
 
 volumes:
   persistent:
