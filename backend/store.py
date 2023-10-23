@@ -1,3 +1,4 @@
+import os
 import json
 import random
 from datetime import datetime
@@ -36,6 +37,9 @@ class Storator3000:
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
         #  and deprioritize those with reviews
+        if not os.path.exists(FEEDBACK_DIR):
+            raise NoDataFound("Directory doesn't exist: {0}".format(FEEDBACK_DIR))
+
         day_dirs = [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
         if not day_dirs:
             raise NoDataFound("No data found to get random results")
