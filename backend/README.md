@@ -2,19 +2,19 @@
 
 ## Dependencies
 
-This is not packaged, and probably never will be. Install dependencies
+This is not packaged, and probably never will be. Install API and ASGI server
 manually:
 
 ```
-dnf install python3-flask
+dnf install python3-fastapi python3-uvicorn
 ```
 
 ## Development
 
-Run the development flask server with
+Run the development ASGI server with
 
 ```
-flask --app main run --port 5020
+PYTHONPATH=/opt/lightspeed-build-website uvicorn api:app --host 0.0.0.0 --port 5020 --reload
 ```
 
 Open http://127.0.0.1:5020 in your web browser.

@@ -5,50 +5,56 @@ import subprocess
 import tempfile
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from http import HTTPStatus
 from pathlib import Path
 from typing import Iterator
 
 import copr.v3
 import koji
 import requests
+from fastapi import HTTPException
 
 from backend.data import LOG_OUTPUT
 
 
-class FetchError(RuntimeError):
+class FetchError(HTTPException):
     """
     Unable to fetch the logs from the outside world for any reason.
     """
+
+    def __init__(self, msg=None) -> None:
+        super().__init__(status_code=HTTPStatus.NOT_FOUND, detail=msg)
 
 
 def handle_errors(func):
     """
     Decorator to catch all client API and network issues and re-raise them as
-    our custom `FetchError`
+    HTTPException to API which handles them
     """
 
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
 
-        except copr.v3.exceptions.CoprNoResultException as ex:
-            raise FetchError(str(ex)) from ex
-
-        except koji.GenericError as ex:
-            raise FetchError(str(ex)) from ex
+        except copr.v3.exceptions.CoprNoResultException or koji.GenericError as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST, detail=str(ex)
+            ) from ex
 
         except binascii.Error as ex:
-            msg = (
+            detail = (
                 "Unable to decode a log URL from the base64 hash. "
                 "How did you get to this page?"
             )
-            raise FetchError(msg) from ex
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=detail) from ex
 
         except requests.HTTPError as ex:
-            msg = "{} {}\n{}".format(
-                ex.response.status_code, ex.response.reason, ex.response.url
+            detail = (
+                f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
             )
-            raise FetchError(msg) from ex
+            raise HTTPException(
+                status_code=ex.response.status_code, detail=detail
+            ) from ex
 
     return inner
 
@@ -71,6 +77,7 @@ class CoprProvider(Provider):
         self.chroot = chroot
         self.client = copr.v3.Client({"copr_url": self.copr_url})
 
+    @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         log_names = ["builder-live.log.gz", "backend.log.gz"]
 
@@ -97,6 +104,7 @@ class CoprProvider(Provider):
             )
         return logs
 
+    @handle_errors
     def fetch_spec_file(self) -> list[str]:
         build = self.client.build_proxy.get(self.build_id)
         name = build.source_package["name"]
@@ -122,6 +130,7 @@ class KojiProvider(Provider):
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
+    @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         logs = []
         names = ["build.log", "root.log", "mock_output.log"]
@@ -168,6 +177,7 @@ class KojiProvider(Provider):
         finally:
             shutil.rmtree(temp_dir)
 
+    @handle_errors
     def fetch_spec_file(self) -> list[str]:
         koji_logs = self.client.getBuild(self.build_id)
         srpm_url = (
@@ -193,6 +203,7 @@ class PackitProvider(Provider):
     def __init__(self, packit_id: int) -> None:
         self.packit_id = packit_id
 
+    @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         # TODO: fetch also koji builds
         #  Use the `/koji-builds` route. The results contain `packit_id`. Use these.
@@ -207,6 +218,7 @@ class PackitProvider(Provider):
             "Please note that Packit Koji jobs are not recognized yet"
         )
 
+    @handle_errors
     def fetch_spec_file(self) -> list[str]:
         # TODO: fetch also koji builds
         #  Use the `/koji-builds` route. The results contain `packit_id`. Use these.
@@ -226,6 +238,7 @@ class URLProvider(Provider):
     def __init__(self, url: str) -> None:
         self.url = url
 
+    @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         # TODO Can we recognize a directory listing and show _all_ logs?
         #  also this will allow us to fetch spec files
@@ -242,6 +255,7 @@ class URLProvider(Provider):
             }
         ]
 
+    @handle_errors
     def fetch_spec_file(self) -> list[str]:
         raise NotImplementedError("Please implement me!")
 
