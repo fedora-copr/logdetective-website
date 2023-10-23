@@ -33,7 +33,15 @@ class Storator3000:
 
     @classmethod
     def get_random(cls) -> Path:
-        random_result_dir = random.choice(
-            [d for d in cls.store_to.iterdir() if d.is_dir()]
+        # TODO: instead of random, we should go from oldest to newest?
+        #  and deprioritize those with reviews
+        random_day_dir = random.choice(
+            [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
         )
-        return random.choice([f for f in random_result_dir.iterdir() if f.is_file()])
+        random_provider_dir = random.choice(
+            [d for d in random_day_dir.iterdir() if d.is_dir()]
+        )
+        random_build_dir = random.choice(
+            [d for d in random_provider_dir.iterdir() if d.is_dir()]
+        )
+        return random.choice([f for f in random_build_dir.iterdir() if f.is_file()])
