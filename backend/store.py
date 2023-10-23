@@ -3,7 +3,7 @@ import random
 from datetime import datetime
 from pathlib import Path
 
-from backend.constants import ProvidersEnum, FEEDBACK_DIR
+from backend.constants import FEEDBACK_DIR, ProvidersEnum
 from backend.schema import ResultSchema
 
 
@@ -33,5 +33,7 @@ class Storator3000:
 
     @classmethod
     def get_random(cls) -> Path:
-        random_result_dir = random.choice([d for d in cls.store_to.iterdir() if d.is_dir()])
+        random_result_dir = random.choice(
+            [d for d in cls.store_to.iterdir() if d.is_dir()]
+        )
         return random.choice([f for f in random_result_dir.iterdir() if f.is_file()])
