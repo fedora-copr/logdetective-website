@@ -5,7 +5,7 @@ from base64 import b64decode
 from typing import Type
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -16,6 +16,7 @@ from backend.constants import (
     BuildIdTitleEnum,
     ProvidersEnum,
 )
+from backend.exceptions import HTTPException
 from backend.fetcher import (
     CoprProvider,
     KojiProvider,
@@ -49,6 +50,23 @@ for root, directories, _ in os.walk(template_dir):
 
 templates = Jinja2Templates(directory=template_dir)
 template_response = templates.TemplateResponse
+
+
+@app.exception_handler(Exception)
+@app.exception_handler(HTTPException)
+def custom_http_exception_handler(request: Request, exc: HTTPException | Exception):
+    if isinstance(exc, HTTPException):
+        status_code = exc.status_code
+    else:
+        status_code = 500
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": "Server error",
+            "description": str(exc),
+        },
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
