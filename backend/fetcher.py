@@ -15,15 +15,7 @@ import requests
 from fastapi import HTTPException
 
 from backend.data import LOG_OUTPUT
-
-
-class FetchError(HTTPException):
-    """
-    Unable to fetch the logs from the outside world for any reason.
-    """
-
-    def __init__(self, msg=None) -> None:
-        super().__init__(status_code=HTTPStatus.NOT_FOUND, detail=msg)
+from backend.exceptions import FetchError
 
 
 def handle_errors(func):
