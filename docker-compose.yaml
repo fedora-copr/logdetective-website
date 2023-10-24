@@ -18,6 +18,7 @@ services:
       - persistent:/persistent
     environment:
       - ENV=devel
+      - FEEDBACK_DIR=/persistent/results
 
   # The frontend container is only a quality of life for development.
   # For production, we will simply compile the ClojureScript into JavaScript
@@ -38,6 +39,7 @@ services:
       - .:/opt/lightspeed-build-website:z
     environment:
       - ENV=devel
+      - FEEDBACK_DIR=/persistent/results
 
 volumes:
   persistent:

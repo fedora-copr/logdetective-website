@@ -1,10 +1,12 @@
+import os
 from enum import StrEnum
 
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
 KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
-FEEDBACK_DIR = "/var/lib/builds/feedbacks"
 PACKIT_BUILD_URL = "https://dashboard.packit.dev/jobs/copr-builds"
+FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/var/lib/builds/feedbacks")
+
 
 
 class ProvidersEnum(StrEnum):
