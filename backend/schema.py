@@ -107,9 +107,7 @@ def _get_result_log_schema(log_schema: LogSchema) -> ResultLogSchema:
     return ResultLogSchema(**result)
 
 
-def schema_inp_to_out(
-    inp: ResultInputSchema, spec_file_lines: list[str]
-) -> ResultSchema:
+def schema_inp_to_out(inp: ResultInputSchema, spec_content: str) -> ResultSchema:
     parsed_log_schema = {}
     for log_schema in inp.logs:
         parsed_log_schema[log_schema.name] = _get_result_log_schema(log_schema)
@@ -117,7 +115,7 @@ def schema_inp_to_out(
     return ResultSchema(
         username=inp.username,
         reviewers=[],
-        specfile={"content": spec_file_lines},
+        specfile={"content": spec_content.split("\n")},
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
