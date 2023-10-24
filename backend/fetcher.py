@@ -1,13 +1,11 @@
 import binascii
 import os
-import shutil
 import subprocess
-import tempfile
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from functools import cached_property
 from http import HTTPStatus
 from pathlib import Path
-from typing import Iterator
+from typing import Optional
 
 import copr.v3
 import koji
@@ -15,6 +13,7 @@ import requests
 
 from backend.data import LOG_OUTPUT
 from backend.exceptions import FetchError, HTTPException
+from backend.spells import _get_temporary_dir
 
 
 def handle_errors(func):
@@ -110,24 +109,29 @@ class CoprProvider(Provider):
 
 class KojiProvider(Provider):
     koji_url = "https://koji.fedoraproject.org"
+    logs_to_look_for = ["build.log", "root.log", "mock_output.log"]
 
-    def __init__(self, build_id: int, arch: str) -> None:
-        self.build_id = build_id
+    def __init__(self, build_or_task_id: int, arch: str) -> None:
+        self.build_or_task_id = build_or_task_id
         self.arch = arch
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
-    @handle_errors
-    def fetch_logs(self) -> list[dict[str, str]]:
-        logs = []
-        names = ["build.log", "root.log", "mock_output.log"]
+    @cached_property
+    def _is_build_id(self) -> bool:
+        try:
+            return self.client.getBuild(self.build_or_task_id) is not None
+        except koji.GenericError:
+            return False
 
-        koji_logs = self.client.getBuildLogs(self.build_id)
+    def _fetch_build_logs_from_koji_api(self) -> list[dict[str, str]]:
+        koji_logs = self.client.getBuildLogs(self.build_or_task_id)
+        logs = []
         for log in koji_logs:
             if log["dir"] != self.arch:
                 continue
 
-            if log["name"] not in names:
+            if log["name"] not in self.logs_to_look_for:
                 continue
 
             url = "{}/{}".format(self.koji_url, log["path"])
@@ -140,46 +144,107 @@ class KojiProvider(Provider):
                 }
             )
 
+        return logs
+
+    def _fetch_task_logs_from_koji_cli(self, temp_dir: Path) -> list[dict[str, str]]:
+        cmd = (
+            f"koji download-task --arch={self.arch} --skip=.rpm --logs"
+            f" {self.build_or_task_id}"
+        )
+        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+        logs = []
+        for file in temp_dir.iterdir():
+            file_parts = file.name.split(".")
+            if len(file_parts) > 2:
+                file_name_without_arch = f"{file_parts[0]}.{file_parts[2]}"
+            else:
+                file_name_without_arch = file.name
+
+            if (
+                file.is_file()
+                and self.arch in file.name
+                and file_name_without_arch in self.logs_to_look_for
+            ):
+                with open(file) as f_log:
+                    logs.append(
+                        {
+                            "name": file_name_without_arch,
+                            "content": f_log.read(),
+                        }
+                    )
+
+        return logs
+
+    @handle_errors
+    def fetch_logs(self) -> list[dict[str, str]]:
+        if not self._is_build_id:
+            with _get_temporary_dir() as temp_dir:
+                logs = self._fetch_task_logs_from_koji_cli(temp_dir)
+        else:
+            logs = self._fetch_build_logs_from_koji_api()
+
         if not logs:
             raise FetchError(
-                f"No logs for build #{self.build_id} and architecture {self.arch}"
+                f"No logs for build #{self.build_or_task_id} and architecture"
+                f" {self.arch}"
             )
 
         return logs
 
-    @contextmanager
-    def _create_tmp_srpm_in_temp_dir(self, srpm_url: str) -> Iterator[Path]:
+    @staticmethod
+    def _get_spec_file_content_from_srpm(
+        srpm_path: Path, temp_dir: Path
+    ) -> Optional[list[str]]:
+        # extract spec file from srpm
+        cmd = f"rpm2archive -n < {str(srpm_path)} | tar xf - '*.spec'"
+        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+        fst_spec_file = next(temp_dir.glob("*.spec"), None)
+        if fst_spec_file is None:
+            return None
+
+        spec_content = []
+        with open(fst_spec_file) as spec_file:
+            spec_content.extend(spec_file.readlines())
+
+        return spec_content
+
+    def _fetch_spec_file_from_task_id(self) -> Optional[list[str]]:
+        with _get_temporary_dir() as temp_dir:
+            cmd = f"koji download-task {self.build_or_task_id}"
+            subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+            srpm = next(temp_dir.glob("*.src.rpm"), None)
+            if srpm is None:
+                return None
+
+            return self._get_spec_file_content_from_srpm(srpm, temp_dir)
+
+    def _fetch_spec_file_from_build_id(self) -> Optional[list[str]]:
+        koji_build = self.client.getBuild(self.build_or_task_id)
+        srpm_url = (
+            f"{self.koji_url}/packages/{koji_build['package_name']}"
+            f"/{koji_build['version']}/{koji_build['release']}/src/{koji_build['nvr']}"
+            ".src.rpm"
+        )
         response = requests.get(srpm_url)
-        temp_dir = Path(tempfile.mkdtemp())
-        koji_srpm_path = temp_dir / f"koji_{self.build_id}.src.rpm"
-        try:
+        with _get_temporary_dir() as temp_dir:
+            koji_srpm_path = temp_dir / f"koji_{self.build_or_task_id}.src.rpm"
             with open(koji_srpm_path, "wb") as src_rpm:
                 src_rpm.write(response.content)
-
-            # extract spec file from srpm
-            cmd = f"rpm2archive -n < {str(koji_srpm_path)} | tar xf - '*.spec'"
-            subprocess.run(cmd, shell=True, check=False, cwd=temp_dir)
-
-            yield temp_dir
-        finally:
-            shutil.rmtree(temp_dir)
+                return self._get_spec_file_content_from_srpm(koji_srpm_path, temp_dir)
 
     @handle_errors
     def fetch_spec_file(self) -> list[str]:
-        koji_logs = self.client.getBuild(self.build_id)
-        srpm_url = (
-            f"{self.koji_url}/packages/{koji_logs['package_name']}"
-            f"/{koji_logs['version']}/{koji_logs['release']}/src/{koji_logs['nvr']}"
-            ".src.rpm"
-        )
-        with self._create_tmp_srpm_in_temp_dir(srpm_url) as temp_dir:
-            fst_spec_file = next(temp_dir.glob("*.spec"), None)
-            if fst_spec_file is None:
-                raise FileNotFoundError(f"No spec file found in SRPM: {srpm_url}")
+        if self._is_build_id:
+            fetch_spec_fn = self._fetch_spec_file_from_build_id
+        else:
+            fetch_spec_fn = self._fetch_spec_file_from_task_id
 
-            spec_content = []
-            with open(fst_spec_file) as spec_file:
-                spec_content.extend(spec_file.readlines())
+        spec_content = fetch_spec_fn()
+        if spec_content is None:
+            raise FetchError(
+                "No spec file found in koji for build/task id "
+                f"#{self.build_or_task_id} and arch {self.arch}"
+            )
 
         return spec_content
 
@@ -189,36 +254,36 @@ class PackitProvider(Provider):
 
     def __init__(self, packit_id: int) -> None:
         self.packit_id = packit_id
+        self.copr_url = f"{self.packit_api_url}/copr-builds/{self.packit_id}"
+        self.koji_url = f"{self.packit_api_url}/koji-builds/{self.packit_id}"
+
+    def _get_correct_provider(self) -> CoprProvider | KojiProvider:
+        build = requests.get(self.copr_url).json()
+        if "error" not in build:
+            return CoprProvider(build["build_id"], build["chroot"])
+
+        build = requests.get(self.koji_url).json()
+        task_id = build["build_id"]
+        if "error" in build:
+            raise FetchError(
+                f"Couldn't find any build logs for Packit ID #{self.packit_id}."
+            )
+
+        koji_api_url = f"{KojiProvider.koji_url}/kojihub"
+        koji_client = koji.ClientSession(koji_api_url)
+        arch = koji_client.getTaskInfo(task_id, strict=True).get("arch")
+        if arch is None:
+            raise FetchError(f"No arch was found for koji task #{task_id}")
+
+        return KojiProvider(task_id, arch)
 
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
-        # TODO: fetch also koji builds
-        #  Use the `/koji-builds` route. The results contain `packit_id`. Use these.
-        copr_url = f"{self.packit_api_url}/copr-builds/{self.packit_id}"
-        build = requests.get(copr_url).json()
-        if "copr_owner" in build:
-            copr_provider = CoprProvider(build["build_id"], build["chroot"])
-            return copr_provider.fetch_logs()
-
-        raise FetchError(
-            f"Couldn't find any build logs for Packit ID #{self.packit_id}. "
-            "Please note that Packit Koji jobs are not recognized yet"
-        )
+        return self._get_correct_provider().fetch_logs()
 
     @handle_errors
     def fetch_spec_file(self) -> list[str]:
-        # TODO: fetch also koji builds
-        #  Use the `/koji-builds` route. The results contain `packit_id`. Use these.
-        copr_url = f"{self.packit_api_url}/copr-builds/{self.packit_id}"
-        build = requests.get(copr_url).json()
-        if "copr_owner" in build:
-            copr_provider = CoprProvider(build["build_id"], build["chroot"])
-            return copr_provider.fetch_spec_file()
-
-        raise FetchError(
-            f"Couldn't find any build logs for Packit ID #{self.packit_id}. "
-            "Please note that Packit Koji jobs are not recognized yet"
-        )
+        return self._get_correct_provider().fetch_spec_file()
 
 
 class URLProvider(Provider):
