@@ -31,6 +31,14 @@ class Storator3000:
         with open(file_name, "w") as json_file:
             json_file.write(feedback_result.json())
 
+    @staticmethod
+    def _get_random_dir_from(dir_: Path) -> Path:
+        iter_dir = [d for d in dir_.iterdir() if d.is_dir()]
+        if not iter_dir:
+            raise NoDataFound("No data found to get random results")
+
+        return random.choice(iter_dir)
+
     @classmethod
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
@@ -38,15 +46,11 @@ class Storator3000:
         if not os.path.exists(FEEDBACK_DIR):
             raise NoDataFound("Directory doesn't exist: {}".format(FEEDBACK_DIR))
 
-        day_dirs = [d for d in Path(FEEDBACK_DIR).iterdir() if d.is_dir()]
-        if not day_dirs:
-            raise NoDataFound("No data found to get random results")
+        random_day_dir = cls._get_random_dir_from(Path(FEEDBACK_DIR))
+        random_provider_dir = cls._get_random_dir_from(random_day_dir)
+        random_build_dir = cls._get_random_dir_from(random_provider_dir)
+        random_contribute = [f for f in random_build_dir.iterdir() if f.is_file()]
+        if not random_contribute:
+            raise NoDataFound("No contribute data found")
 
-        random_day_dir = random.choice(day_dirs)
-        random_provider_dir = random.choice(
-            [d for d in random_day_dir.iterdir() if d.is_dir()]
-        )
-        random_build_dir = random.choice(
-            [d for d in random_provider_dir.iterdir() if d.is_dir()]
-        )
-        return random.choice([f for f in random_build_dir.iterdir() if f.is_file()])
+        return random.choice(random_contribute)
