@@ -28,8 +28,10 @@ from backend.fetcher import (
 from backend.schema import (
     ContributeResponseSchema,
     ResultInputSchema,
+    ResultReviewSchema,
     ResultSchema,
     schema_inp_to_out,
+    schema_out_to_fe,
 )
 from backend.store import Storator3000
 
@@ -200,7 +202,7 @@ def frontend_contribute_post(
     return {"status": "ok"}
 
 
-@app.get("/frontend/review", response_model=ResultSchema)
+@app.get("/frontend/review", response_model=ResultReviewSchema)
 def frontend_review():
     if os.environ.get("ENV") == "production":
         raise NotImplementedError("Reviewing is not ready yet")
@@ -208,4 +210,4 @@ def frontend_review():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
-        return ResultSchema(**content)
+        return schema_out_to_fe(ResultSchema(**content))

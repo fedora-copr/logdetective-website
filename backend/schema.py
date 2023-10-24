@@ -4,6 +4,9 @@ from pydantic import AnyUrl, BaseModel, constr
 
 from backend.constants import BuildIdTitleEnum
 
+# TODO: there's a lot of small changes between the same schemas basically
+#  unify those unicorn schemas once we fully agree on backend <-> frontend data
+
 
 class ContributeResponseSchema(BaseModel):
     build_id: Optional[int]
@@ -73,6 +76,25 @@ class ResultSchema(BaseModel):
     how_to_fix: str
 
 
+class SnippetReviewSchema(SnippetResultSchema):
+    start_index: int
+    end_index: int
+
+
+class ResultReviewLogSchema(BaseModel):
+    log: list[str]
+    snippets: list[SnippetReviewSchema]
+
+
+class ResultReviewSchema(BaseModel):
+    username: Optional[str]
+    reviewers: list[str]
+    specfile: SpecfileSchema
+    logs: dict[str, ResultReviewLogSchema]
+    fail_reason: str
+    how_to_fix: str
+
+
 def _find_line_for_index(log_lines: list[str], index: int) -> Optional[int]:
     curr_index = 0
     line_index = None
@@ -119,4 +141,28 @@ def schema_inp_to_out(inp: ResultInputSchema, spec_content: str) -> ResultSchema
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
+    )
+
+
+def schema_out_to_fe(out: ResultSchema) -> ResultReviewSchema:
+    logs = {}
+    for log_name, result_log_schema in out.logs.items():
+        snippets = []
+        for snippet in result_log_schema.snippets:
+            char_from, char_to = snippet.char_from_char_to()
+            the_rest_of_dict = {
+                "start_index": char_from,
+                "end_index": char_to,
+            }
+            snippets.append(snippet.dict() | the_rest_of_dict)
+
+        logs[log_name] = {"log": result_log_schema.log, "snippets": snippets}
+
+    return ResultReviewSchema(
+        username=out.username,
+        reviewers=out.reviewers,
+        specfile=out.specfile,
+        fail_reason=out.fail_reason,
+        how_to_fix=out.how_to_fix,
+        logs=logs,
     )
