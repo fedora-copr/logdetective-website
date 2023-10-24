@@ -5,11 +5,12 @@ from pydantic import AnyUrl, BaseModel, constr
 from backend.constants import BuildIdTitleEnum
 
 
-class BuildLogsSchema(BaseModel):
+class ContributeResponseSchema(BaseModel):
     build_id: Optional[int]
     build_id_title: BuildIdTitleEnum
     build_url: AnyUrl
     logs: list[dict[str, str]]
+    spec_file: list[str]
 
 
 class SpecfileSchema(BaseModel):
@@ -41,6 +42,7 @@ class ResultInputSchema(BaseModel):
 
 class SnippetResultSchema(BaseModel):
     log_part: constr(regex=r"^\d+:\d+-\d+:\d+$")
+    # LINE_FROM:CHAR_FROM-LINE_TO:CHAR_TO
     user_comment: str
 
     def _splitter(self, return_lines: bool) -> tuple[int, int]:

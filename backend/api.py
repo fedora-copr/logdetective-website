@@ -26,7 +26,7 @@ from backend.fetcher import (
     fetch_debug_logs,
 )
 from backend.schema import (
-    BuildLogsSchema,
+    ContributeResponseSchema,
     ResultInputSchema,
     ResultSchema,
     schema_inp_to_out,
@@ -91,10 +91,12 @@ def review(request: Request):
 
 
 @app.get(
-    "/frontend/contribute/copr/{build_id}/{chroot}", response_model=BuildLogsSchema
+    "/frontend/contribute/copr/{build_id}/{chroot}",
+    response_model=ContributeResponseSchema,
 )
 @app.get(
-    "/frontend/contribute/koji/{build_id}/{chroot}", response_model=BuildLogsSchema
+    "/frontend/contribute/koji/{build_id}/{chroot}",
+    response_model=ContributeResponseSchema,
 )
 def get_build_logs_with_chroot(request: Request, build_id: int, chroot: str):
     provider_name = request.url.path.lstrip("/").split("/")[2]
@@ -112,10 +114,13 @@ def get_build_logs_with_chroot(request: Request, build_id: int, chroot: str):
         "build_id_title": build_title,
         "build_url": build_url,
         "logs": provider.fetch_logs(),
+        "spec_file": provider.fetch_spec_file(),
     }
 
 
-@app.get("/frontend/contribute/packit/{packit_id}", response_model=BuildLogsSchema)
+@app.get(
+    "/frontend/contribute/packit/{packit_id}", response_model=ContributeResponseSchema
+)
 def get_packit_build_logs(packit_id: int):
     provider = PackitProvider(packit_id)
     return {
@@ -123,10 +128,11 @@ def get_packit_build_logs(packit_id: int):
         "build_id_title": BuildIdTitleEnum.packit,
         "build_url": PACKIT_BUILD_URL,
         "logs": provider.fetch_logs(),
+        "spec_file": provider.fetch_spec_file(),
     }
 
 
-@app.get("/frontend/contribute/url/{base64}", response_model=BuildLogsSchema)
+@app.get("/frontend/contribute/url/{base64}", response_model=ContributeResponseSchema)
 def get_build_logs_from_url(base64: str):
     build_url = b64decode(base64).decode("utf-8")
     provider = URLProvider(build_url)
@@ -135,6 +141,7 @@ def get_build_logs_from_url(base64: str):
         "build_id_title": BuildIdTitleEnum.url,
         "build_url": build_url,
         "logs": provider.fetch_logs(),
+        "spec_file": provider.fetch_spec_file(),
     }
 
 
@@ -146,6 +153,7 @@ def get_debug_build_logs():
         "build_id_title": BuildIdTitleEnum.debug,
         "build_url": "#",
         "logs": fetch_debug_logs(),
+        "spec_file": ["fake spec file"],
     }
 
 
