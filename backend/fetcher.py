@@ -247,6 +247,17 @@ class KojiProvider(Provider):
 
 
 class PackitProvider(Provider):
+    """
+    The `packit_id` is hard to get. Open https://prod.packit.dev/api
+
+    1) Use the `/copr-builds` route. The results contain a dictionary
+       named `packit_id_per_chroot`. Use these IDs.
+
+    2) Use the `/koji-builds` route. The results contain `packit_id`. Use these.
+
+    I don't know if it is possible to get the `packit_id` in a WebUI
+    """
+
     packit_api_url = "https://prod.packit.dev/api"
 
     def __init__(self, packit_id: int) -> None:
