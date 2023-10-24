@@ -41,6 +41,7 @@ class ResultInputSchema(BaseModel):
     logs: list[LogSchema]
     fail_reason: str
     how_to_fix: str
+    specfile: Optional[str] = None
 
 
 class SnippetResultSchema(BaseModel):

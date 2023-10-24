@@ -13,7 +13,7 @@ import requests
 
 from backend.data import LOG_OUTPUT
 from backend.exceptions import FetchError, HTTPException
-from backend.spells import _get_temporary_dir
+from backend.spells import get_temporary_dir
 
 
 def handle_errors(func):
@@ -178,7 +178,7 @@ class KojiProvider(Provider):
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         if not self._is_build_id:
-            with _get_temporary_dir() as temp_dir:
+            with get_temporary_dir() as temp_dir:
                 logs = self._fetch_task_logs_from_koji_cli(temp_dir)
         else:
             logs = self._fetch_build_logs_from_koji_api()
@@ -206,7 +206,7 @@ class KojiProvider(Provider):
             return spec_file.read()
 
     def _fetch_spec_file_from_task_id(self) -> Optional[str]:
-        with _get_temporary_dir() as temp_dir:
+        with get_temporary_dir() as temp_dir:
             cmd = f"koji download-task {self.build_or_task_id}"
             subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
             srpm = next(temp_dir.glob("*.src.rpm"), None)
@@ -223,7 +223,7 @@ class KojiProvider(Provider):
             ".src.rpm"
         )
         response = requests.get(srpm_url)
-        with _get_temporary_dir() as temp_dir:
+        with get_temporary_dir() as temp_dir:
             koji_srpm_path = temp_dir / f"koji_{self.build_or_task_id}.src.rpm"
             with open(koji_srpm_path, "wb") as src_rpm:
                 src_rpm.write(response.content)

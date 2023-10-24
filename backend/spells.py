@@ -10,7 +10,7 @@ from typing import Iterator
 
 
 @contextmanager
-def _get_temporary_dir() -> Iterator[Path]:
+def get_temporary_dir() -> Iterator[Path]:
     temp_dir = Path(tempfile.mkdtemp())
     try:
         yield temp_dir
