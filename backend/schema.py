@@ -10,7 +10,7 @@ class ContributeResponseSchema(BaseModel):
     build_id_title: BuildIdTitleEnum
     build_url: AnyUrl
     logs: list[dict[str, str]]
-    spec_file: list[str]
+    spec_file: str
 
 
 class SpecfileSchema(BaseModel):
