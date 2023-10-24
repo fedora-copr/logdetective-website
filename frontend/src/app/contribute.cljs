@@ -184,10 +184,6 @@
   ;; instead of like :on-click is done
   ;; (js/document.addEventListener "selectionchange" on-selection-change)
 
-  (when (not-empty @snippets)
-    (let [accordion (.getElementById js/document "accordionItems")]
-      (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
-
   (cond
     @error-description
     (render-error @error-title @error-description)
@@ -199,10 +195,15 @@
     (render-succeeded)
 
     @files
-    (three-column-layout
-     (left-column)
-     (middle-column)
-     (right-column))
+    (do
+      (when (not-empty @snippets)
+        (let [accordion (.getElementById js/document "accordionItems")]
+          (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
+
+      (three-column-layout
+       (left-column)
+       (middle-column)
+       (right-column)))
 
     :else
     (loading-screen "Please wait, fetching logs from the outside world.")))
