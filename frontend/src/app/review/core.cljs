@@ -130,4 +130,4 @@
      (right-column))
 
     :else
-    (loading-screen)))
+    (loading-screen "Please wait, fetching logs from our dataset.")))

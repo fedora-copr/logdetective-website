@@ -17,7 +17,7 @@
      error-title
      error-description
      fail-reason
-     submitted
+     status
      snippets
      fas
      files]]))
@@ -48,6 +48,7 @@
                                (= (:file snippet) (:name file)))
                              @snippets))})
                    @files)}]
+    (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [data]
@@ -58,7 +59,7 @@
 
                        (= (:status data) "ok")
                        (do
-                         (reset! submitted true))
+                         (reset! status "submitted"))
 
                        :else nil))))))
 

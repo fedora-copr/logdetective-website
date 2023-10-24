@@ -19,11 +19,11 @@
    description
    [:i {:class "fa-solid fa-bug"}]))
 
-(defn loading-screen []
+(defn loading-screen [title]
   (render-jumbotron
    "loading"
    "Loading"
-   "Please wait, fetching logs from the outside world."
+   title
    "..."
    [:div {:class "spinner-border", :role "status"}
     [:span {:class "sr-only"} "Loading..."]]))

@@ -9,7 +9,7 @@
 
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
-(def submitted (r/atom nil))
+(def status (r/atom nil))
 (def backend-data (r/atom nil))
 (def log (r/atom nil))
 (def fas (r/atom nil))

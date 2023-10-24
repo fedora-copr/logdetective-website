@@ -21,7 +21,7 @@
    [app.contribute-atoms :refer
     [how-to-fix
      fail-reason
-     submitted
+     status
      snippets
      files
      error-description
@@ -192,7 +192,10 @@
     @error-description
     (render-error @error-title @error-description)
 
-    @submitted
+    (= @status "submitting")
+    (loading-screen "Please wait, submitting results.")
+
+    (= @status "submitted")
     (render-succeeded)
 
     @files
@@ -202,4 +205,4 @@
      (right-column))
 
     :else
-    (loading-screen)))
+    (loading-screen "Please wait, fetching logs from the outside world.")))
