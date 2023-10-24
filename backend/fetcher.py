@@ -279,7 +279,7 @@ class PackitProvider(Provider):
         return self._get_correct_provider().fetch_logs()
 
     @handle_errors
-    def fetch_spec_file(self) -> list[str]:
+    def fetch_spec_file(self) -> str:
         return self._get_correct_provider().fetch_spec_file()
 
 
@@ -305,10 +305,10 @@ class URLProvider(Provider):
         ]
 
     @handle_errors
-    def fetch_spec_file(self) -> list[str]:
+    def fetch_spec_file(self) -> str:
         # FIXME: Please implement me!
         #  raise NotImplementedError("Please implement me!")
-        return ["fake spec file"]
+        return "fake spec file"
 
 
 def fetch_debug_logs():

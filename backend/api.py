@@ -155,7 +155,7 @@ def get_debug_build_logs():
         "build_id_title": BuildIdTitleEnum.debug,
         "build_url": "#",
         "logs": fetch_debug_logs(),
-        "spec_file": ["fake spec file"],
+        "spec_file": "fake spec file",
     }
 
 
