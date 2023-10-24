@@ -2,6 +2,7 @@ FROM registry.fedoraproject.org/fedora:38
 MAINTAINER copr-devel@lists.fedorahosted.org
 
 ENV FEEDBACK_DIR=/persistent/results
+ENV ENV=production
 
 RUN dnf -y update && \
     # Base packages
