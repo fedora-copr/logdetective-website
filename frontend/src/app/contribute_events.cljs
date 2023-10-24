@@ -20,6 +20,7 @@
      status
      snippets
      fas
+     spec
      files]]))
 
 
@@ -47,7 +48,8 @@
                              (fn [snippet]
                                (= (:file snippet) (:name file)))
                              @snippets))})
-                   @files)}]
+                   @files)
+              :spec_file @spec}]
     (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))

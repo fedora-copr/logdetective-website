@@ -24,6 +24,7 @@
      status
      snippets
      files
+     spec
      error-description
      error-title
      backend-data
@@ -59,6 +60,7 @@
                      (reset! build-id (:build_id data))
                      (reset! build-id-title (:build_id_title data))
                      (reset! build-url (:build_url data))
+                     (reset! spec (:spec_file data))
 
                      (reset!
                       files
