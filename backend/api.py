@@ -187,7 +187,7 @@ def frontend_contribute_post(
 ):
     args_list = args.split("/")
     storator = Storator3000(provider, args_list[0])
-    result_to_store = schema_inp_to_out(request, request.spec_file)
+    result_to_store = schema_inp_to_out(request)
     storator.store(result_to_store)
 
     # TODO: parse args_list for url and packit

@@ -8,7 +8,6 @@ PACKIT_BUILD_URL = "https://dashboard.packit.dev/jobs/copr-builds"
 FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/var/lib/builds/feedbacks")
 
 
-
 class ProvidersEnum(StrEnum):
     packit = "packit"
     copr = "copr"
