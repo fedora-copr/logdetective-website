@@ -16,6 +16,7 @@
    [app.contribute-atoms :refer
     [how-to-fix
      error-title
+     backend-data
      error-description
      fail-reason
      status
@@ -49,7 +50,9 @@
                              (fn [snippet]
                                (= (:file snippet) (:name file)))
                              @snippets))})
-                   @files)
+                   ;; We can't use @files here because they contain highlight
+                   ;; spans, HTML escaping, etc.
+                   (:logs @backend-data))
               :spec_file @spec}]
     (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
