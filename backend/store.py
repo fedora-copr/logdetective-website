@@ -1,4 +1,5 @@
 import os
+import json
 import random
 from datetime import datetime
 from pathlib import Path
@@ -28,8 +29,8 @@ class Storator3000:
 
         timestamp_seconds = int(datetime.now().timestamp())
         file_name = self.build_dir / f"{timestamp_seconds}.json"
-        with open(file_name, "w") as json_file:
-            json_file.write(feedback_result.json())
+        with open(file_name, "w") as fp:
+            json.dump(feedback_result.dict(), fp, indent=4)
 
     @staticmethod
     def _get_random_dir_from(dir_: Path) -> Path:
