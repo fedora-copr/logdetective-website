@@ -98,21 +98,3 @@ def schema_inp_to_out(inp: FeedbackInputSchema) -> FeedbackSchema:
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
     )
-
-
-def schema_out_to_fe(out: FeedbackSchema) -> FeedbackSchema:
-    logs = {}
-    for log_name, result_log_schema in out.logs.items():
-        snippets = []
-        for snippet in result_log_schema.snippets:
-            snippets.append(snippet.dict())
-
-        logs[log_name] = {"log": result_log_schema.content, "snippets": snippets}
-
-    return FeedbackSchema(
-        username=out.username,
-        spec_file=out.spec_file,
-        fail_reason=out.fail_reason,
-        how_to_fix=out.how_to_fix,
-        logs=logs,
-    )

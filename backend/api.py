@@ -32,7 +32,6 @@ from backend.schema import (
     FeedbackInputSchema,
     FeedbackSchema,
     schema_inp_to_out,
-    schema_out_to_fe,
 )
 from backend.store import Storator3000
 
@@ -246,4 +245,4 @@ def frontend_review():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
-        return schema_out_to_fe(FeedbackSchema(**content))
+        return FeedbackSchema(**content)
