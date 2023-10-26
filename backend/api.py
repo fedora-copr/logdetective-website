@@ -3,7 +3,6 @@ import logging
 import os
 from base64 import b64decode
 from http import HTTPStatus
-from typing import Type
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -24,7 +23,6 @@ from backend.fetcher import (
     CoprProvider,
     KojiProvider,
     PackitProvider,
-    Provider,
     URLProvider,
     fetch_debug_logs,
 )
@@ -160,20 +158,6 @@ def get_debug_build_logs():
         "logs": fetch_debug_logs(),
         "spec_file": "fake spec file",
     }
-
-
-def _get_provider_cls(provider_enum: ProvidersEnum) -> Type[Provider]:
-    hashmap = {
-        ProvidersEnum.copr: CoprProvider,
-        ProvidersEnum.koji: KojiProvider,
-        ProvidersEnum.packit: PackitProvider,
-        ProvidersEnum.url: URLProvider,
-    }
-    provider_cls = hashmap.get(provider_enum)
-    if provider_cls is None:
-        raise ValueError(f"Unknown provider: {provider_enum}")
-
-    return provider_cls
 
 
 # TODO: delete this once in production
