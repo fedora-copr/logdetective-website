@@ -9,6 +9,7 @@ from fastapi.exceptions import FastAPIError, RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.constants import (
@@ -107,14 +108,8 @@ def review(request: Request):
 # These are called from JavaScript to asynchronously fetch or post data
 
 
-@app.get(
-    "/frontend/contribute/copr/{build_id}/{chroot}",
-    response_model=ContributeResponseSchema,
-)
-@app.get(
-    "/frontend/contribute/koji/{build_id}/{chroot}",
-    response_model=ContributeResponseSchema,
-)
+@app.get("/frontend/contribute/copr/{build_id}/{chroot}")
+@app.get("/frontend/contribute/koji/{build_id}/{chroot}")
 def get_build_logs_with_chroot(request: Request, build_id: int, chroot: str):
     provider_name = request.url.path.lstrip("/").split("/")[2]
     prov_kls = CoprProvider if provider_name == ProvidersEnum.copr else KojiProvider
@@ -126,40 +121,38 @@ def get_build_logs_with_chroot(request: Request, build_id: int, chroot: str):
         build_title = BuildIdTitleEnum.koji
         build_url = KOJI_BUILD_URL.format(build_id)
 
-    return {
-        "build_id": build_id,
-        "build_id_title": build_title,
-        "build_url": build_url,
-        "logs": provider.fetch_logs(),
-        "spec_file": provider.fetch_spec_file(),
-    }
+    return ContributeResponseSchema(
+        build_id=build_id,
+        build_id_title=build_title,
+        build_url=build_url,
+        logs=provider.fetch_logs(),
+        spec_file=provider.fetch_spec_file(),
+    )
 
 
-@app.get(
-    "/frontend/contribute/packit/{packit_id}", response_model=ContributeResponseSchema
-)
-def get_packit_build_logs(packit_id: int):
+@app.get("/frontend/contribute/packit/{packit_id}")
+def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
     provider = PackitProvider(packit_id)
-    return {
-        "build_id": packit_id,
-        "build_id_title": BuildIdTitleEnum.packit,
-        "build_url": PACKIT_BUILD_URL,
-        "logs": provider.fetch_logs(),
-        "spec_file": provider.fetch_spec_file(),
-    }
+    return ContributeResponseSchema(
+        build_id=packit_id,
+        build_id_title=BuildIdTitleEnum.packit,
+        build_url=PACKIT_BUILD_URL,
+        logs=provider.fetch_logs(),
+        spec_file=provider.fetch_spec_file(),
+    )
 
 
-@app.get("/frontend/contribute/url/{base64}", response_model=ContributeResponseSchema)
-def get_build_logs_from_url(base64: str):
+@app.get("/frontend/contribute/url/{base64}")
+def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
     build_url = b64decode(base64).decode("utf-8")
     provider = URLProvider(build_url)
-    return {
-        "build_id": None,
-        "build_id_title": BuildIdTitleEnum.url,
-        "build_url": build_url,
-        "logs": provider.fetch_logs(),
-        "spec_file": provider.fetch_spec_file(),
-    }
+    return ContributeResponseSchema(
+        build_id=None,
+        build_id_title=BuildIdTitleEnum.url,
+        build_url=build_url,
+        logs=provider.fetch_logs(),
+        spec_file=provider.fetch_spec_file(),
+    )
 
 
 # TODO: no response checking here, it will be deleted anyway
@@ -195,9 +188,14 @@ def frontend_debug_contribute():
     return {"status": "ok"}
 
 
+# TODO: some reasonable ok response would be better
+class OkResponse(BaseModel):
+    status: str = "ok"
+
+
 def _store_data_for_providers(
     feedback_input: FeedbackInputSchema, provider: ProvidersEnum, id_: int | str, *args
-) -> None:
+) -> OkResponse:
     storator = Storator3000(provider, id_)
     result_to_store = schema_inp_to_out(feedback_input)
     storator.store(result_to_store)
@@ -207,38 +205,39 @@ def _store_data_for_providers(
         rest = ""
 
     logger.info("Submitted data for {%s}: #{%s}{%s}", provider, id_, rest)
+    return OkResponse()
 
 
 @app.post("/frontend/contribute/copr/{build_id}/{chroot}")
 def contribute_review_copr(
     feedback_input: FeedbackInputSchema, build_id: int, chroot: str
-):
-    _store_data_for_providers(feedback_input, ProvidersEnum.copr, build_id, chroot)
-    return {"status": "ok"}
+) -> OkResponse:
+    return _store_data_for_providers(
+        feedback_input, ProvidersEnum.copr, build_id, chroot
+    )
 
 
 @app.post("/frontend/contribute/koji/{build_id}/{arch}")
 def contribute_review_koji(
     feedback_input: FeedbackInputSchema, build_id: int, arch: str
-):
-    _store_data_for_providers(feedback_input, ProvidersEnum.koji, build_id, arch)
-    return {"status": "ok"}
+) -> OkResponse:
+    return _store_data_for_providers(feedback_input, ProvidersEnum.koji, build_id, arch)
 
 
 @app.post("/frontend/contribute/packit/{packit_id}")
-def contribute_review_packit(feedback_input: FeedbackInputSchema, packit_id: int):
-    _store_data_for_providers(feedback_input, ProvidersEnum.packit, packit_id)
-    return {"status": "ok"}
+def contribute_review_packit(
+    feedback_input: FeedbackInputSchema, packit_id: int
+) -> OkResponse:
+    return _store_data_for_providers(feedback_input, ProvidersEnum.packit, packit_id)
 
 
 @app.post("/frontend/contribute/url/{url}")
-def contribute_review_url(feedback_input: FeedbackInputSchema, url: str):
-    _store_data_for_providers(feedback_input, ProvidersEnum.url, url)
-    return {"status": "ok"}
+def contribute_review_url(feedback_input: FeedbackInputSchema, url: str) -> OkResponse:
+    return _store_data_for_providers(feedback_input, ProvidersEnum.url, url)
 
 
-@app.get("/frontend/review", response_model=FeedbackSchema)
-def frontend_review():
+@app.get("/frontend/review")
+def frontend_review() -> FeedbackSchema:
     if os.environ.get("ENV") == "production":
         raise NotImplementedError("Reviewing is not ready yet")
 
