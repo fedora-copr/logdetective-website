@@ -10,9 +10,10 @@ from typing import Optional
 import copr.v3
 import koji
 import requests
+from fastapi import HTTPException
 
 from backend.data import LOG_OUTPUT
-from backend.exceptions import FetchError, HTTPException
+from backend.exceptions import FetchError
 from backend.spells import get_temporary_dir
 
 
@@ -27,20 +28,24 @@ def handle_errors(func):
             return func(*args, **kwargs)
 
         except copr.v3.exceptions.CoprNoResultException or koji.GenericError as ex:
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, msg=str(ex)) from ex
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST, detail=str(ex)
+            ) from ex
 
         except binascii.Error as ex:
             detail = (
                 "Unable to decode a log URL from the base64 hash. "
                 "How did you get to this page?"
             )
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, msg=detail) from ex
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=detail) from ex
 
         except requests.HTTPError as ex:
             detail = (
                 f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
             )
-            raise HTTPException(status_code=ex.response.status_code, msg=detail) from ex
+            raise HTTPException(
+                status_code=ex.response.status_code, detail=detail
+            ) from ex
 
     return inner
 
@@ -90,8 +95,9 @@ class CoprProvider(Provider):
             log_names.append("build.log.gz")
 
         if not baseurl:
-            raise FetchError("There are no results for {0}/{1}"
-                             .format(self.build_id, self.chroot))
+            raise FetchError(
+                "There are no results for {}/{}".format(self.build_id, self.chroot)
+            )
 
         logs = []
         for name in log_names:

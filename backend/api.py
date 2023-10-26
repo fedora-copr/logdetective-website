@@ -2,15 +2,16 @@ import json
 import logging
 import os
 from base64 import b64decode
+from http import HTTPStatus
 from typing import Type
 
 from fastapi import FastAPI, Request
-from fastapi.exceptions import FastAPIError, RequestValidationError
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.exceptions import HTTPException
 
 from backend.constants import (
     COPR_BUILD_URL,
@@ -19,7 +20,6 @@ from backend.constants import (
     BuildIdTitleEnum,
     ProvidersEnum,
 )
-from backend.exceptions import HTTPException
 from backend.fetcher import (
     CoprProvider,
     KojiProvider,
@@ -55,25 +55,20 @@ templates = Jinja2Templates(directory=template_dir)
 template_response = templates.TemplateResponse
 
 
-# TODO: handle all exceptions raised in fastapi here, ideally in one exception handler
 @app.exception_handler(Exception)
 @app.exception_handler(HTTPException)
-@app.exception_handler(StarletteHTTPException)
-@app.exception_handler(FastAPIError)
 @app.exception_handler(RequestValidationError)
 def _custom_http_exception_handler(
-    request: Request, exc: HTTPException | StarletteHTTPException | Exception
+    request: Request, exc: HTTPException | RequestValidationError | Exception
 ):
-    if isinstance(exc, (HTTPException, StarletteHTTPException)):
+    if isinstance(exc, HTTPException):
         status_code = exc.status_code
+    elif isinstance(exc, RequestValidationError):
+        status_code = HTTPStatus.UNPROCESSABLE_ENTITY
     else:
-        # TODO: get it from RequestValidationError
-        if isinstance(exc, RequestValidationError):
-            status_code = 422
-        else:
-            status_code = 500
+        status_code = HTTPStatus.INTERNAL_SERVER_ERROR
 
-    if isinstance(exc, StarletteHTTPException):
+    if isinstance(exc, HTTPException):
         description = exc.detail
     else:
         description = str(exc)
