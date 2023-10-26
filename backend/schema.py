@@ -63,28 +63,27 @@ class FeedbackLogSchema(LogSchema):
     snippets: list[SnippetSchema]
 
 
-class FeedbackInputSchema(BaseModel):
+class _WithoutLogsSchema(BaseModel):
+    username: Optional[str]
+    spec_file: SpecfileSchema
+    fail_reason: str
+    how_to_fix: str
+
+
+class FeedbackInputSchema(_WithoutLogsSchema):
     """
     Contains data from users with reasons why build failed. It is sent from FE
      and contains only inputs from user + spec and logs content.
     """
-    username: Optional[str]
     logs: list[FeedbackLogSchema]
-    fail_reason: str
-    how_to_fix: str
-    spec_file: str
 
 
-class FeedbackSchema(BaseModel):
+class FeedbackSchema(_WithoutLogsSchema):
     """
     This schema is the final structure as we decided to store our data in json file
      from users feedbacks.
     """
-    username: Optional[str]
-    spec_file: SpecfileSchema
     logs: dict[str, FeedbackLogSchema]
-    fail_reason: str
-    how_to_fix: str
 
 
 def schema_inp_to_out(inp: FeedbackInputSchema) -> FeedbackSchema:
@@ -94,7 +93,7 @@ def schema_inp_to_out(inp: FeedbackInputSchema) -> FeedbackSchema:
 
     return FeedbackSchema(
         username=inp.username,
-        spec_file={"content": inp.spec_file},
+        spec_file=inp.spec_file,
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
