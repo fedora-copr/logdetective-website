@@ -14,6 +14,7 @@ RUN dnf -y update && \
                    vim \
                    mlocate \
                    jq \
+                   fpaste \
                    git \
                    sudo \
                    python3-ipdb \
