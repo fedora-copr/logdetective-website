@@ -205,19 +205,19 @@ def contribute_review_copr(
 def contribute_review_koji(
     feedback_input: FeedbackInputSchema, build_id: int, arch: str
 ):
-    _store_data_for_providers(feedback_input, ProvidersEnum.copr, build_id, arch)
+    _store_data_for_providers(feedback_input, ProvidersEnum.koji, build_id, arch)
     return {"status": "ok"}
 
 
 @app.post("/frontend/contribute/packit/{packit_id}")
 def contribute_review_packit(feedback_input: FeedbackInputSchema, packit_id: int):
-    _store_data_for_providers(feedback_input, ProvidersEnum.copr, packit_id)
+    _store_data_for_providers(feedback_input, ProvidersEnum.packit, packit_id)
     return {"status": "ok"}
 
 
 @app.post("/frontend/contribute/url/{url}")
 def contribute_review_url(feedback_input: FeedbackInputSchema, url: str):
-    _store_data_for_providers(feedback_input, ProvidersEnum.copr, url)
+    _store_data_for_providers(feedback_input, ProvidersEnum.url, url)
     return {"status": "ok"}
 
 
