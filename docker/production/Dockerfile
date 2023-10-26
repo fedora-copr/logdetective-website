@@ -13,6 +13,7 @@ RUN dnf -y update && \
                    iputils \
                    vim \
                    mlocate \
+                   jq \
                    git \
                    sudo \
                    python3-ipdb \
