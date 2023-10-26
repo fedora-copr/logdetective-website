@@ -58,7 +58,6 @@ class ResultInputSchema(BaseModel):
 
 class ResultSchema(BaseModel):
     username: Optional[str]
-    reviewers: list[str]
     specfile: SpecfileSchema
     logs: dict[str, LogSchema]
     fail_reason: str
@@ -67,7 +66,6 @@ class ResultSchema(BaseModel):
 
 class ResultReviewSchema(BaseModel):
     username: Optional[str]
-    reviewers: list[str]
     specfile: SpecfileSchema
     logs: dict[str, LogSchema]
     fail_reason: str
@@ -81,7 +79,6 @@ def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
 
     return ResultSchema(
         username=inp.username,
-        reviewers=[],
         specfile={"content": inp.spec_file},
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
@@ -100,7 +97,6 @@ def schema_out_to_fe(out: ResultSchema) -> ResultReviewSchema:
 
     return ResultReviewSchema(
         username=out.username,
-        reviewers=out.reviewers,
         specfile=out.specfile,
         fail_reason=out.fail_reason,
         how_to_fix=out.how_to_fix,
