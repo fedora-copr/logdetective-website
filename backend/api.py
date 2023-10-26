@@ -179,24 +179,45 @@ def frontend_debug_contribute():
     return {"status": "ok"}
 
 
-# TODO: split urls for args or use enums
-@app.post("/frontend/contribute/{provider}/{args:path}")
-def frontend_contribute_post(
-    request: FeedbackInputSchema, provider: ProvidersEnum, args: str
-):
-    args_list = args.split("/")
-    storator = Storator3000(provider, args_list[0])
-    result_to_store = schema_inp_to_out(request)
+def _store_data_for_providers(
+    feedback_input: FeedbackInputSchema, provider: ProvidersEnum, id_: int | str, *args
+) -> None:
+    storator = Storator3000(ProvidersEnum.copr, id_)
+    result_to_store = schema_inp_to_out(feedback_input)
     storator.store(result_to_store)
-
-    # TODO: parse args_list for url and packit
-    if len(args_list) > 1:
-        chroot_info = args_list[1]
+    if len(args) > 0:
+        rest = f"/{args[0]}"
     else:
-        chroot_info = "unknown arch"
-    logger.info(
-        "Submitted data for {%s}: #{%s/%s}", provider, args_list[0], chroot_info
-    )
+        rest = ""
+
+    logger.info("Submitted data for {%s}: #{%s}{%s}", provider, id_, rest)
+
+
+@app.post("/frontend/contribute/copr/{build_id}/{chroot}")
+def contribute_review_copr(
+    feedback_input: FeedbackInputSchema, build_id: int, chroot: str
+):
+    _store_data_for_providers(feedback_input, ProvidersEnum.copr, build_id, chroot)
+    return {"status": "ok"}
+
+
+@app.post("/frontend/contribute/koji/{build_id}/{arch}")
+def contribute_review_koji(
+    feedback_input: FeedbackInputSchema, build_id: int, arch: str
+):
+    _store_data_for_providers(feedback_input, ProvidersEnum.copr, build_id, arch)
+    return {"status": "ok"}
+
+
+@app.post("/frontend/contribute/packit/{packit_id}")
+def contribute_review_packit(feedback_input: FeedbackInputSchema, packit_id: int):
+    _store_data_for_providers(feedback_input, ProvidersEnum.copr, packit_id)
+    return {"status": "ok"}
+
+
+@app.post("/frontend/contribute/url/{url}")
+def contribute_review_url(feedback_input: FeedbackInputSchema, url: str):
+    _store_data_for_providers(feedback_input, ProvidersEnum.copr, url)
     return {"status": "ok"}
 
 
