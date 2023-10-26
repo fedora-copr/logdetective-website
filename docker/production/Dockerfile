@@ -25,6 +25,7 @@ RUN dnf -y update && \
     && dnf -y install \
                    python3-fastapi \
                    python3-uvicorn \
+                   python3-gunicorn \
                    python3-jinja2 \
                    python3-requests \
                    python3-koji \
@@ -42,6 +43,8 @@ RUN npm install -g shadow-cljs
 RUN npx shadow-cljs release app
 
 
-# TODO We need to use an actual httpd server
+# According to the documentation, gunicorn is a valid production server
+# https://www.uvicorn.org/deployment/
 WORKDIR /src/backend
-CMD PYTHONPATH="${PYTHONPATH}:/src" uvicorn api:app --host 0.0.0.0 --port 8080
+ENV PYTHONPATH="${PYTHONPATH}:/src"
+CMD gunicorn -k uvicorn.workers.UvicornWorker api:app -b 0.0.0.0:8080
