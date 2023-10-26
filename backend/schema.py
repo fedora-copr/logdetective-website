@@ -64,14 +64,6 @@ class ResultSchema(BaseModel):
     how_to_fix: str
 
 
-class ResultReviewSchema(BaseModel):
-    username: Optional[str]
-    specfile: SpecfileSchema
-    logs: dict[str, LogSchema]
-    fail_reason: str
-    how_to_fix: str
-
-
 def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
     parsed_log_schema = {}
     for log_schema in inp.logs:
@@ -86,7 +78,7 @@ def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
     )
 
 
-def schema_out_to_fe(out: ResultSchema) -> ResultReviewSchema:
+def schema_out_to_fe(out: ResultSchema) -> ResultSchema:
     logs = {}
     for log_name, result_log_schema in out.logs.items():
         snippets = []
@@ -95,7 +87,7 @@ def schema_out_to_fe(out: ResultSchema) -> ResultReviewSchema:
 
         logs[log_name] = {"log": result_log_schema.log, "snippets": snippets}
 
-    return ResultReviewSchema(
+    return ResultSchema(
         username=out.username,
         specfile=out.specfile,
         fail_reason=out.fail_reason,

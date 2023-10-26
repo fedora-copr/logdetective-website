@@ -28,7 +28,6 @@ from backend.fetcher import (
 from backend.schema import (
     ContributeResponseSchema,
     ResultInputSchema,
-    ResultReviewSchema,
     ResultSchema,
     schema_inp_to_out,
     schema_out_to_fe,
@@ -201,7 +200,7 @@ def frontend_contribute_post(
     return {"status": "ok"}
 
 
-@app.get("/frontend/review", response_model=ResultReviewSchema)
+@app.get("/frontend/review", response_model=ResultSchema)
 def frontend_review():
     if os.environ.get("ENV") == "production":
         raise NotImplementedError("Reviewing is not ready yet")
