@@ -10,6 +10,15 @@ class LogSchema(BaseModel):
     content: str
 
 
+class SpecfileSchema(BaseModel):
+    # TODO: do we want to store spec_file separately
+    #  in file or store content in one file?
+    #  or the path means just its name?
+    # path: Path
+    name: str
+    content: str
+
+
 class ContributeResponseSchema(BaseModel):
     """
     Data requested by frontend at the very beginning of review process. Those are
@@ -20,7 +29,7 @@ class ContributeResponseSchema(BaseModel):
     build_id_title: BuildIdTitleEnum
     build_url: AnyUrl
     logs: list[LogSchema]
-    spec_file: str
+    spec_file: SpecfileSchema
 
 
 class SnippetSchema(BaseModel):
@@ -64,14 +73,6 @@ class FeedbackInputSchema(BaseModel):
     fail_reason: str
     how_to_fix: str
     spec_file: str
-
-
-class SpecfileSchema(BaseModel):
-    # TODO: do we want to store spec_file separately
-    #  in file or store content in one file?
-    #  or the path means just its name?
-    # path: Path
-    content: str
 
 
 class FeedbackSchema(BaseModel):

@@ -48,10 +48,22 @@ def handle_errors(func):
 class Provider(ABC):
     @abstractmethod
     def fetch_logs(self) -> list[dict[str, str]]:
+        """
+        Fetches logs from a provider with name and content.
+
+        Returns:
+            List of dict where each dict contains log name and its content.
+        """
         ...
 
     @abstractmethod
-    def fetch_spec_file(self) -> str:
+    def fetch_spec_file(self) -> dict[str, str]:
+        """
+        Fetches spec file with its content and name.
+
+        Returns:
+            Dict which contains spec name and its content.
+        """
         ...
 
 
@@ -91,7 +103,7 @@ class CoprProvider(Provider):
         return logs
 
     @handle_errors
-    def fetch_spec_file(self) -> str:
+    def fetch_spec_file(self) -> dict[str, str]:
         build = self.client.build_proxy.get(self.build_id)
         name = build.source_package["name"]
         if self.chroot == "srpm-builds":
@@ -102,9 +114,10 @@ class CoprProvider(Provider):
             )
             baseurl = build_chroot.result_url
 
-        response = requests.get(f"{baseurl}/{name}.spec")
+        spec_name = f"{name}.spec"
+        response = requests.get(f"{baseurl}/{spec_name}")
         response.raise_for_status()
-        return response.text
+        return {"name": spec_name, "content": response.text}
 
 
 class KojiProvider(Provider):
@@ -194,7 +207,7 @@ class KojiProvider(Provider):
     @staticmethod
     def _get_spec_file_content_from_srpm(
         srpm_path: Path, temp_dir: Path
-    ) -> Optional[str]:
+    ) -> Optional[dict[str, str]]:
         # extract spec file from srpm
         cmd = f"rpm2archive -n < {str(srpm_path)} | tar xf - '*.spec'"
         subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
@@ -203,9 +216,9 @@ class KojiProvider(Provider):
             return None
 
         with open(fst_spec_file) as spec_file:
-            return spec_file.read()
+            return {"name": fst_spec_file.name, "content": spec_file.read()}
 
-    def _fetch_spec_file_from_task_id(self) -> Optional[str]:
+    def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
         with get_temporary_dir() as temp_dir:
             cmd = f"koji download-task {self.build_or_task_id}"
             subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
@@ -215,7 +228,7 @@ class KojiProvider(Provider):
 
             return self._get_spec_file_content_from_srpm(srpm, temp_dir)
 
-    def _fetch_spec_file_from_build_id(self) -> Optional[str]:
+    def _fetch_spec_file_from_build_id(self) -> Optional[dict[str, str]]:
         koji_build = self.client.getBuild(self.build_or_task_id)
         srpm_url = (
             f"{self.koji_url}/packages/{koji_build['package_name']}"
@@ -230,20 +243,20 @@ class KojiProvider(Provider):
                 return self._get_spec_file_content_from_srpm(koji_srpm_path, temp_dir)
 
     @handle_errors
-    def fetch_spec_file(self) -> str:
+    def fetch_spec_file(self) -> dict[str, str]:
         if self._is_build_id:
             fetch_spec_fn = self._fetch_spec_file_from_build_id
         else:
             fetch_spec_fn = self._fetch_spec_file_from_task_id
 
-        spec_content = fetch_spec_fn()
-        if spec_content is None:
+        spec_dict = fetch_spec_fn()
+        if spec_dict is None:
             raise FetchError(
                 "No spec file found in koji for build/task id "
                 f"#{self.build_or_task_id} and arch {self.arch}"
             )
 
-        return spec_content
+        return spec_dict
 
 
 class PackitProvider(Provider):
@@ -290,7 +303,7 @@ class PackitProvider(Provider):
         return self._get_correct_provider().fetch_logs()
 
     @handle_errors
-    def fetch_spec_file(self) -> str:
+    def fetch_spec_file(self) -> dict[str, str]:
         return self._get_correct_provider().fetch_spec_file()
 
 
@@ -316,10 +329,10 @@ class URLProvider(Provider):
         ]
 
     @handle_errors
-    def fetch_spec_file(self) -> str:
+    def fetch_spec_file(self) -> dict[str, str]:
         # FIXME: Please implement me!
         #  raise NotImplementedError("Please implement me!")
-        return "fake spec file"
+        return {"name": "fake_spec_name.spec", "content": "fake spec file"}
 
 
 def fetch_debug_logs():
