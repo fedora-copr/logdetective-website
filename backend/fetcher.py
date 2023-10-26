@@ -89,6 +89,10 @@ class CoprProvider(Provider):
             baseurl = build_chroot.result_url
             log_names.append("build.log.gz")
 
+        if not baseurl:
+            raise FetchError("There are no results for {0}/{1}"
+                             .format(self.build_id, self.chroot))
+
         logs = []
         for name in log_names:
             url = "{}/{}".format(baseurl, name)
