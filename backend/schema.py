@@ -44,7 +44,7 @@ class SnippetSchema(BaseModel):
 
 class LogSchema(BaseModel):
     name: str
-    log: str
+    content: str
     snippets: list[SnippetSchema]
 
 
@@ -85,7 +85,7 @@ def schema_out_to_fe(out: ResultSchema) -> ResultSchema:
         for snippet in result_log_schema.snippets:
             snippets.append(snippet.dict())
 
-        logs[log_name] = {"log": result_log_schema.log, "snippets": snippets}
+        logs[log_name] = {"log": result_log_schema.content, "snippets": snippets}
 
     return ResultSchema(
         username=out.username,
