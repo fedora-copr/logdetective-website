@@ -36,7 +36,7 @@
               :logs
               (map (fn [file]
                       {:name (:name file)
-                       :log (:content file)
+                       :content (:content file)
                        :snippets
                        (map (fn [snippet]
                               (-> snippet
