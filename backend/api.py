@@ -56,7 +56,7 @@ template_response = templates.TemplateResponse
 
 @app.exception_handler(Exception)
 @app.exception_handler(HTTPException)
-def custom_http_exception_handler(request: Request, exc: HTTPException | Exception):
+def _custom_http_exception_handler(request: Request, exc: HTTPException | Exception):
     if isinstance(exc, HTTPException):
         status_code = exc.status_code
     else:
@@ -187,8 +187,7 @@ def frontend_contribute_post(
 ):
     args_list = args.split("/")
     storator = Storator3000(provider, args_list[0])
-    provider_kls = _get_provider_cls(provider)(*args_list)
-    result_to_store = schema_inp_to_out(request, provider_kls.fetch_spec_file())
+    result_to_store = schema_inp_to_out(request, request.spec_file)
     storator.store(result_to_store)
 
     # TODO: parse args_list for url and packit

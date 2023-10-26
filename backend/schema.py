@@ -21,7 +21,7 @@ class SpecfileSchema(BaseModel):
     #  in file or store content in one file?
     #  or the path means just its name?
     # path: Path
-    content: list[str]
+    content: str
 
 
 class SnippetSchema(BaseModel):
@@ -41,7 +41,7 @@ class ResultInputSchema(BaseModel):
     logs: list[LogSchema]
     fail_reason: str
     how_to_fix: str
-    specfile: Optional[str] = None
+    spec_file: str
 
 
 class SnippetResultSchema(BaseModel):
@@ -138,7 +138,7 @@ def schema_inp_to_out(inp: ResultInputSchema, spec_content: str) -> ResultSchema
     return ResultSchema(
         username=inp.username,
         reviewers=[],
-        specfile={"content": spec_content.split("\n")},
+        specfile={"content": spec_content},
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
