@@ -6,7 +6,10 @@
    [lambdaisland.fetch :as fetch]
    [web.Range :refer [surround-contents]]
    ["html-entities" :as html-entities]
-   [app.helpers :refer [current-path fontawesome-icon]]
+   [app.helpers :refer
+    [current-path
+     fontawesome-icon
+     remove-trailing-slash]]
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
@@ -45,7 +48,7 @@
 
 
 (defn fetch-logs []
-  (let [url (str "/frontend" (current-path))]
+  (let [url (remove-trailing-slash (str "/frontend" (current-path)))]
     (-> (fetch/get url {:accept :json :content-type :json})
         (.then (fn [resp]
                  (-> resp :body (js->clj :keywordize-keys true))))

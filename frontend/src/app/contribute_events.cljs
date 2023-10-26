@@ -4,7 +4,8 @@
    [reagent.core :as r]
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
-    [current-path]]
+    [current-path
+     remove-trailing-slash]]
    [app.editor.core :refer [active-file]]
    [app.contribute-logic :refer
     [file-id
@@ -25,7 +26,7 @@
 
 
 (defn submit-form []
-  (let [url (str "/frontend" (current-path))
+  (let [url (remove-trailing-slash (str "/frontend" (current-path)))
         ;; Clojure typically uses dashes instead of underscores in keyword
         ;; names. However, this is going to be dumped as JSON and we expect
         ;; underscores there
