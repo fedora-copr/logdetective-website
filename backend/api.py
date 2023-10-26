@@ -182,7 +182,7 @@ def frontend_debug_contribute():
 def _store_data_for_providers(
     feedback_input: FeedbackInputSchema, provider: ProvidersEnum, id_: int | str, *args
 ) -> None:
-    storator = Storator3000(ProvidersEnum.copr, id_)
+    storator = Storator3000(provider, id_)
     result_to_store = schema_inp_to_out(feedback_input)
     storator.store(result_to_store)
     if len(args) > 0:
