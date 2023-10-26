@@ -5,9 +5,11 @@ from base64 import b64decode
 from typing import Type
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import FastAPIError, RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.constants import (
     COPR_BUILD_URL,
@@ -53,19 +55,34 @@ templates = Jinja2Templates(directory=template_dir)
 template_response = templates.TemplateResponse
 
 
+# TODO: handle all exceptions raised in fastapi here, ideally in one exception handler
 @app.exception_handler(Exception)
 @app.exception_handler(HTTPException)
-def _custom_http_exception_handler(request: Request, exc: HTTPException | Exception):
-    if isinstance(exc, HTTPException):
+@app.exception_handler(StarletteHTTPException)
+@app.exception_handler(FastAPIError)
+@app.exception_handler(RequestValidationError)
+def _custom_http_exception_handler(
+    request: Request, exc: HTTPException | StarletteHTTPException | Exception
+):
+    if isinstance(exc, (HTTPException, StarletteHTTPException)):
         status_code = exc.status_code
     else:
-        status_code = 500
+        # TODO: get it from RequestValidationError
+        if isinstance(exc, RequestValidationError):
+            status_code = 422
+        else:
+            status_code = 500
+
+    if isinstance(exc, StarletteHTTPException):
+        description = exc.detail
+    else:
+        description = str(exc)
 
     return JSONResponse(
         status_code=status_code,
         content={
-            "error": "Server error",
-            "description": str(exc),
+            "error": f"Server error: {status_code}",
+            "description": description,
         },
     )
 
