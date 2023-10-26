@@ -5,23 +5,28 @@ from pydantic import AnyUrl, BaseModel
 from backend.constants import BuildIdTitleEnum
 
 
-class ContributeResponseSchema(BaseModel):
-    build_id: Optional[int]
-    build_id_title: BuildIdTitleEnum
-    build_url: AnyUrl
-    logs: list[dict[str, str]]
-    spec_file: str
-
-
-class SpecfileSchema(BaseModel):
-    # TODO: do we want to store spec_file separately
-    #  in file or store content in one file?
-    #  or the path means just its name?
-    # path: Path
+class LogSchema(BaseModel):
+    name: str
     content: str
 
 
+class ContributeResponseSchema(BaseModel):
+    """
+    Data requested by frontend at the very beginning of review process. Those are
+     fetched data (logs, spec, ...) and are needed for user to give a feedback why
+     build failed.
+    """
+    build_id: Optional[int]
+    build_id_title: BuildIdTitleEnum
+    build_url: AnyUrl
+    logs: list[LogSchema]
+    spec_file: str
+
+
 class SnippetSchema(BaseModel):
+    """
+    Snippet for log, each log may have 0 - many snippets.
+    """
     # LINE_FROM:CHAR_FROM-LINE_TO:CHAR_TO
     # log_part: constr(regex=r"^\d+:\d+-\d+:\d+$")
     start_index: int
@@ -42,34 +47,51 @@ class SnippetSchema(BaseModel):
     #     return self._splitter(False)
 
 
-class LogSchema(BaseModel):
-    name: str
-    content: str
+class FeedbackLogSchema(LogSchema):
+    """
+    Feedback from user per individual log with user's comment.
+    """
     snippets: list[SnippetSchema]
 
 
-class ResultInputSchema(BaseModel):
+class FeedbackInputSchema(BaseModel):
+    """
+    Contains data from users with reasons why build failed. It is sent from FE
+     and contains only inputs from user + spec and logs content.
+    """
     username: Optional[str]
-    logs: list[LogSchema]
+    logs: list[FeedbackLogSchema]
     fail_reason: str
     how_to_fix: str
     spec_file: str
 
 
-class ResultSchema(BaseModel):
+class SpecfileSchema(BaseModel):
+    # TODO: do we want to store spec_file separately
+    #  in file or store content in one file?
+    #  or the path means just its name?
+    # path: Path
+    content: str
+
+
+class FeedbackSchema(BaseModel):
+    """
+    This schema is the final structure as we decided to store our data in json file
+     from users feedbacks.
+    """
     username: Optional[str]
     spec_file: SpecfileSchema
-    logs: dict[str, LogSchema]
+    logs: dict[str, FeedbackLogSchema]
     fail_reason: str
     how_to_fix: str
 
 
-def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
+def schema_inp_to_out(inp: FeedbackInputSchema) -> FeedbackSchema:
     parsed_log_schema = {}
     for log_schema in inp.logs:
         parsed_log_schema[log_schema.name] = log_schema
 
-    return ResultSchema(
+    return FeedbackSchema(
         username=inp.username,
         spec_file={"content": inp.spec_file},
         logs=parsed_log_schema,
@@ -78,7 +100,7 @@ def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
     )
 
 
-def schema_out_to_fe(out: ResultSchema) -> ResultSchema:
+def schema_out_to_fe(out: FeedbackSchema) -> FeedbackSchema:
     logs = {}
     for log_name, result_log_schema in out.logs.items():
         snippets = []
@@ -87,7 +109,7 @@ def schema_out_to_fe(out: ResultSchema) -> ResultSchema:
 
         logs[log_name] = {"log": result_log_schema.content, "snippets": snippets}
 
-    return ResultSchema(
+    return FeedbackSchema(
         username=out.username,
         spec_file=out.spec_file,
         fail_reason=out.fail_reason,

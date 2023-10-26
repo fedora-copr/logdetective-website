@@ -27,8 +27,8 @@ from backend.fetcher import (
 )
 from backend.schema import (
     ContributeResponseSchema,
-    ResultInputSchema,
-    ResultSchema,
+    FeedbackInputSchema,
+    FeedbackSchema,
     schema_inp_to_out,
     schema_out_to_fe,
 )
@@ -182,7 +182,7 @@ def frontend_debug_contribute():
 # TODO: split urls for args or use enums
 @app.post("/frontend/contribute/{provider}/{args:path}")
 def frontend_contribute_post(
-    request: ResultInputSchema, provider: ProvidersEnum, args: str
+    request: FeedbackInputSchema, provider: ProvidersEnum, args: str
 ):
     args_list = args.split("/")
     storator = Storator3000(provider, args_list[0])
@@ -200,7 +200,7 @@ def frontend_contribute_post(
     return {"status": "ok"}
 
 
-@app.get("/frontend/review", response_model=ResultSchema)
+@app.get("/frontend/review", response_model=FeedbackSchema)
 def frontend_review():
     if os.environ.get("ENV") == "production":
         raise NotImplementedError("Reviewing is not ready yet")
@@ -208,4 +208,4 @@ def frontend_review():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
-        return schema_out_to_fe(ResultSchema(**content))
+        return schema_out_to_fe(FeedbackSchema(**content))

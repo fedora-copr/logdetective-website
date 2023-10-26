@@ -6,7 +6,7 @@ from pathlib import Path
 
 from backend.constants import FEEDBACK_DIR, ProvidersEnum
 from backend.exceptions import NoDataFound
-from backend.schema import ResultSchema
+from backend.schema import FeedbackSchema
 
 
 class Storator3000:
@@ -24,7 +24,7 @@ class Storator3000:
     def build_dir(self) -> Path:
         return self.target_dir / str(self.id_)
 
-    def store(self, feedback_result: ResultSchema) -> None:
+    def store(self, feedback_result: FeedbackSchema) -> None:
         self.build_dir.mkdir(parents=True, exist_ok=True)
 
         timestamp_seconds = int(datetime.now().timestamp())
