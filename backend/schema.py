@@ -14,7 +14,7 @@ class ContributeResponseSchema(BaseModel):
 
 
 class SpecfileSchema(BaseModel):
-    # TODO: do we want to store specfile separately
+    # TODO: do we want to store spec_file separately
     #  in file or store content in one file?
     #  or the path means just its name?
     # path: Path
@@ -58,7 +58,7 @@ class ResultInputSchema(BaseModel):
 
 class ResultSchema(BaseModel):
     username: Optional[str]
-    specfile: SpecfileSchema
+    spec_file: SpecfileSchema
     logs: dict[str, LogSchema]
     fail_reason: str
     how_to_fix: str
@@ -71,7 +71,7 @@ def schema_inp_to_out(inp: ResultInputSchema) -> ResultSchema:
 
     return ResultSchema(
         username=inp.username,
-        specfile={"content": inp.spec_file},
+        spec_file={"content": inp.spec_file},
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,
@@ -89,7 +89,7 @@ def schema_out_to_fe(out: ResultSchema) -> ResultSchema:
 
     return ResultSchema(
         username=out.username,
-        specfile=out.specfile,
+        spec_file=out.spec_file,
         fail_reason=out.fail_reason,
         how_to_fix=out.how_to_fix,
         logs=logs,
