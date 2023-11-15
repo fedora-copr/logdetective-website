@@ -4,8 +4,8 @@ services:
   website:
     build:
       context: docker/production
-    image: quay.io/jkadlcik/lightspeed-build
-    hostname: lightspeed-build
+    image: quay.io/jkadlcik/log-detective
+    hostname: log-detective
     stdin_open: true
     tty: true
     ports:

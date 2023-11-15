@@ -2,23 +2,23 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: lightspeed-build-website
+  name: log-detective-website
 spec:
   selector:
     matchLabels:
-      component: lightspeed-build-website
+      component: log-detective-website
   template:
     metadata:
       labels:
-        component: lightspeed-build-website
+        component: log-detective-website
     spec:
       volumes:
         - name: persistent
           persistentVolumeClaim:
             claimName: persistent
       containers:
-        - name: lightspeed-build-website
-          image: quay.io/jkadlcik/lightspeed-build:latest
+        - name: log-detective-website
+          image: quay.io/jkadlcik/log-detective:latest
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -54,27 +54,27 @@ status: {}
 kind: Service
 apiVersion: v1
 metadata:
-  name: lightspeed-build-website
+  name: log-detective-website
 spec:
   ports:
-    - name: lightspeed-build-website
+    - name: log-detective-website
       port: 8080
       protocol: TCP
       targetPort: 8080
   selector:
-    component: lightspeed-build-website
+    component: log-detective-website
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: lightspeed-build-website
-  namespace: communishift-lightspeed-build
+  name: log-detective-website
+  namespace: communishift-log-detective
 spec:
   host: >-
-    lightspeed-build-website-communishift-lightspeed-build.apps.fedora.cj14.p1.openshiftapps.com
+    log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.openshiftapps.com
   to:
     kind: Service
-    name: lightspeed-build-website
+    name: log-detective-website
     weight: 100
   port:
     targetPort: 8080
