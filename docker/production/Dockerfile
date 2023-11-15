@@ -36,7 +36,7 @@ RUN dnf -y update && \
     && dnf clean all
 
 
-RUN git clone https://github.com/fedora-copr/lightspeed-build-website.git /src
+RUN git clone https://github.com/fedora-copr/log-detective-website.git /src
 
 
 WORKDIR /src/frontend

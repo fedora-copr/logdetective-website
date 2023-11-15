@@ -1,7 +1,7 @@
-# Lightspeed build website
+# Log Detective website
 
 We don't have a hostname yet
-https://lightspeed-build-website-communishift-lightspeed-build.apps.fedora.cj14.p1.openshiftapps.com/
+https://log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.openshiftapps.com/
 
 
 ## Development

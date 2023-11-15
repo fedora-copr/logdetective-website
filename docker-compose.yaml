@@ -5,16 +5,16 @@ services:
     build:
       context: docker/backend
     hostname: backend
-    working_dir: /opt/lightspeed-build-website/backend
+    working_dir: /opt/log-detective-website/backend
     environment:
-      PYTHONPATH: "/opt/lightspeed-build-website"
+      PYTHONPATH: "/opt/log-detective-website"
     command: "uvicorn api:app --host 0.0.0.0 --port 5020"
     stdin_open: true
     tty: true
     ports:
       - 5020:5020
     volumes:
-      - .:/opt/lightspeed-build-website:z
+      - .:/opt/log-detective-website:z
       - persistent:/persistent
     environment:
       - ENV=devel
@@ -27,7 +27,7 @@ services:
     build:
       context: docker/frontend
     hostname: frontend
-    working_dir: /opt/lightspeed-build-website/frontend
+    working_dir: /opt/log-detective-website/frontend
     command: "npx shadow-cljs watch app"
     stdin_open: true
     tty: true
@@ -36,7 +36,7 @@ services:
       - 9630:9630
       - 3333:3333
     volumes:
-      - .:/opt/lightspeed-build-website:z
+      - .:/opt/log-detective-website:z
     environment:
       - ENV=devel
       - FEEDBACK_DIR=/persistent/results
