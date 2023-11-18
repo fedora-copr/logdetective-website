@@ -3,6 +3,10 @@
 We don't have a hostname yet
 https://log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.openshiftapps.com/
 
+## Screenshot
+
+![Screenshot](screenshot.png)
+
 
 ## Development
 
