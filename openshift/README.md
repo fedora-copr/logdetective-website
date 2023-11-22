@@ -6,7 +6,6 @@ CommuniShift.
 - Dashboard: https://console-openshift-console.apps.fedora.cj14.p1.openshiftapps.com/
 - Documentation: https://docs.fedoraproject.org/en-US/infra/ocp4/sop_communishift/
 
-
 ## Tools
 
 For some reason, in the Fedora repositories, there is an outdated
@@ -15,13 +14,11 @@ need to install it like this
 
 https://docs.okd.io/latest/cli_reference/openshift_cli/getting-started-cli.html
 
-
 ## Permissions
 
 To be able to access the OpenShift project please ping fedora-infra to
 add you to [communishift][group1] group and @FrostyX, to add you to
 [communishift-log-detective][group2] group.
-
 
 ## Login
 
@@ -32,7 +29,6 @@ in the top-right and "Copy login command". Display token and run the
 ```bash
 oc login --token=... --server=https://api.fedora.cj14.p1.openshiftapps.com:6443
 ```
-
 
 ## Deploy
 
@@ -80,8 +76,6 @@ oc logs -f deploy/log-detective-website
 # or
 oc rsh deploy/log-detective-website
 ```
-
-
 
 [quay-repo]: https://quay.io/repository/jkadlcik/log-detective
 [group1]: https://accounts.fedoraproject.org/group/communishift/

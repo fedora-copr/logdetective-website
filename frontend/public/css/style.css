@@ -10,27 +10,27 @@
   */
 
   /* Color-blind safe palette */
-  --darkblue:    #294172;
-  --blue:        #3c6eb4;
-  --newblue:     #51a2da;
-  --green:       #38bc3b;
-  --lightgreen:  #afea85;
-  --magenta:     #db3279;
-  --orange:      #eb7434;
-  --purple:      #603e79;
-  --lightpurple: #cfbddd;  /* This one is from the main palette */
+  --darkblue: #294172;
+  --blue: #3c6eb4;
+  --newblue: #51a2da;
+  --green: #38bc3b;
+  --lightgreen: #afea85;
+  --magenta: #db3279;
+  --orange: #eb7434;
+  --purple: #603e79;
+  --lightpurple: #cfbddd; /* This one is from the main palette */
 
-  --white:       #f8f9fa;  /* This one isn't in any Fedora scheme */
-  --gray-0:      #eff0f1;
-  --gray-1:      #dfe0e3;
-  --gray-2:      #dedede;
-  --gray-3:      #c5c7cc;
-  --gray-4:      #8c8c8c;
-  --gray-5:      #9a9fa6;
-  --gray-6:      #79818b;
-  --gray-7:      #535961;
-  --gray-8:      #4c4c4c;
-  --gray-9:      #1d252e;
+  --white: #f8f9fa; /* This one isn't in any Fedora scheme */
+  --gray-0: #eff0f1;
+  --gray-1: #dfe0e3;
+  --gray-2: #dedede;
+  --gray-3: #c5c7cc;
+  --gray-4: #8c8c8c;
+  --gray-5: #9a9fa6;
+  --gray-6: #79818b;
+  --gray-7: #535961;
+  --gray-8: #4c4c4c;
+  --gray-9: #1d252e;
 }
 
 body {
@@ -43,13 +43,14 @@ body {
   padding-bottom: 0px;
 }
 
-#menu > .container{
+#menu > .container {
   max-width: 1700px;
 }
 
 #menu #logo {
   height: 50px;
-  filter: invert(100%) sepia(96%) saturate(15%) hue-rotate(212deg) brightness(104%) contrast(104%);
+  filter: invert(100%) sepia(96%) saturate(15%) hue-rotate(212deg)
+    brightness(104%) contrast(104%);
 }
 
 .card-img-top {
@@ -156,7 +157,8 @@ h2 {
   max-width: 600px;
 }
 
-a, a:hover {
+a,
+a:hover {
   font-weight: 500;
   color: var(--newblue);
 }
@@ -252,7 +254,9 @@ a, a:hover {
   --color: var(--green);
 }
 
-#error, #loading, #succeeded {
+#error,
+#loading,
+#succeeded {
   margin-top: 100px;
   background-color: white;
   max-width: 720px;
