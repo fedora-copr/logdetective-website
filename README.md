@@ -7,7 +7,6 @@ https://log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.ope
 
 ![Screenshot](screenshot.png)
 
-
 ## Development
 
 Easily run on your machine:
@@ -20,7 +19,6 @@ See README files for frontend and backend:
 
 - [frontend](frontend/README.md)
 - [backend](backend/README.md)
-
 
 ## Deployment
 
