@@ -9,7 +9,6 @@ manually:
 dnf install npm
 ```
 
-
 ## Development
 
 ```
