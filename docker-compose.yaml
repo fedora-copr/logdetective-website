@@ -2,7 +2,8 @@ version: "3"
 services:
   backend:
     build:
-      context: docker/backend
+      context: .
+      dockerfile: docker/backend/Dockerfile
     hostname: backend
     working_dir: /opt/log-detective-website/backend
     command: "uvicorn api:app --host 0.0.0.0 --port 5020"
@@ -22,7 +23,8 @@ services:
   # and deploy it.
   frontend:
     build:
-      context: docker/frontend
+      context: .
+      dockerfile: docker/frontend/Dockerfile
     hostname: frontend
     working_dir: /opt/log-detective-website/frontend
     command: "npx shadow-cljs watch app"
