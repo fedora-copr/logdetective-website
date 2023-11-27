@@ -20,6 +20,11 @@ RUN dnf -y update && \
                    java \
     && dnf clean all
 
+# We cannot use volumes to bindmount code from the host during the build phase.
+# We need to copy them.
+COPY ./ /src/code/
+
+WORKDIR /src/code/frontend
 RUN npm install
 RUN npm install -g shadow-cljs
 
