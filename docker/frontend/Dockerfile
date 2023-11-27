@@ -28,9 +28,6 @@ WORKDIR /src/code/frontend
 RUN npm install
 RUN npm install -g shadow-cljs
 
-# TODO First run is slow because of downloading dependencies
-# Copy initial sources to the image and download dependencies during build phase
-
 # Unintuitive command but it downloads all ClojureScript dependencies
 # https://github.com/thheller/shadow-cljs/issues/362
-# RUN npx shadow-cljs classpath
+RUN npx shadow-cljs classpath
