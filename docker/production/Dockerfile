@@ -49,4 +49,4 @@ RUN npx shadow-cljs release app
 # https://www.uvicorn.org/deployment/
 WORKDIR /src/backend
 ENV PYTHONPATH="${PYTHONPATH}:/src"
-CMD gunicorn -k uvicorn.workers.UvicornWorker api:app -b 0.0.0.0:80
+CMD gunicorn -k uvicorn.workers.UvicornWorker api:app -b 0.0.0.0:8080
