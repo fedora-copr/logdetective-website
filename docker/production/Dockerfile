@@ -22,18 +22,7 @@ RUN dnf -y update && \
     # Frontend
     && dnf -y install \
                    npm \
-                   java \
-    # Backend
-    && dnf -y install \
-                   python3-fastapi \
-                   python3-uvicorn \
-                   python3-gunicorn \
-                   python3-jinja2 \
-                   python3-requests \
-                   python3-koji \
-                   python3-copr \
-                   koji \
-    && dnf clean all
+                   java
 
 
 RUN git clone https://github.com/fedora-copr/log-detective-website.git /src
@@ -44,9 +33,28 @@ RUN npm install
 RUN npm install -g shadow-cljs
 RUN npx shadow-cljs release app
 
+FROM registry.fedoraproject.org/fedora:38
+MAINTAINER copr-devel@lists.fedorahosted.org
+
+ENV FEEDBACK_DIR=/persistent/results
+ENV ENV=production
+
+RUN dnf -y install python3-fastapi \
+                   python3-uvicorn \
+                   python3-gunicorn \
+                   python3-jinja2 \
+                   python3-requests \
+                   python3-koji \
+                   python3-copr \
+                   koji \
+    && dnf clean all \
+    && mkdir -p /src/{frontend,backend}
+COPY --from=0 /src/frontend/public /src/frontend/public
+COPY --from=0 /src/backend /src/backend
 
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
 WORKDIR /src/backend
 ENV PYTHONPATH="${PYTHONPATH}:/src"
-CMD gunicorn -k uvicorn.workers.UvicornWorker api:app -b 0.0.0.0:8080
+
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "api:app", "-b", "0.0.0.0:8080"]
