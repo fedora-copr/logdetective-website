@@ -1,0 +1,21 @@
+{
+    "arch": "x86_64",
+    "awaited": false,
+    "channel_id": 1,
+    "completion_time": "2024-03-08 12:13:43.939540+00:00",
+    "completion_ts": 1709900023.93954,
+    "create_time": "2024-03-08 12:11:46.687703+00:00",
+    "create_ts": 1709899906.687703,
+    "host_id": 386,
+    "id": 114657791,
+    "label": "x86_64",
+    "method": "buildArch",
+    "owner": 5159,
+    "parent": 114657579,
+    "priority": 24,
+    "start_time": "2024-03-08 12:12:00.182445+00:00",
+    "start_ts": 1709899920.182445,
+    "state": 5,
+    "waiting": null,
+    "weight": 1.6014493647916668
+}

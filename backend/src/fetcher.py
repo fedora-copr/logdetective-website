@@ -15,10 +15,10 @@ import koji
 import requests
 from fastapi import HTTPException
 
-from backend.constants import COPR_RESULT_TEMPLATE
-from backend.data import LOG_OUTPUT
-from backend.exceptions import FetchError
-from backend.spells import get_temporary_dir
+from src.constants import COPR_RESULT_TEMPLATE
+from src.data import LOG_OUTPUT
+from src.exceptions import FetchError
+from src.spells import get_temporary_dir
 
 
 def handle_errors(func):

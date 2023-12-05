@@ -5,9 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from itertools import chain
 
-from backend.constants import FEEDBACK_DIR, ProvidersEnum
-from backend.exceptions import NoDataFound
-from backend.schema import FeedbackSchema
+from src.constants import FEEDBACK_DIR, ProvidersEnum
+from src.exceptions import NoDataFound
+from src.schema import FeedbackSchema
 
 
 class Storator3000:

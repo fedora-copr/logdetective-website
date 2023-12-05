@@ -1,0 +1,23 @@
+name: Test backend
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt-get install make
+      - name: Test backend inside container
+        run: |
+          make test-backend-in-container
+        shell: bash

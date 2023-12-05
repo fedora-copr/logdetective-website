@@ -1,0 +1,21 @@
+{
+    "arch": "noarch",
+    "awaited": false,
+    "channel_id": 2,
+    "completion_time": "2024-03-07 13:01:15.937921+00:00",
+    "completion_ts": 1709816475.937921,
+    "create_time": "2024-03-07 12:59:02.042404+00:00",
+    "create_ts": 1709816342.042404,
+    "host_id": 557,
+    "id": 114607543,
+    "label": "srpm",
+    "method": "buildSRPMFromSCM",
+    "owner": 184,
+    "parent": 114607514,
+    "priority": 19,
+    "start_time": "2024-03-07 12:59:54.681546+00:00",
+    "start_ts": 1709816394.681546,
+    "state": 5,
+    "waiting": null,
+    "weight": 1.0
+}

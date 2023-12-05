@@ -5,8 +5,8 @@ services:
       context: .
       dockerfile: docker/backend/Dockerfile
     hostname: backend
-    working_dir: /opt/log-detective-website/backend
-    command: "uvicorn api:app --host 0.0.0.0 --port 5020 --reload"
+    working_dir: /opt/log-detective-website/backend/src
+    command: "uvicorn api:app --host 0.0.0.0 --port 5020"
     stdin_open: true
     tty: true
     ports:
@@ -18,8 +18,8 @@ services:
       - "files/env"
     environment:
       - ENV=devel
-      - PYTHONPATH=/opt/log-detective-website
-
+      - FEEDBACK_DIR=/persistent/results
+      - PYTHONPATH=/opt/log-detective-website/backend
   # The frontend container is only a quality of life for development.
   # For production, we will simply compile the ClojureScript into JavaScript
   # and deploy it.
