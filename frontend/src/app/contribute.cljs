@@ -177,7 +177,10 @@
                 :on-change #(on-how-to-fix-textarea-change (.-target %))}]]
 
    [:div {}
-    [:label {:class "form-label"} "Ready to submit the results?"]
+    [:label {:class "form-label"} "Ready to submit the results? "
+                                  "By submitting this form, you agree that your input "
+                                  "can be used for teaching AI and that the data are "
+                                  "available under " [:a {:href "https://cdla.dev/permissive-2-0/"} "CDLA-Permissive-2.0"] " license."]
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"
