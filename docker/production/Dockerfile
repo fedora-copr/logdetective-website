@@ -62,7 +62,7 @@ COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extracti
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
 WORKDIR /src/backend
-ENV PYTHONPATH="${PYTHONPATH}:/src"
+ENV PYTHONPATH="${PYTHONPATH}:/src/backend"
 
 # We should put this into a config file
 CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/log-detective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080"]

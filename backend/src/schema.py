@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import AnyUrl, BaseModel, root_validator
 
-from backend.constants import BuildIdTitleEnum
+from src.constants import BuildIdTitleEnum
 
 
 def _check_spec_container_are_exclusively_mutual(_, values):

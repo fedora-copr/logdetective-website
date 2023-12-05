@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
-from backend.constants import (
+from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
     PACKIT_BUILD_URL,
@@ -23,7 +23,7 @@ from backend.constants import (
     BuildIdTitleEnum,
     ProvidersEnum,
 )
-from backend.fetcher import (
+from src.fetcher import (
     ContainerProvider,
     CoprProvider,
     KojiProvider,
@@ -31,20 +31,21 @@ from backend.fetcher import (
     URLProvider,
     fetch_debug_logs,
 )
-from backend.schema import (
+from src.schema import (
     ContributeResponseSchema,
     FeedbackInputSchema,
     FeedbackSchema,
     schema_inp_to_out,
 )
-from backend.spells import make_tar, get_temporary_dir
-from backend.store import Storator3000
+from src.spells import make_tar, get_temporary_dir
+from src.store import Storator3000
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-template_dir = "../frontend/public"
+# TODO: use absolute path perhaps?
+template_dir = "../../frontend/public"
 app.mount("/static", StaticFiles(directory=template_dir), name="static")
 # blame scarlette for not being able to mount directories recursively
 for root, directories, _ in os.walk(template_dir):

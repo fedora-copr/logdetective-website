@@ -1,0 +1,21 @@
+{
+    "arch": "ppc64le",
+    "awaited": false,
+    "channel_id": 1,
+    "completion_time": "2024-03-08 12:00:00.866999+00:00",
+    "completion_ts": 1709899200.866999,
+    "create_time": "2024-03-08 11:55:04.362951+00:00",
+    "create_ts": 1709898904.362951,
+    "host_id": 424,
+    "id": 114656851,
+    "label": "noarch",
+    "method": "buildArch",
+    "owner": 5159,
+    "parent": 114656535,
+    "priority": 24,
+    "start_time": "2024-03-08 11:55:51.587869+00:00",
+    "start_ts": 1709898951.587869,
+    "state": 5,
+    "waiting": null,
+    "weight": 1.556425605
+}
