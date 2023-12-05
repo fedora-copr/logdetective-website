@@ -24,7 +24,7 @@
                       "#koji"   [(get @input-values :koji-build-id)
                                  (get @input-values :koji-arch)]
                       "#url"    [(js/btoa (get @input-values :url))])
-        url (str/join "/" (concat ["/contribute" source] params))]
+        url (str/join "/" (concat ["/contribute" source] (map str/trim params)))]
     (when (empty? @input-errors)
       (set! (.-href (.-location js/window)) url))))
 
