@@ -20,6 +20,7 @@ from backend.constants import (
     ProvidersEnum,
 )
 from backend.fetcher import (
+    ContainerProvider,
     CoprProvider,
     KojiProvider,
     PackitProvider,
@@ -58,7 +59,7 @@ template_response = templates.TemplateResponse
 @app.exception_handler(RequestValidationError)
 def _custom_http_exception_handler(
     request: Request, exc: HTTPException | RequestValidationError | Exception
-):
+) -> JSONResponse:
     if isinstance(exc, HTTPException):
         status_code = exc.status_code
     elif isinstance(exc, RequestValidationError):
@@ -103,7 +104,9 @@ def review(request: Request):
 
 @app.get("/frontend/contribute/copr/{build_id}/{chroot}")
 @app.get("/frontend/contribute/koji/{build_id}/{chroot}")
-def get_build_logs_with_chroot(request: Request, build_id: int, chroot: str):
+def get_build_logs_with_chroot(
+    request: Request, build_id: int, chroot: str
+) -> ContributeResponseSchema:
     provider_name = request.url.path.lstrip("/").split("/")[2]
     prov_kls = CoprProvider if provider_name == ProvidersEnum.copr else KojiProvider
     provider = prov_kls(build_id, chroot)
@@ -148,6 +151,18 @@ def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
     )
 
 
+@app.get("/frontend/contribute/container/{base64}")
+def get_logs_from_container(base64: str) -> ContributeResponseSchema:
+    build_url = b64decode(base64).decode("utf-8")
+    provider = ContainerProvider(build_url)
+    return ContributeResponseSchema(
+        build_id=None,
+        build_id_title=BuildIdTitleEnum.container,
+        build_url=build_url,
+        logs=provider.fetch_logs(),
+    )
+
+
 # TODO: no response checking here, it will be deleted anyway
 @app.get("/frontend/contribute/debug")
 def get_debug_build_logs():
@@ -176,7 +191,12 @@ def _store_data_for_providers(
     feedback_input: FeedbackInputSchema, provider: ProvidersEnum, id_: int | str, *args
 ) -> OkResponse:
     storator = Storator3000(provider, id_)
-    result_to_store = schema_inp_to_out(feedback_input)
+
+    if provider == ProvidersEnum.container:
+        result_to_store = schema_inp_to_out(feedback_input, is_with_spec=False)
+    else:
+        result_to_store = schema_inp_to_out(feedback_input)
+
     storator.store(result_to_store)
     if len(args) > 0:
         rest = f"/{args[0]}"
@@ -213,6 +233,13 @@ def contribute_review_packit(
 @app.post("/frontend/contribute/url/{url}")
 def contribute_review_url(feedback_input: FeedbackInputSchema, url: str) -> OkResponse:
     return _store_data_for_providers(feedback_input, ProvidersEnum.url, url)
+
+
+@app.post("/frontend/contribute/container/{url}")
+def contribute_review_container_logs(
+    feedback_input: FeedbackInputSchema, url: str
+) -> OkResponse:
+    return _store_data_for_providers(feedback_input, ProvidersEnum.container, url)
 
 
 @app.get("/frontend/review")

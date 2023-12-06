@@ -30,7 +30,7 @@ class Storator3000:
         timestamp_seconds = int(datetime.now().timestamp())
         file_name = self.build_dir / f"{timestamp_seconds}.json"
         with open(file_name, "w") as fp:
-            json.dump(feedback_result.dict(), fp, indent=4)
+            json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
 
     @staticmethod
     def _get_random_dir_from(dir_: Path) -> Path:

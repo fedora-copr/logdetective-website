@@ -13,6 +13,7 @@ class ProvidersEnum(StrEnum):
     copr = "copr"
     koji = "koji"
     url = "url"
+    container = "container"
     debug = "debug"
 
 
@@ -21,4 +22,5 @@ class BuildIdTitleEnum(StrEnum):
     koji = "Koji build"
     packit = "Packit build"
     url = "URL"
+    container = "Container log"
     debug = "Debug output"

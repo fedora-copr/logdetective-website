@@ -61,6 +61,12 @@ class Provider(ABC):
         """
         ...
 
+
+class RPMProvider(Provider):
+    """
+    Is able to provide spec file on top of the logs.
+    """
+
     @abstractmethod
     def fetch_spec_file(self) -> dict[str, str]:
         """
@@ -72,7 +78,7 @@ class Provider(ABC):
         ...
 
 
-class CoprProvider(Provider):
+class CoprProvider(RPMProvider):
     copr_url = "https://copr.fedorainfracloud.org"
 
     def __init__(self, build_id: int, chroot: str) -> None:
@@ -130,7 +136,7 @@ class CoprProvider(Provider):
         return {"name": spec_name, "content": response.text}
 
 
-class KojiProvider(Provider):
+class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     logs_to_look_for = ["build.log", "root.log", "mock_output.log"]
 
@@ -269,7 +275,7 @@ class KojiProvider(Provider):
         return spec_dict
 
 
-class PackitProvider(Provider):
+class PackitProvider(RPMProvider):
     """
     The `packit_id` is hard to get. Open https://prod.packit.dev/api
 
@@ -317,7 +323,7 @@ class PackitProvider(Provider):
         return self._get_correct_provider().fetch_spec_file()
 
 
-class URLProvider(Provider):
+class URLProvider(RPMProvider):
     def __init__(self, url: str) -> None:
         self.url = url
 
@@ -343,6 +349,31 @@ class URLProvider(Provider):
         # FIXME: Please implement me!
         #  raise NotImplementedError("Please implement me!")
         return {"name": "fake_spec_name.spec", "content": "fake spec file"}
+
+
+class ContainerProvider(Provider):
+    """
+    Fetching container logs only from URL for now
+    """
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+
+    @handle_errors
+    def fetch_logs(self) -> list[dict[str, str]]:
+        # TODO: c&p from url provider for now, integrate with containers better later on
+        response = requests.get(self.url)
+        response.raise_for_status()
+        if response.headers["Content-Type"] != "text/plain":
+            raise FetchError(
+                "The URL must point to a raw text file. " f"This URL isn't: {self.url}"
+            )
+        return [
+            {
+                "name": "Container log",
+                "content": response.text,
+            }
+        ]
 
 
 def fetch_debug_logs():
