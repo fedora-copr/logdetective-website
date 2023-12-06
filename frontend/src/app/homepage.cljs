@@ -18,12 +18,13 @@
   (validate current-hash-atom input-values input-errors)
   (let [source (str/replace @current-hash-atom "#" "")
         params (match @current-hash-atom
-                      "#copr"   [(get @input-values :copr-build-id)
-                                 (get @input-values :copr-chroot)]
-                      "#packit" [(get @input-values :packit-id)]
-                      "#koji"   [(get @input-values :koji-build-id)
-                                 (get @input-values :koji-arch)]
-                      "#url"    [(js/btoa (get @input-values :url))])
+                      "#copr"      [(get @input-values :copr-build-id)
+                                    (get @input-values :copr-chroot)]
+                      "#packit"    [(get @input-values :packit-id)]
+                      "#koji"      [(get @input-values :koji-build-id)
+                                    (get @input-values :koji-arch)]
+                      "#url"       [(js/btoa (get @input-values :url))]
+                      "#container" [(js/btoa (get @input-values :url))])
         url (str/join "/" (concat ["/contribute" source] (map str/trim params)))]
     (when (empty? @input-errors)
       (set! (.-href (.-location js/window)) url))))
@@ -51,7 +52,8 @@
      (render-navigation-item "Copr" "#copr")
      (render-navigation-item "Koji" "#koji")
      (render-navigation-item "Packit" "#packit")
-     (render-navigation-item "URL" "#url")]])
+     (render-navigation-item "URL" "#url")
+     (render-navigation-item "Container" "#container")]])
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
@@ -122,19 +124,29 @@
   (render-card
    nil
    nil
-   "Submit logs from URL"
+   "Submit RPM logs from URL"
    "img/url-icon.png"
    (str/join "" ["Paste an URL to a log file, or a build in some build system. "
                  "If recognized, we will fetch and display all relevant logs."])
    [(input "url" "https://paste.centos.org/view/raw/5ba21754")]))
 
+(defn render-container-card []
+  (render-card
+   nil
+   nil
+   "Submit container logs from URL"
+   "img/url-icon.png"
+   "Paste an URL to a raw container log file."
+   [(input "url" "https://paste.centos.org/view/raw/5ba21754")]))
+
 (defn render-cards []
   (match @current-hash-atom
-         "#copr"   (render-copr-card)
-         "#packit" (render-packit-card)
-         "#koji"   (render-koji-card)
-         "#url"    (render-url-card)
-         :else     (render-copr-card)))
+         "#copr"      (render-copr-card)
+         "#packit"    (render-packit-card)
+         "#koji"      (render-koji-card)
+         "#url"       (render-url-card)
+         "#container" (render-container-card)
+         :else        (render-copr-card)))
 
 (defn homepage []
   (reset! current-hash-atom

@@ -23,6 +23,7 @@
      snippets
      fas
      spec
+     container
      files]]))
 
 
@@ -53,7 +54,8 @@
                    ;; We can't use @files here because they contain highlight
                    ;; spans, HTML escaping, etc.
                    (:logs @backend-data))
-              :spec_file @spec}]
+              :spec_file @spec
+              :container_file @container}]
     (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
