@@ -295,17 +295,19 @@ class PackitProvider(RPMProvider):
         self.koji_url = f"{self.packit_api_url}/koji-builds/{self.packit_id}"
 
     def _get_correct_provider(self) -> CoprProvider | KojiProvider:
-        build = requests.get(self.copr_url).json()
-        if "error" not in build:
+        resp = requests.get(self.copr_url)
+        if resp.ok:
+            build = resp.json()
             return CoprProvider(build["build_id"], build["chroot"])
 
-        build = requests.get(self.koji_url).json()
-        task_id = build["build_id"]
-        if "error" in build:
+        resp = requests.get(self.koji_url)
+        if not resp.ok:
             raise FetchError(
                 f"Couldn't find any build logs for Packit ID #{self.packit_id}."
             )
 
+        build = resp.json()
+        task_id = build["task_id"]
         koji_api_url = f"{KojiProvider.koji_url}/kojihub"
         koji_client = koji.ClientSession(koji_api_url)
         arch = koji_client.getTaskInfo(task_id, strict=True).get("arch")
@@ -333,7 +335,7 @@ class URLProvider(RPMProvider):
         #  also this will allow us to fetch spec files
         response = requests.get(self.url)
         response.raise_for_status()
-        if response.headers["Content-Type"] != "text/plain":
+        if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
                 "The URL must point to a raw text file. " f"This URL isn't: {self.url}"
             )
@@ -364,7 +366,7 @@ class ContainerProvider(Provider):
         # TODO: c&p from url provider for now, integrate with containers better later on
         response = requests.get(self.url)
         response.raise_for_status()
-        if response.headers["Content-Type"] != "text/plain":
+        if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
                 "The URL must point to a raw text file. " f"This URL isn't: {self.url}"
             )
