@@ -86,7 +86,7 @@ class CoprProvider(Provider):
 
         if self.chroot == "srpm-builds":
             build = self.client.build_proxy.get(self.build_id)
-            baseurl = os.path.dirname(build.source_package["url"])
+            baseurl = os.path.dirname(build.source_package.get("url", ""))
         else:
             build_chroot = self.client.build_chroot_proxy.get(
                 self.build_id, self.chroot
