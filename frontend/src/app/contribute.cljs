@@ -28,6 +28,7 @@
      snippets
      files
      spec
+     container
      error-description
      error-title
      backend-data
@@ -64,6 +65,7 @@
                      (reset! build-id-title (:build_id_title data))
                      (reset! build-url (:build_url data))
                      (reset! spec (:spec_file data))
+                     (reset! container (:container_file data))
 
                      (reset!
                       files
@@ -85,7 +87,7 @@
    [(instructions-item
      (not-empty @files)
 
-     (if (= @build-id-title "URL")
+     (if (contains? #{"URL" "Container log"} @build-id-title)
        [:<>
         (str "We fetched logs from ")
         [:a {:href @build-url} "this URL"]]

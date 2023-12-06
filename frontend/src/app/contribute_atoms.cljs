@@ -7,6 +7,7 @@
 (def snippets (r/atom []))
 (def files (r/atom nil))
 (def spec (r/atom nil))
+(def container (r/atom nil))
 
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))

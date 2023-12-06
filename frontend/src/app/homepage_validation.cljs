@@ -44,4 +44,9 @@
          "#url"
          (do
            (when (empty? (get @input-values :url))
+             (swap! input-errors conj "url")))
+
+         "#container"
+         (do
+           (when (empty? (get @input-values :url))
              (swap! input-errors conj "url")))))
