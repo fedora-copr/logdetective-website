@@ -83,3 +83,33 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
 status: {}
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: log-detective.com
+  namespace: communishift-log-detective
+  labels: {}
+spec:
+  to:
+    kind: Service
+    name: log-detective-website
+  tls: null
+  host: log-detective.com
+  port:
+    targetPort: log-detective-website
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: logdetective.com
+  namespace: communishift-log-detective
+  labels: {}
+spec:
+  to:
+    kind: Service
+    name: log-detective-website
+  tls: null
+  host: logdetective.com
+  port:
+    targetPort: log-detective-website

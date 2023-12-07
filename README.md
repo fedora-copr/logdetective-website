@@ -1,7 +1,6 @@
 # Log Detective website
 
-We don't have a hostname yet
-https://log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.openshiftapps.com/
+Production instance: http://log-detective.com
 
 ## Screenshot
 
