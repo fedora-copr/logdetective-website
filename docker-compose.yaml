@@ -27,7 +27,11 @@ services:
       dockerfile: docker/frontend/Dockerfile
     hostname: frontend
     working_dir: /opt/log-detective-website/frontend
-    command: "npx shadow-cljs watch app"
+    command: >
+      bash -c "
+        npm install &&
+        npx shadow-cljs watch app
+      "
     stdin_open: true
     tty: true
     ports:
