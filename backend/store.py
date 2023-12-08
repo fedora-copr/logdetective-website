@@ -3,11 +3,11 @@ import json
 import random
 from datetime import datetime
 from pathlib import Path
+from itertools import chain
 
 from backend.constants import FEEDBACK_DIR, ProvidersEnum
 from backend.exceptions import NoDataFound
 from backend.schema import FeedbackSchema
-from itertools import chain
 
 
 class Storator3000:
@@ -34,9 +34,7 @@ class Storator3000:
             json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
 
     @classmethod
-    def get_random(cls) -> Path:
-        # TODO: instead of random, we should go from oldest to newest?
-        #  and deprioritize those with reviews
+    def get_logs(cls) -> list:
         if not os.path.exists(FEEDBACK_DIR):
             raise NoDataFound(f"Directory doesn't exist: {FEEDBACK_DIR}")
 
@@ -45,5 +43,29 @@ class Storator3000:
                         for file in subdir[2]
                     ]
                 for subdir in os.walk(FEEDBACK_DIR)]
+        # MyPy has an issue with this usage of chain.
+        all_files = list(chain.from_iterable(all_files))  # type: ignore
 
-        return Path(random.choice(list(chain.from_iterable(all_files))))
+        if not all_files:
+            raise NoDataFound(f"Results directory {FEEDBACK_DIR} is empty")
+        return all_files
+
+    @classmethod
+    def get_latest(cls) -> Path:
+        """Sort stored logs by timestamp and return the newest.
+        """
+        files = cls.get_logs()
+        files = sorted(
+            files,
+            key=lambda x: x.split('/')[-1],
+            reverse=True)
+
+        return Path(files[0])
+
+    @classmethod
+    def get_random(cls) -> Path:
+        # TODO: instead of random, we should go from oldest to newest?
+        #  and deprioritize those with reviews
+        files = cls.get_logs()
+
+        return Path(random.choice(files))
