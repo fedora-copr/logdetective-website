@@ -7,6 +7,7 @@ from pathlib import Path
 from backend.constants import FEEDBACK_DIR, ProvidersEnum
 from backend.exceptions import NoDataFound
 from backend.schema import FeedbackSchema
+from itertools import chain
 
 
 class Storator3000:
@@ -32,26 +33,17 @@ class Storator3000:
         with open(file_name, "w") as fp:
             json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
 
-    @staticmethod
-    def _get_random_dir_from(dir_: Path) -> Path:
-        iter_dir = [d for d in dir_.iterdir() if d.is_dir()]
-        if not iter_dir:
-            raise NoDataFound("No data found to get random results")
-
-        return random.choice(iter_dir)
-
     @classmethod
     def get_random(cls) -> Path:
         # TODO: instead of random, we should go from oldest to newest?
         #  and deprioritize those with reviews
         if not os.path.exists(FEEDBACK_DIR):
-            raise NoDataFound("Directory doesn't exist: {}".format(FEEDBACK_DIR))
+            raise NoDataFound(f"Directory doesn't exist: {FEEDBACK_DIR}")
 
-        random_day_dir = cls._get_random_dir_from(Path(FEEDBACK_DIR))
-        random_provider_dir = cls._get_random_dir_from(random_day_dir)
-        random_build_dir = cls._get_random_dir_from(random_provider_dir)
-        random_contribute = [f for f in random_build_dir.iterdir() if f.is_file()]
-        if not random_contribute:
-            raise NoDataFound("No contribute data found")
+        all_files = [[
+                        os.path.join(subdir[0], file)
+                        for file in subdir[2]
+                    ]
+                for subdir in os.walk(FEEDBACK_DIR)]
 
-        return random.choice(random_contribute)
+        return Path(random.choice(list(chain.from_iterable(all_files))))
