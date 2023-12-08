@@ -242,12 +242,24 @@ def contribute_review_container_logs(
     return _store_data_for_providers(feedback_input, ProvidersEnum.container, url)
 
 
-@app.get("/frontend/review")
-def frontend_review() -> FeedbackSchema:
+@app.get("/frontend/review/random")
+def frontend_review_random() -> FeedbackSchema:
     if os.environ.get("ENV") == "production":
         raise NotImplementedError("Reviewing is not ready yet")
 
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
+        return FeedbackSchema(**content)
+
+
+@app.get("/frontend/review/latest")
+def frontend_review_latest() -> FeedbackSchema:
+    if os.environ.get("ENV") == "production":
+        raise NotImplementedError("Reviewing is not ready yet")
+
+    feedback_file = Storator3000.get_latest()
+
+    with open(feedback_file) as file:
+        content = json.loads(file.read())
         return FeedbackSchema(**content)
