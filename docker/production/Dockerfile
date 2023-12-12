@@ -57,4 +57,5 @@ COPY --from=0 /src/backend /src/backend
 WORKDIR /src/backend
 ENV PYTHONPATH="${PYTHONPATH}:/src"
 
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "api:app", "-b", "0.0.0.0:8080"]
+# We should put this into a config file
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/log-detective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080"]

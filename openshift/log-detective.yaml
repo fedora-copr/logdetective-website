@@ -19,6 +19,7 @@ spec:
       containers:
         - name: log-detective-website
           image: quay.io/jkadlcik/log-detective:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -36,6 +37,7 @@ spec:
   strategy:
     type: Recreate
 ---
+# communityshift allows only a single PVC :(((((
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -64,52 +66,22 @@ spec:
   selector:
     component: log-detective-website
 ---
+# Route stuff stolen from Packit:
+# https://github.com/packit/deployment/blob/main/openshift/packit-service.yml.j2#L147
+# Gunicorn can't do 2 domains at the same time, we need nginx for that:
+#   https://github.com/fedora-copr/log-detective-website/issues/61
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: log-detective-website
   namespace: communishift-log-detective
 spec:
-  host: >-
-    log-detective-website-communishift-log-detective.apps.fedora.cj14.p1.openshiftapps.com
-  to:
-    kind: Service
-    name: log-detective-website
-    weight: 100
-  port:
-    targetPort: 8080
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
-  wildcardPolicy: None
-status: {}
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: log-detective.com
-  namespace: communishift-log-detective
-  labels: {}
-spec:
-  to:
-    kind: Service
-    name: log-detective-website
-  tls: null
   host: log-detective.com
-  port:
-    targetPort: log-detective-website
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: logdetective.com
-  namespace: communishift-log-detective
-  labels: {}
-spec:
   to:
     kind: Service
     name: log-detective-website
-  tls: null
-  host: logdetective.com
   port:
     targetPort: log-detective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None
