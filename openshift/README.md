@@ -80,3 +80,56 @@ oc rsh deploy/log-detective-website
 [quay-repo]: https://quay.io/repository/jkadlcik/log-detective
 [group1]: https://accounts.fedoraproject.org/group/communishift/
 [group2]: https://accounts.fedoraproject.org/group/communishift-log-detective/
+
+
+## TLS certificates
+
+This is a copy-pasta of Packit's process: https://github.com/packit/deployment/blob/main/docs/deployment/tls-certs.md
+Praise @jpopelka
+
+We will use DNS TXT entries to verify we own the domain. Ping @TomasTomecek to get access to the domain.
+
+Locally:
+```
+$ dnf install certbot
+```
+
+Run certbot in the root of this git repo.
+```
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d log-detective.com -d logdetective.com
+```
+
+```
+Please deploy a DNS TXT record under the name:
+```
+
+Set those 2 TXT DNS entries for log-detective.com and logdetective.com
+
+Wait for those 2 entries to be up:
+```
+$ watch -d nslookup -q=TXT _acme-challenge.logdetective.com
+```
+
+Alternatively check the record using porkbun's DNS server:
+```
+$ dig -t txt _acme-challenge.logdetective.com. @curitiba.ns.porkbun.com.
+```
+
+You need to run the certbot command twice for both certificates.
+
+Once verified, you should delete those TXT DNS records.
+
+All certificate stuff is in gitignored cert/ folder.
+
+Copy the content to the running log-detective:
+```
+$ oc cp cert/ log-detective-temp-pod:/persistent
+```
+
+Connect to the pod and rename cert/ to letsencrypt/:
+```
+$ oc rsh deployment/log-detective-website
+$ mv /persistent/{cert,letsencrypt}
+```
+
+🎉🎉🎉
