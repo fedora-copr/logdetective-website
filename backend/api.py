@@ -2,11 +2,14 @@ import json
 import logging
 import os
 from base64 import b64decode
+from datetime import datetime
 from http import HTTPStatus
+from pathlib import Path
+from typing import Iterator
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -33,6 +36,7 @@ from backend.schema import (
     FeedbackSchema,
     schema_inp_to_out,
 )
+from backend.spells import make_tar, get_temporary_dir
 from backend.store import Storator3000
 
 logger = logging.getLogger(__name__)
@@ -263,3 +267,35 @@ def frontend_review_latest() -> FeedbackSchema:
     with open(feedback_file) as file:
         content = json.loads(file.read())
         return FeedbackSchema(**content)
+
+
+def _make_tpm_tar_file_from_results() -> Iterator[Path]:
+    results = os.environ.get("FEEDBACK_DIR")
+    if results is None:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
+
+    with get_temporary_dir() as tmp_dir:
+        tar_path = make_tar(
+            f"results-{int(datetime.now().timestamp())}.tar.gz", Path(results), tmp_dir
+        )
+        try:
+            yield tar_path
+        finally:
+            os.unlink(tar_path)
+
+
+@app.get("/download", response_class=StreamingResponse)
+def download_results(_tar_path=Depends(_make_tpm_tar_file_from_results)):
+    def iter_large_file(file_name: Path):
+        with open(file_name, mode="rb") as file:
+            yield from file
+
+    return StreamingResponse(
+        iter_large_file(_tar_path),
+        media_type="application/x-tar",
+        # TODO: https://github.com/fedora-copr/log-detective-website/issues/63
+        headers={
+            "Content-Disposition": f"attachment; filename={_tar_path.name}",  # noqa: E702
+            "Content-Length": str(_tar_path.stat().st_size),
+        },
+    )
