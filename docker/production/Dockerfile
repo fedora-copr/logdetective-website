@@ -1,24 +1,11 @@
 FROM registry.fedoraproject.org/fedora:38
 MAINTAINER copr-devel@lists.fedorahosted.org
 
-ENV FEEDBACK_DIR=/persistent/results
 ENV ENV=production
 
 RUN dnf -y update && \
     # Base packages
-    dnf -y install htop \
-                   make \
-                   wget \
-                   net-tools \
-                   iputils \
-                   vim \
-                   mlocate \
-                   jq \
-                   fpaste \
-                   git \
-                   sudo \
-                   python3-ipdb \
-                   findutils \
+    dnf -y install git \
     # Frontend
     && dnf -y install \
                    npm \
@@ -36,8 +23,11 @@ RUN npx shadow-cljs release app
 FROM registry.fedoraproject.org/fedora:38
 MAINTAINER copr-devel@lists.fedorahosted.org
 
-ENV FEEDBACK_DIR=/persistent/results
 ENV ENV=production
+
+# TODO: how to get envs from env file in openshift?
+ENV STORAGE_DIR=/persistent
+ENV FEEDBACK_DIR=/persistent/results
 
 RUN dnf -y install python3-fastapi \
                    python3-uvicorn \
@@ -47,8 +37,22 @@ RUN dnf -y install python3-fastapi \
                    python3-koji \
                    python3-copr \
                    koji \
+                   htop \
+                   btop \
+                   make \
+                   wget \
+                   net-tools \
+                   iputils \
+                   vim \
+                   mlocate \
+                   jq \
+                   fpaste \
+                   git \
+                   python3-ipdb \
+                   findutils \
     && dnf clean all \
     && mkdir -p /src/{frontend,backend}
+
 COPY --from=0 /src/frontend/public /src/frontend/public
 COPY --from=0 /src/backend /src/backend
 

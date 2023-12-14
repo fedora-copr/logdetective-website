@@ -14,10 +14,12 @@ services:
     volumes:
       - .:/opt/log-detective-website:z
       - persistent:/persistent
+    env_file:
+      - "files/env"
     environment:
       - ENV=devel
-      - FEEDBACK_DIR=/persistent/results
       - PYTHONPATH=/opt/log-detective-website
+
   # The frontend container is only a quality of life for development.
   # For production, we will simply compile the ClojureScript into JavaScript
   # and deploy it.
@@ -40,9 +42,10 @@ services:
       - 3333:3333
     volumes:
       - .:/opt/log-detective-website:z
+    env_file:
+      - "files/env"
     environment:
       - ENV=devel
-      - FEEDBACK_DIR=/persistent/results
 
 volumes:
   persistent:
