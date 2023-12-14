@@ -47,6 +47,24 @@ def handle_errors(func):
                 status_code=ex.response.status_code, detail=detail
             ) from ex
 
+        except subprocess.CalledProcessError as ex:
+            # When koji can't find the task.
+            if "No such task" in str(ex.stderr):
+                raise HTTPException(
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=ex.stderr.decode()
+                ) from ex
+
+            # Everything else
+            if os.environ.get("ENV") != "production":
+                raise HTTPException(
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                    detail=f"stdout: {ex.stdout} stderr: {ex.stderr}"
+                ) from ex
+
+            raise HTTPException(
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+                ) from ex
+
     return inner
 
 
@@ -180,7 +198,7 @@ class KojiProvider(RPMProvider):
             f"koji download-task --arch={self.arch} --skip=.rpm --logs"
             f" {self.build_or_task_id}"
         )
-        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
         logs = []
         for file in temp_dir.iterdir():
             file_parts = file.name.split(".")
@@ -226,7 +244,7 @@ class KojiProvider(RPMProvider):
     ) -> Optional[dict[str, str]]:
         # extract spec file from srpm
         cmd = f"rpm2archive -n < {str(srpm_path)} | tar xf - '*.spec'"
-        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
         fst_spec_file = next(temp_dir.glob("*.spec"), None)
         if fst_spec_file is None:
             return None
@@ -237,7 +255,7 @@ class KojiProvider(RPMProvider):
     def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
         with get_temporary_dir() as temp_dir:
             cmd = f"koji download-task {self.build_or_task_id}"
-            subprocess.run(cmd, shell=True, check=True, cwd=temp_dir)
+            subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
             srpm = next(temp_dir.glob("*.src.rpm"), None)
             if srpm is None:
                 return None
