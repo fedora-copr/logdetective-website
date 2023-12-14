@@ -3,7 +3,8 @@ services:
   website:
     build:
       context: docker/production
-    image: quay.io/jkadlcik/log-detective
+      dockerfile: Dockerfile
+    image: quay.io/log-detective/website
     hostname: log-detective
     stdin_open: true
     tty: true

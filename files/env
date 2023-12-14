@@ -1,0 +1,2 @@
+STORAGE_DIR=/persistent
+FEEDBACK_DIR=/persistent/results

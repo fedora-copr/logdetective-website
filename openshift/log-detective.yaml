@@ -18,7 +18,7 @@ spec:
             claimName: persistent
       containers:
         - name: log-detective-website
-          image: quay.io/jkadlcik/log-detective:latest
+          image: quay.io/log-detective/website:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
