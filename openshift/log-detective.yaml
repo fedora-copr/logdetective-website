@@ -84,4 +84,24 @@ spec:
     targetPort: log-detective-website
   tls:
     termination: passthrough
-    insecureEdgeTerminationPolicy: None
+    insecureEdgeTerminationPolicy: Redirect
+---
+# Route stuff stolen from Packit:
+# https://github.com/packit/deployment/blob/main/openshift/packit-service.yml.j2#L147
+# Gunicorn can't do 2 domains at the same time, we need nginx for that:
+#   https://github.com/fedora-copr/log-detective-website/issues/61
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: logdetective-website
+  namespace: communishift-log-detective
+spec:
+  host: logdetective.com
+  to:
+    kind: Service
+    name: log-detective-website
+  port:
+    targetPort: log-detective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect

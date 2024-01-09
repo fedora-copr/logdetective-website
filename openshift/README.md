@@ -111,6 +111,7 @@ Run certbot in the root of this git repo.
 $ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d log-detective.com -d logdetective.com
 ```
 
+We will create one certificate file that will contain data for both log-detective.com and logdetective.com.
 ```
 Please deploy a DNS TXT record under the name:
 ```
@@ -127,7 +128,13 @@ Alternatively check the record using porkbun's DNS server:
 $ dig -t txt _acme-challenge.logdetective.com. @curitiba.ns.porkbun.com.
 ```
 
-You need to run the certbot command twice for both certificates.
+You can verify the newly created cert with `openssl` CLI. Here we check that both domains are set as SAN:
+```
+$ openssl x509 -inform pem -noout -text -in 'cert/live/log-detective.com/fullchain.pem'
+...
+            X509v3 Subject Alternative Name:
+                DNS:log-detective.com, DNS:logdetective.com
+```
 
 Once verified, you should delete those TXT DNS records.
 
@@ -135,7 +142,7 @@ All certificate stuff is in gitignored cert/ folder.
 
 Copy the content to the running log-detective:
 ```
-$ oc cp cert/ log-detective-temp-pod:/persistent
+$ oc cp cert/ log-detective-website-$pod:/persistent
 ```
 
 Connect to the pod and rename cert/ to letsencrypt/:
