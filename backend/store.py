@@ -11,11 +11,10 @@ from backend.schema import FeedbackSchema
 
 
 class Storator3000:
-    store_to = Path(FEEDBACK_DIR) / str(datetime.now().date())
-
     def __init__(self, provider: ProvidersEnum, id_: int | str) -> None:
         self.provider = provider
         self.id_ = id_
+        self.store_to = Path(FEEDBACK_DIR) / str(datetime.now().date())
 
     @property
     def target_dir(self) -> Path:
