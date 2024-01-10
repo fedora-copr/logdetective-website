@@ -6,6 +6,7 @@ from functools import cached_property
 from http import HTTPStatus
 from pathlib import Path
 from typing import Optional
+from urllib.error import HTTPError
 
 import copr.v3
 import koji
@@ -157,6 +158,7 @@ class CoprProvider(RPMProvider):
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     logs_to_look_for = ["build.log", "root.log", "mock_output.log"]
+    koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
     def __init__(self, build_or_task_id: int, arch: str) -> None:
         self.build_or_task_id = build_or_task_id
@@ -171,7 +173,7 @@ class KojiProvider(RPMProvider):
         except koji.GenericError:
             return False
 
-    def _fetch_build_logs_from_koji_api(self) -> list[dict[str, str]]:
+    def _fetch_build_logs_from_build_id(self) -> list[dict[str, str]]:
         koji_logs = self.client.getBuildLogs(self.build_or_task_id)
         logs = []
         for log in koji_logs:
@@ -193,42 +195,86 @@ class KojiProvider(RPMProvider):
 
         return logs
 
-    def _fetch_task_logs_from_koji_cli(self, temp_dir: Path) -> list[dict[str, str]]:
-        cmd = (
-            f"koji download-task --arch={self.arch} --skip=.rpm --logs"
-            f" {self.build_or_task_id}"
-        )
-        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
-        logs = []
-        for file in temp_dir.iterdir():
-            file_parts = file.name.split(".")
-            if len(file_parts) > 2:
-                file_name_without_arch = f"{file_parts[0]}.{file_parts[2]}"
-            else:
-                file_name_without_arch = file.name
+    @cached_property
+    def task_info(self) -> dict:
+        task = self.client.getTaskInfo(self.build_or_task_id)
+        if not task:
+            raise HTTPException(
+                detail=f"Task {self.build_or_task_id} is empty",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
 
-            if (
-                file.is_file()
-                and self.arch in file.name
-                and file_name_without_arch in self.logs_to_look_for
-            ):
-                with open(file) as f_log:
-                    logs.append(
-                        {
-                            "name": file_name_without_arch,
-                            "content": f_log.read(),
-                        }
-                    )
+        return task
+
+    @cached_property
+    def task_request(self) -> list:
+        return self.client.getTaskRequest(self.build_or_task_id)
+
+    def _get_srpm_url_from_task(self) -> str:
+        request_endpoint = self.task_request[0]
+        if not request_endpoint.endswith(".src.rpm"):
+            raise HTTPException(
+                detail=(
+                    f"Task {self.build_or_task_id} doesn't seem to have "
+                    "an available spec file."
+                ),
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        return f"{self.koji_pkgs_url}/{request_endpoint}"
+
+    def _get_logs_url_from_task_id(self) -> str:
+        request_endpoint = self.task_request[0]
+        if not request_endpoint.startswith("tasks"):
+            # other methods of getting logs yet unknown
+            raise HTTPException(
+                detail=f"Task {self.build_or_task_id} not findable under {self.koji_pkgs_url} URL",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        if request_endpoint.endswith(".src.rpm"):
+            request_endpoint = request_endpoint.rsplit("/", 1)[0]
+
+        return f"{self.koji_pkgs_url}/{request_endpoint}"
+
+    def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
+        if self.task_info["arch"] != self.arch:
+            raise HTTPException(
+                detail=(
+                    f"Bad arch of task {self.build_or_task_id}: "
+                    f'expected: {self.arch} actual: {self.task_info["arch"]}'
+                ),
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        if self.task_info["method"] != "buildArch":
+            raise HTTPException(
+                detail=f"{self.build_or_task_id} is not buildArch method.",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        logs_url_dir = self._get_logs_url_from_task_id()
+        logs = []
+        for log_name in self.logs_to_look_for:
+            req = requests.get(f"{logs_url_dir}/{log_name}")
+            if not req.text:
+                continue
+
+            logs.append(
+                {
+                    "name": log_name,
+                    "content": req.text,
+                }
+            )
 
         return logs
 
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         if not self._is_build_id:
-            with get_temporary_dir() as temp_dir:
-                logs = self._fetch_task_logs_from_koji_cli(temp_dir)
+            logs = self._fetch_task_logs_from_task_id()
         else:
-            logs = self._fetch_build_logs_from_koji_api()
+            logs = self._fetch_build_logs_from_build_id()
 
         if not logs:
             raise FetchError(
@@ -254,13 +300,22 @@ class KojiProvider(RPMProvider):
 
     def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
         with get_temporary_dir() as temp_dir:
-            cmd = f"koji download-task {self.build_or_task_id}"
-            subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
-            srpm = next(temp_dir.glob("*.src.rpm"), None)
-            if srpm is None:
-                return None
+            srpm_url = self._get_srpm_url_from_task()
+            resp = requests.get(srpm_url)
+            try:
+                resp.raise_for_status()
+            except HTTPError as exc:
+                raise FetchError(
+                    "No spec file found in koji for build/task id "
+                    f"#{self.build_or_task_id} and arch {self.arch}."
+                    f"Reason: {exc}"
+                ) from exc
 
-            return self._get_spec_file_content_from_srpm(srpm, temp_dir)
+            destination = Path(f'{temp_dir}/{srpm_url.split("/")[-1]}')
+            with open(destination, "wb") as srpm_f:
+                srpm_f.write(resp.content)
+
+            return self._get_spec_file_content_from_srpm(destination, temp_dir)
 
     def _fetch_spec_file_from_build_id(self) -> Optional[dict[str, str]]:
         koji_build = self.client.getBuild(self.build_or_task_id)
