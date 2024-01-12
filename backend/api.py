@@ -97,6 +97,11 @@ def contribute(request: Request, args: str):
     return template_response("contribute.html", {"request": request})
 
 
+@app.get("/documentation", response_class=HTMLResponse)
+def documentation(request: Request):
+    return template_response("documentation.html", {"request": request})
+
+
 @app.get("/review", response_class=HTMLResponse)
 def review(request: Request):
     return template_response("review.html", {"request": request})

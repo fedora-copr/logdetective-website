@@ -1,0 +1,103 @@
+{% extends "layout.html" %} {%block content %}
+
+<div class="container" id="content">
+
+  <div id="about" class="container">
+    <h2 class="text-center">HOWTO</h2>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">How to upload log</h5>
+Log Detective can download the build directly from Koji, Copr or Packit. If you have the log somewhere else (different Koji instance, local Mock build), you can point Log Detective to URL where it can be downloaded. The URL can be shortlived, e.g., Pastebin, etc. If you have more logs for one build, you can concat them. E.g., <code>cat build.log root.log | fpaste</code>. Open the paste in a web browser to find its RAW URL, and provide it to Log Detective.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">How to annotate a log</h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">After uploading a log, find its relevant part, highlight it with mouse, and click on "Add" button in the right column.</li>
+          <li class="list-group-item">This will create new Form Field "Snippet 1" in the right column. State there why this part of log is interresting. E.g., <em>"Here the build fails, because the /usr/bin/make command is not available."</em> You can add more these snipets.</li>
+          <li class="list-group-item">Then navigate to <em>"Why did the build fail?"</em> and describe the reason, e.g., <em>"The build failed because `make` command was not available in the buildroot and the %install sections requires it."</em></li>
+          <li class="list-group-item">And finaly go to <em>"How to fix the issue?"</em> and provide a hint how to fix it. E.g., <em>"You have to tell Mock to install the command `make` in buildroot. You can do that by putting `BuildRequires: make`. If you are not sure what package provides this command you can check it using `dnf whatprovides /usr/bin/make` command."</em></li>
+          <li class="list-group-item">And then Submit your annotation. And remember - the more details you provide, the more details will the AI provide to you later.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="text-center">Documentation</h2>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Why?</h5>
+The build logs can have thousands of lines. When the build fails, it is very hard to spot the problem, even for seasoned engineers. The string “ERROR” is not always an error. The error is not always at the end of a log. And you have to be fluent in packaging to recognize how to fix the problem. We gathered data from Copr, and it takes developers days and even weeks to fix the failed build.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">How?</h5>
+We decided to build an AI tool that will read the log and use LLM to give you a human-like answer. We <a href="https://github.com/TomasTomecek/my-rpm-build-broke">know</a> that the goal is achievable, but we do not have enough data. We have millions of failed jobs from Koji, and Copr. But it is not paired with a description of what needs to be fixed and how. Therefore, we started with Phase 1 and we have created this website where you can upload the failed build log and annotate it. During our experiments, we learned that we will require around one thousand annotated logs to be able to build the AI tool.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">What?</h5>
+The final tool will be an AI model and our artifact will be a binary blob of trained data. This model together with the command line tool will be able to read the build log and give you guidance on why the build failed. Later we plan to incorporate this tool to build systems (Copr, Koji,...) to give you a nice UI.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">We need your help</h5>
+Please upload a build log from your recent failed build - we can import it from Copr, Packit, Koji and even from arbitrary URL. Provided that it points to a parsable text file. Mark which lines of the log are relevant to the failure. And describe how it can be fixed. The more elaborate you will be, the better will be the final tool.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Future Plans</h5>
+We plan to add a review tool to Log Detective. Similarly what <a href="https://commonvoice.mozilla.org/">Common Voice</a> has. This will help us to identify bad samples and remove them from the data set.
+      </div>
+    </div>
+
+    <h2 class="text-center">FAQ</h2>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">What AI model are you using?</h5>
+We do not know yet. <a href="https://github.com/TomasTomecek">Tomáš</a> experimented with several models and literally every week he came with a new model that just became available and that is better than our previous choice. We assume that when we start training the AI model, we will be using a model that does not exist yet.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">What about privacy?</h5>
+        We do not track any sensitive data. When you upload a build log, make sure you have the rights to do that. All data is available under
+        <a href="https://cdla.dev/permissive-2-0/">CDLA-Permissive-2.0</a> license.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Did you consider using AI to generate the data set?</h5>
+Yes, we considered it. However, we cannot use ChatGPT and similar tools because the problematic license can taint the whole project. Additionally, using AI-generated data to teach AI is prone to <a href="https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)">hallucinations</a>. We are considering using data from Bugzilla and other tools (if Legals allows that), but we want to have a strong core dataset with a clear license.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">I have lots of failed logs, can I bulk upload them?</h5>
+Uploading the log is 5 seconds work. But you have to annotate it. Describe what part of log is relevant and why. Why the build failed and how can be fixed. This takes several minutes. Therefore bulk uploading will not help us.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">I did not see failed log for ages - do you have some?</h5>
+Pick anything from <a href="https://koji.fedoraproject.org/koji/builds?type=rpm&order=-completion_time&state=3">Koji's Failed Builds</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
