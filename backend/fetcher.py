@@ -12,6 +12,7 @@ import koji
 import requests
 from fastapi import HTTPException
 
+from backend.constants import COPR_RESULT_TEMPLATE
 from backend.data import LOG_OUTPUT
 from backend.exceptions import FetchError
 from backend.spells import get_temporary_dir
@@ -110,7 +111,7 @@ class CoprProvider(RPMProvider):
 
         if self.chroot == "srpm-builds":
             build = self.client.build_proxy.get(self.build_id)
-            baseurl = os.path.dirname(build.source_package.get("url", ""))
+            baseurl = COPR_RESULT_TEMPLATE.format(build.ownername, build.project_dirname, build.id)
         else:
             build_chroot = self.client.build_chroot_proxy.get(
                 self.build_id, self.chroot
@@ -137,11 +138,11 @@ class CoprProvider(RPMProvider):
         return logs
 
     @handle_errors
-    def fetch_spec_file(self) -> dict[str, str]:
+    def fetch_spec_file(self) -> Optional[dict[str, str]]:
         build = self.client.build_proxy.get(self.build_id)
         name = build.source_package["name"]
         if self.chroot == "srpm-builds":
-            baseurl = os.path.dirname(build.source_package["url"])
+            baseurl = COPR_RESULT_TEMPLATE.format(build.ownername, build.project_dirname, build.id)
         else:
             build_chroot = self.client.build_chroot_proxy.get(
                 self.build_id, self.chroot
@@ -150,6 +151,8 @@ class CoprProvider(RPMProvider):
 
         spec_name = f"{name}.spec"
         response = requests.get(f"{baseurl}/{spec_name}")
+        if response.status_code == 404:
+            return None
         response.raise_for_status()
         return {"name": spec_name, "content": response.text}
 
