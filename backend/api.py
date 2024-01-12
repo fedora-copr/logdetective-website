@@ -19,6 +19,7 @@ from backend.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
     PACKIT_BUILD_URL,
+    FEEDBACK_DIR,
     BuildIdTitleEnum,
     ProvidersEnum,
 )
@@ -281,13 +282,12 @@ def frontend_review_latest() -> FeedbackSchema:
 
 
 def _make_tpm_tar_file_from_results() -> Iterator[Path]:
-    results = os.environ.get("FEEDBACK_DIR")
-    if results is None:
+    if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
 
     with get_temporary_dir() as tmp_dir:
         tar_path = make_tar(
-            f"results-{int(datetime.now().timestamp())}.tar.gz", Path(results), tmp_dir
+            f"results-{int(datetime.now().timestamp())}.tar.gz", Path(FEEDBACK_DIR), tmp_dir
         )
         try:
             yield tar_path
