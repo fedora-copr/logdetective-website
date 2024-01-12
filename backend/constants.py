@@ -7,6 +7,9 @@ KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
 PACKIT_BUILD_URL = "https://dashboard.packit.dev/jobs/copr-builds"
 FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/var/lib/builds/feedbacks")
 
+COPR_RESULT_TEMPLATE = "https://download.copr.fedorainfracloud.org" + \
+                       "/results/{0}/{1}/srpm-builds/{2:08}"
+
 
 class ProvidersEnum(StrEnum):
     packit = "packit"
