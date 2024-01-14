@@ -47,8 +47,27 @@
      on-accordion-item-show
      on-click-delete-snippet]]))
 
+(defn set-atoms [data]
+  (reset! backend-data data)
+  (reset! log (:content (:log data)))
+  (reset! build-id (:build_id data))
+  (reset! build-id-title (:build_id_title data))
+  (reset! build-url (:build_url data))
+  (reset! spec (:spec_file data))
+  (reset! container (:container_file data))
+  (reset!
+   files
+   (vec (map (fn [log]
+               ;; We must html encode all HTML characters
+               ;; because we are going to render the log
+               ;; files dangerously
+               (update log :content #(.encode html-entities %)))
+             (:logs data))))
 
-(defn fetch-logs []
+  (reset! error-title nil)
+  (reset! error-description nil))
+
+(defn fetch-logs-backend []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))]
     (-> (fetch/get url {:accept :json :content-type :json})
         (.then (fn [resp]
@@ -58,40 +77,36 @@
                    (do
                      (reset! error-title (:error data))
                      (reset! error-description (:description data)))
-                   (do
-                     (reset! backend-data data)
-                     (reset! log (:content (:log data)))
-                     (reset! build-id (:build_id data))
-                     (reset! build-id-title (:build_id_title data))
-                     (reset! build-url (:build_url data))
-                     (reset! spec (:spec_file data))
-                     (reset! container (:container_file data))
+                   (set-atoms data)))))))
 
-                     (reset!
-                      files
-                      (vec (map (fn [log]
-                                  ;; We must html encode all HTML characters
-                                  ;; because we are going to render the log
-                                  ;; files dangerously
-                                  (update log :content #(.encode html-entities %)))
-                                (:logs data))))
+(defn fetch-logs-upload []
+  (let [data {:build_id_title "Upload"
+              :logs [{:name (.getItem js/localStorage "name")
+                      :content (.getItem js/localStorage "content")}]}]
 
-                     (reset! error-title nil)
-                     (reset! error-description nil))))))))
+    (set-atoms data)))
 
 (defn init-data []
-  (fetch-logs))
+  (if(= (remove-trailing-slash (current-path))  "/contribute/upload")
+    (fetch-logs-upload)
+    (fetch-logs-backend)))
 
 (defn left-column []
   (instructions
    [(instructions-item
      (not-empty @files)
 
-     (if (contains? #{"URL" "Container log"} @build-id-title)
+     (cond
+       (contains? #{"URL" "Container log"} @build-id-title)
        [:<>
         (str "We fetched logs from ")
         [:a {:href @build-url} "this URL"]]
 
+       (= @build-id-title "Upload")
+       [:<>
+        (str "Upload a log file from your computer")]
+
+       :else
        [:<>
         (str "We fetched logs for " @build-id-title " ")
         [:a {:href @build-url} (str "#" @build-id)]]))

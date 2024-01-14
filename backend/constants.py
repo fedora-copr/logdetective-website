@@ -18,6 +18,7 @@ class ProvidersEnum(StrEnum):
     url = "url"
     container = "container"
     debug = "debug"
+    upload = "upload"
 
 
 class BuildIdTitleEnum(StrEnum):

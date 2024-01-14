@@ -239,6 +239,12 @@ def contribute_review_packit(
     return _store_data_for_providers(feedback_input, ProvidersEnum.packit, packit_id)
 
 
+@app.post("/frontend/contribute/upload")
+def contribute_upload_file(feedback_input: FeedbackInputSchema) -> OkResponse:
+    dirname = int(datetime.now().timestamp())
+    return _store_data_for_providers(feedback_input, ProvidersEnum.upload, dirname)
+
+
 @app.post("/frontend/contribute/url/{url}")
 def contribute_review_url(feedback_input: FeedbackInputSchema, url: str) -> OkResponse:
     return _store_data_for_providers(feedback_input, ProvidersEnum.url, url)

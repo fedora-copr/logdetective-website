@@ -1,5 +1,6 @@
 (ns app.homepage-validation
   (:require
+   [clojure.string :as str]
    [cljs.core.match :refer-macros [match]]))
 
 
@@ -45,6 +46,15 @@
          (do
            (when (empty? (get @input-values :url))
              (swap! input-errors conj "url")))
+
+         "#upload"
+         (let [name (get @input-values :name)
+               extension (last (str/split name #"\."))]
+           (when (empty? name)
+             (swap! input-errors conj "file"))
+
+           (when-not (contains? #{"log" "txt" "gz"} extension)
+             (swap! input-errors conj "file")))
 
          "#container"
          (do
