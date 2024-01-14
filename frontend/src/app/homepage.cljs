@@ -14,7 +14,8 @@
 (defn current-hash []
   (. (. js/document -location) -hash))
 
-(defn homepage-submit []
+(defn on-submit [event]
+  (.preventDefault event)
   (validate current-hash-atom input-values input-errors)
   (let [source (str/replace @current-hash-atom "#" "")
         params (match @current-hash-atom
@@ -29,6 +30,14 @@
     (when (empty? @input-errors)
       (set! (.-href (.-location js/window)) url))))
 
+(defn on-submit-upload [event]
+  (.preventDefault event)
+  (.setItem js/localStorage "name" (get @input-values :name))
+  (.setItem js/localStorage "content" (get @input-values :file))
+  (validate current-hash-atom input-values input-errors)
+  (when (empty? @input-errors)
+    (set! (.-href (.-location js/window)) "/contribute/upload")))
+
 (defn on-tab-click [href]
   (reset! current-hash-atom href)
   (reset! input-errors []))
@@ -37,6 +46,20 @@
   (swap! input-values assoc
          (keyword (.-name target))
          (.-value target)))
+
+(defn on-input-change-file [event]
+  (let [target (.-target event)
+        path (-> target .-value)
+        name (last (str/split path #"\\"))
+        reader (js/FileReader.)
+        set-atom (fn [e]
+                   (swap! input-values assoc :name name)
+                   (swap! input-values assoc
+                          (keyword (.-name target))
+                          (-> e .-target .-result)))
+        file (first (array-seq (.. event -target -files)))]
+    (.addEventListener reader "load" set-atom)
+    (.readAsText reader file)))
 
 (defn render-navigation-item [title href]
   (let [active? (= href @current-hash-atom)]
@@ -53,6 +76,7 @@
      (render-navigation-item "Koji" "#koji")
      (render-navigation-item "Packit" "#packit")
      (render-navigation-item "URL" "#url")
+     (render-navigation-item "Upload" "#upload")
      (render-navigation-item "Container" "#container")]])
 
 (defn render-card [provider url title img text inputs]
@@ -66,16 +90,22 @@
      [:h2 {:class "card-title"} title]
      [:p {:class "card-text"} text]
 
-     (for [[i input] (map-indexed vector inputs)]
-       ^{:key i}
-       [:div {:class "input-group mb-3 container"}
-        input
-        (when (= (- (count inputs) 1) i)
-          [:button
-           {:class "btn btn-outline-primary",
-            :type "button", :id "button-addon2"
-            :on-click #(homepage-submit)}
-           "Let's go"])])]
+     [:form
+      (if (= provider "Upload")
+        {:action "/contribute/upload"
+         :method "POST"
+         :on-submit #'on-submit-upload
+         :enc-type "multipart/form-data"}
+        {:on-submit #'on-submit})
+      (for [[i input] (map-indexed vector inputs)]
+        ^{:key i}
+        [:div {:class "input-group mb-3 container"}
+         input
+         (when (= (- (count inputs) 1) i)
+           [:button
+            {:class "btn btn-outline-primary",
+             :type "submit"}
+            "Let's go"])])]]
 
     [:div {:class "col-2"}]]])
 
@@ -89,6 +119,15 @@
     :placeholder placeholder
     :value (get @input-values (keyword name))
     :on-change #(on-input-change (.-target %))}])
+
+(defn input-file [name]
+  [:input
+   {:type "file"
+    :class ["form-control"
+            (when (some #{name} @input-errors)
+              "validation-error")]
+    :name name
+    :on-change #(on-input-change-file %)}])
 
 (defn render-copr-card []
   (render-card
@@ -130,6 +169,15 @@
                  "If recognized, we will fetch and display all relevant logs."])
    [(input "url" "https://paste.centos.org/view/raw/5ba21754")]))
 
+(defn render-upload-card []
+  (render-card
+   "Upload"
+   nil
+   "Upload RPM logs from your computer"
+   "img/upload-icon.png"
+   "Upload a RPM log file from your computer. "
+   [(input-file "file")]))
+
 (defn render-container-card []
   (render-card
    nil
@@ -145,6 +193,7 @@
          "#packit"    (render-packit-card)
          "#koji"      (render-koji-card)
          "#url"       (render-url-card)
+         "#upload"    (render-upload-card)
          "#container" (render-container-card)
          :else        (render-copr-card)))
 
