@@ -426,7 +426,7 @@ class URLProvider(RPMProvider):
     def fetch_spec_file(self) -> dict[str, str]:
         # FIXME: Please implement me!
         #  raise NotImplementedError("Please implement me!")
-        return {"name": "fake_spec_name.spec", "content": "fake spec file"}
+        return None  # type: ignore
 
 
 class ContainerProvider(Provider):
