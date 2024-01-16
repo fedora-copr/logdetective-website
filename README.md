@@ -2,9 +2,9 @@
 
 Production instance: http://log-detective.com
 
-## Screenshot
+## DEMO
 
-![Screenshot](screenshot.png)
+![Video](./log_detective_demo.gif)
 
 ## Development
 
