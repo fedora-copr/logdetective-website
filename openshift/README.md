@@ -108,10 +108,12 @@ $ dnf install certbot
 
 Run certbot in the root of this git repo.
 ```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d log-detective.com -d logdetective.com
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.log-detective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
 ```
 
-We will create one certificate file that will contain data for both log-detective.com and logdetective.com.
+We will create one certificate file that will contain data for both
+log-detective.com and logdetective.com. With wildcards and naked. We need all
+these 4 entries to get https://log... and https://www... working.
 ```
 Please deploy a DNS TXT record under the name:
 ```
@@ -145,10 +147,14 @@ Copy the content to the running log-detective:
 $ oc cp cert/ log-detective-website-$pod:/persistent
 ```
 
-Connect to the pod and rename cert/ to letsencrypt/:
+Connect to the pod, back up old certs and rename cert/ to letsencrypt/:
 ```
 $ oc rsh deployment/log-detective-website
+
+$ mv /persistent/letsencrypt{,-old}
 $ mv /persistent/{cert,letsencrypt}
 ```
+
+Kill the running pod so the certs are actually loaded.
 
 🎉🎉🎉
