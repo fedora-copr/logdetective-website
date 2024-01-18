@@ -1,7 +1,7 @@
 (ns app.core
   "This namespace contains your application and is the entrypoint for 'yarn start'."
   (:require [reagent.core :as r]
-            [app.homepage :refer [homepage]]
+            [app.homepage :refer [homepage fetch-stats-backend]]
             [app.contribute :refer [contribute init-data]]
             [app.review.core :refer [review init-data-review]]))
 
@@ -12,7 +12,10 @@
   ;; This is not the standard way of doing this, we should probably use some
   ;; router. But it is good enough for now.
   (cond (.getElementById js/document "app-homepage")
-        (r/render [homepage] (.getElementById js/document "app-homepage"))
+        (do
+          (fetch-stats-backend)
+          (r/render [homepage] (.getElementById js/document "app-homepage"))
+          )
 
         (.getElementById js/document "app-contribute")
         (do

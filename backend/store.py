@@ -68,3 +68,13 @@ class Storator3000:
         files = cls.get_logs()
 
         return Path(random.choice(files))
+
+    @classmethod
+    def get_stats(cls) -> dict:
+        """Retrieve basic statistics about submitted reports.
+        """
+        files = cls.get_logs()
+        stats = {
+            "total_reports" : len(files),
+        }
+        return stats

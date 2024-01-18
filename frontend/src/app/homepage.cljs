@@ -1,18 +1,33 @@
 (ns app.homepage
   (:require [reagent.core :as r]
+            [cljs.math :as math]
             [clojure.string :as str]
             [cljs.source-map.base64 :as base64 :refer [encode]]
             [cljs.core.match :refer-macros [match]]
-            [app.homepage-validation :refer [validate]]))
+            [app.homepage-validation :refer [validate]]
+            [lambdaisland.fetch :as fetch]
+            [app.helpers :refer
+              [current-path
+              fontawesome-icon
+              remove-trailing-slash]]))
 
 
 (def input-values (r/atom nil))
 (def input-errors (r/atom []))
 (def current-hash-atom (r/atom nil))
-
+(def backend-stats (r/atom nil))
+(def report-target (r/atom 1000))
 
 (defn current-hash []
   (. (. js/document -location) -hash))
+
+(defn fetch-stats-backend []
+  (let [url (remove-trailing-slash (str "/stats" (current-path)))]
+    (-> (fetch/get url {:accept :json :content-type :json})
+        (.then (fn [resp]
+                 (-> resp :body (js->clj :keywordize-keys true))))
+        (.then (fn [resp]
+                   (reset! backend-stats resp))))))
 
 (defn on-submit [event]
   (.preventDefault event)
@@ -78,6 +93,24 @@
      (render-navigation-item "URL" "#url")
      (render-navigation-item "Upload" "#upload")
      (render-navigation-item "Container" "#container")]])
+
+(defn progress-width []
+  (min
+    (math/ceil
+     (*
+      (float
+        (/
+          (:total_reports @backend-stats)
+    @report-target)) 100)) 100))
+
+(defn render-stats []
+  [:div {:id "progressbar"}
+      [:h5 "Are we there yet?"]
+    [:div {:id "progressbar-number"}
+      [:p (progress-width) "%"]]
+    [:div {
+      :id "progress"
+      :style {:width (str (progress-width) "%")}}]])
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
@@ -200,6 +233,8 @@
 (defn homepage []
   (reset! current-hash-atom
           (if (str/blank? (current-hash)) "#copr" (current-hash)))
-  [:div {:class "card text-center"}
-   (render-navigation)
-   (render-cards)])
+    [:div {:class "card text-center"}
+      (render-stats)
+      (render-navigation)
+      (render-cards)]
+ )
