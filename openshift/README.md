@@ -30,7 +30,7 @@ in the top-right and "Copy login command". Display token and run the
 oc login --token=... --server=https://api.fedora.cj14.p1.openshiftapps.com:6443
 ```
 
-## Deploy
+## Build
 
 The production container uses code from
 https://github.com/fedora-copr/log-detective-website
@@ -60,6 +60,21 @@ or
 ```bash
 make push-prod
 ```
+
+## Pull Image
+
+Alternativelly you can use existing image.
+Pre-build images are available at quay.io/log-detective, semantically versioned,
+with versions correponding to tags of this repo.
+
+```bash
+docker pull quay.io/log-detective/website:latest
+```
+
+Images are build and pushed with every new tag by a github action.
+
+
+## Deploy
 
 Make sure you are using the correct OpenShift project
 
