@@ -275,3 +275,28 @@ a:hover {
   --bs-spinner-width: 80px;
   --bs-spinner-height: 80px;
 }
+
+#progressbar {
+  width: 100%;
+  background-color: var(--gray-0);
+}
+
+#progress {
+  height: 30px;
+  background-color: var(--newblue);
+  text-align: center;
+  line-height: 30px;
+  font-weight: 500;
+  color: var(--darkblue);
+  overflow-wrap: normal;
+}
+
+#progressbar-number {
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}

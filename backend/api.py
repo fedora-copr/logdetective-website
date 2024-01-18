@@ -310,3 +310,8 @@ def download_results(_tar_path=Depends(_make_tpm_tar_file_from_results)):
             "Content-Length": str(_tar_path.stat().st_size),
         },
     )
+
+
+@app.get("/stats")
+def get_report_stats() -> dict:
+    return Storator3000.get_stats()
