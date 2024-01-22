@@ -177,26 +177,24 @@ class KojiProvider(RPMProvider):
             return False
 
     def _fetch_build_logs_from_build_id(self) -> list[dict[str, str]]:
-        koji_logs = self.client.getBuildLogs(self.build_or_task_id)
-        logs = []
-        for log in koji_logs:
-            if log["dir"] != self.arch:
-                continue
+        """
+        Obtain build logs from a failed build by traversing
+        through the task hierarchy to the buildArch task's logs
 
-            if log["name"] not in self.logs_to_look_for:
-                continue
-
-            url = "{}/{}".format(self.koji_url, log["path"])
-            response = requests.get(url)
-            response.raise_for_status()
-            logs.append(
-                {
-                    "name": log["name"],
-                    "content": response.text,
-                }
-            )
-
-        return logs
+        Koji's method getBuildLogs sadly only works with successful builds.
+        """
+        koji_build = self.client.getBuild(self.build_or_task_id)
+        root_task_id = koji_build['task_id']
+        # the response of getTaskDescendents:
+        #   {'112162296': [{'arch': 'noarch', 'awaited': False...
+        task_descendants = self.client.getTaskDescendents(root_task_id)[str(root_task_id)]
+        for task_info in task_descendants:
+            if task_info['arch'] == self.arch and task_info['method'] == 'buildArch' \
+                    and task_info['state'] == 5:
+                # this is the one and only ring!
+                self.build_or_task_id = task_info['id']
+                return self._fetch_task_logs_from_task_id()
+        return []
 
     @cached_property
     def task_info(self) -> dict:
