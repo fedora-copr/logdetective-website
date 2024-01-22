@@ -61,6 +61,17 @@ or
 make push-prod
 ```
 
+Alternatively, when working with github repo, the image can be published
+by simply creating a tag with name respecting [semver](https://semver.org/) convention.
+This will trigger github action in `docker-publish.yml`.
+
+New image will be created with the same tag and pushed to quay.io.
+Tag `latest` will also be updated to point to the new image.
+
+The best way to publish an image is to make a new release of the project,
+using the github [dialog](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release).
+This will also generate release notes.
+
 ## Pull Image
 
 Alternativelly you can use existing image.
