@@ -252,7 +252,10 @@ class KojiProvider(RPMProvider):
 
         if self.task_info["method"] != "buildArch":
             raise HTTPException(
-                detail=f"{self.build_or_task_id} is not buildArch method.",
+                detail=(
+                    f"Task {self.build_or_task_id} method is "
+                    f"{self.task_info['method']}. "
+                    "Please select task with method buildArch."),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
