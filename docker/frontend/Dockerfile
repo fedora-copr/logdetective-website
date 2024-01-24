@@ -20,7 +20,7 @@ RUN dnf -y update && \
                    java \
     && dnf clean all
 
-RUN npm install -g shadow-cljs
+RUN npm install -g shadow-cljs@">=2.26.0 <3.0.0"
 
 # TODO In the next steps we want to copy the source code to the container,
 # install all Javascript dependencies and pre-install all ClojureScript
