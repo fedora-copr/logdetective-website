@@ -1,10 +1,10 @@
 import binascii
 import os
+import re
 import subprocess
 from abc import ABC, abstractmethod
 from functools import cached_property
 from http import HTTPStatus
-from pathlib import Path
 from typing import Optional
 from urllib.error import HTTPError
 
@@ -16,7 +16,6 @@ from fastapi import HTTPException
 from backend.constants import COPR_RESULT_TEMPLATE
 from backend.data import LOG_OUTPUT
 from backend.exceptions import FetchError
-from backend.spells import get_temporary_dir
 
 
 def handle_errors(func):
@@ -160,114 +159,117 @@ class CoprProvider(RPMProvider):
 
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
-    logs_to_look_for = ["build.log", "root.log", "mock_output.log"]
+    # checkout.log - for dist-git repo cloning problems
+    logs_to_look_for = ["build.log", "root.log", "mock_output.log",
+                        "checkout.log"]
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
     def __init__(self, build_or_task_id: int, arch: str) -> None:
-        self.build_or_task_id = build_or_task_id
-        self.arch = arch
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
-    @cached_property
-    def _is_build_id(self) -> bool:
+        self.arch = arch
+        self.task_id = None
+        self.build_id = None
+        # this block detects what we got: is it build or task?
+        # failed builds are useless sadly, we will only work with tasks
         try:
-            return self.client.getBuild(self.build_or_task_id) is not None
+            self.build = self.client.getBuild(build_or_task_id)
         except koji.GenericError:
-            return False
+            # great, no need to take care of builds
+            self.build = None
 
-    def _fetch_build_logs_from_build_id(self) -> list[dict[str, str]]:
-        """
-        Obtain build logs from a failed build by traversing
-        through the task hierarchy to the buildArch task's logs
-
-        Koji's method getBuildLogs sadly only works with successful builds.
-        """
-        koji_build = self.client.getBuild(self.build_or_task_id)
-        root_task_id = koji_build['task_id']
-        # the response of getTaskDescendents:
-        #   {'112162296': [{'arch': 'noarch', 'awaited': False...
-        task_descendants = self.client.getTaskDescendents(root_task_id)[str(root_task_id)]
-        for task_info in task_descendants:
-            if task_info['arch'] == self.arch and task_info['method'] == 'buildArch' \
-                    and task_info['state'] == 5:
-                # this is the one and only ring!
-                self.build_or_task_id = task_info['id']
-                return self._fetch_task_logs_from_task_id()
-        return []
+        if self.build:
+            self.build_id = build_or_task_id
+            # it's a build, we need to find the right task now
+            root_task_id = self.build['task_id']
+            # the response of getTaskDescendents:
+            #   {'112162296': [{'arch': 'noarch', 'awaited': False...
+            task_descendants = self.client.getTaskDescendents(root_task_id)[str(root_task_id)]
+            for task_info in task_descendants:
+                if task_info['arch'] == arch \
+                        and task_info['method'] in ("buildArch", "buildSRPMFromSCM") \
+                        and task_info['state'] == 5:
+                    # this is the one and only ring!
+                    self.task_id = task_info['id']
+                    break
+            else:
+                raise HTTPException(
+                    detail=f"Build {build_or_task_id} doesn't have a failed task for arch {arch}",
+                    status_code=HTTPStatus.BAD_REQUEST,
+                )
+        else:
+            self.task_id = build_or_task_id
 
     @cached_property
     def task_info(self) -> dict:
-        task = self.client.getTaskInfo(self.build_or_task_id)
+        task = self.client.getTaskInfo(self.task_id)
         if not task:
             raise HTTPException(
-                detail=f"Task {self.build_or_task_id} is empty",
+                detail=f"Task {self.task_id} is empty",
                 status_code=HTTPStatus.BAD_REQUEST,
             )
-
         return task
 
     @cached_property
     def task_request(self) -> list:
-        return self.client.getTaskRequest(self.build_or_task_id)
+        return self.client.getTaskRequest(self.task_id)
 
-    def _get_srpm_url_from_task(self) -> str:
-        request_endpoint = self.task_request[0]
-        if not request_endpoint.endswith(".src.rpm"):
-            raise HTTPException(
-                detail=(
-                    f"Task {self.build_or_task_id} doesn't seem to have "
-                    "an available spec file."
-                ),
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+    def get_task_request_url(self) -> str:
+        """
+        We need this:
+            'git+https://src.fedoraproject.org/rpms/libphonenumber.git#c88bd3...
+        This info is in self.task_request[0]
 
-        return f"{self.koji_pkgs_url}/{request_endpoint}"
-
-    def _get_logs_url_from_task_id(self) -> str:
-        request_endpoint = self.task_request[0]
-        if not request_endpoint.startswith("tasks"):
-            # other methods of getting logs yet unknown
-            raise HTTPException(
-                detail=f"Task {self.build_or_task_id} not findable under {self.koji_pkgs_url} URL",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
-
-        if request_endpoint.endswith(".src.rpm"):
-            request_endpoint = request_endpoint.rsplit("/", 1)[0]
-
-        return f"{self.koji_pkgs_url}/{request_endpoint}"
+        But not every task has this though, buildArch
+        contains file-based path to SRPM, build and buildFromSCM has it
+        """
+        task_request_url = self.task_request[0]
+        if task_request_url.startswith("git+https"):
+            return task_request_url
+        parent_task = self.task_info['parent']
+        if parent_task:
+            task_request_url = self.client.getTaskInfo(parent_task, request=True)["request"][0]
+        if task_request_url.startswith("git+https"):
+            return task_request_url
+        raise HTTPException(
+            detail=(
+                f"Task {self.task_id}, parent task {parent_task} do not have a link to sources. "
+                "We can't locate the specfile."
+            ),
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
 
     def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
         if self.task_info["arch"] != self.arch:
             raise HTTPException(
                 detail=(
-                    f"Bad arch of task {self.build_or_task_id}: "
+                    f"Bad arch of task {self.task_id}: "
                     f'expected: {self.arch} actual: {self.task_info["arch"]}'
                 ),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
-        if self.task_info["method"] != "buildArch":
+        if self.task_info["method"] not in ("buildArch", "buildSRPMFromSCM"):
             raise HTTPException(
                 detail=(
-                    f"Task {self.build_or_task_id} method is "
+                    f"Task {self.task_id} method is "
                     f"{self.task_info['method']}. "
                     "Please select task with method buildArch."),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
-        logs_url_dir = self._get_logs_url_from_task_id()
         logs = []
         for log_name in self.logs_to_look_for:
-            req = requests.get(f"{logs_url_dir}/{log_name}")
-            if not req.text:
+            try:
+                log_content = self.client.downloadTaskOutput(self.task_id, log_name)
+            except koji.GenericError:
+                # checkout.log not available for buildArch
                 continue
-
             logs.append(
                 {
                     "name": log_name,
-                    "content": req.text,
+                    "content": log_content
                 }
             )
 
@@ -275,80 +277,33 @@ class KojiProvider(RPMProvider):
 
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
-        if not self._is_build_id:
-            logs = self._fetch_task_logs_from_task_id()
-        else:
-            logs = self._fetch_build_logs_from_build_id()
+        logs = self._fetch_task_logs_from_task_id()
 
         if not logs:
             raise FetchError(
-                f"No logs for build #{self.build_or_task_id} and architecture"
+                f"No logs for build {self.build_id} task #{self.task_id} and architecture"
                 f" {self.arch}"
             )
 
         return logs
 
-    @staticmethod
-    def _get_spec_file_content_from_srpm(
-        srpm_path: Path, temp_dir: Path
-    ) -> Optional[dict[str, str]]:
-        # extract spec file from srpm
-        cmd = f"rpm2archive -n < {str(srpm_path)} | tar xf - '*.spec'"
-        subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
-        fst_spec_file = next(temp_dir.glob("*.spec"), None)
-        if fst_spec_file is None:
-            return None
-
-        with open(fst_spec_file) as spec_file:
-            return {"name": fst_spec_file.name, "content": spec_file.read()}
-
-    def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
-        with get_temporary_dir() as temp_dir:
-            srpm_url = self._get_srpm_url_from_task()
-            resp = requests.get(srpm_url)
-            try:
-                resp.raise_for_status()
-            except HTTPError as exc:
-                raise FetchError(
-                    "No spec file found in koji for build/task id "
-                    f"#{self.build_or_task_id} and arch {self.arch}."
-                    f"Reason: {exc}"
-                ) from exc
-
-            destination = Path(f'{temp_dir}/{srpm_url.split("/")[-1]}')
-            with open(destination, "wb") as srpm_f:
-                srpm_f.write(resp.content)
-
-            return self._get_spec_file_content_from_srpm(destination, temp_dir)
-
-    def _fetch_spec_file_from_build_id(self) -> Optional[dict[str, str]]:
-        koji_build = self.client.getBuild(self.build_or_task_id)
-        srpm_url = (
-            f"{self.koji_url}/packages/{koji_build['package_name']}"
-            f"/{koji_build['version']}/{koji_build['release']}/src/{koji_build['nvr']}"
-            ".src.rpm"
-        )
-        response = requests.get(srpm_url)
-        with get_temporary_dir() as temp_dir:
-            koji_srpm_path = temp_dir / f"koji_{self.build_or_task_id}.src.rpm"
-            with open(koji_srpm_path, "wb") as src_rpm:
-                src_rpm.write(response.content)
-                return self._get_spec_file_content_from_srpm(koji_srpm_path, temp_dir)
-
     @handle_errors
     def fetch_spec_file(self) -> dict[str, str]:
-        if self._is_build_id:
-            fetch_spec_fn = self._fetch_spec_file_from_build_id
-        else:
-            fetch_spec_fn = self._fetch_spec_file_from_task_id
-
-        spec_dict = fetch_spec_fn()
-        if spec_dict is None:
+        try:
+            request_url = self.get_task_request_url()
+            package_name = re.findall(r"/rpms/(.+)\.git", request_url)[0]
+            commit_hash = re.findall(r"\.git#(.+)$", request_url)[0]
+            spec_url = "https://src.fedoraproject.org/rpms/" \
+                f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
+            response = requests.get(spec_url)
+            response.raise_for_status()
+            spec_dict = {"name": f"{package_name}.spec", "content": response.text}
+        except HTTPError as exc:
             raise FetchError(
-                "No spec file found in koji for build/task id "
-                f"#{self.build_or_task_id} and arch {self.arch}"
-            )
-
+                "No spec file found in koji for task "
+                f"#{self.task_id} and arch {self.arch}."
+                f"Reason: {exc}"
+            ) from exc
         return spec_dict
 
 
