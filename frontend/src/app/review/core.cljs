@@ -1,25 +1,25 @@
 (ns app.review.core
- (:require
-  [reagent.core :as r]
-  [html-entities :as html-entities]
-  [lambdaisland.fetch :as fetch]
-  [app.helpers :refer [current-path]]
-  [app.editor.core :refer [editor]]
-  [app.components.accordion :refer [accordion]]
-   [app.components.jumbotron :refer
-    [render-jumbotron
-     render-error
-     loading-screen]]
-  [app.three-column-layout.core :refer
-   [three-column-layout
-    instructions-item
-    instructions]]))
+  ;; This namespace is WIP and currently not working. Ignore lint errors
+  {:clj-kondo/config '{:linters {:unused-namespace {:level :off}}}}
 
+  (:require
+   [reagent.core :as r]
+   [html-entities :as html-entities]
+   [lambdaisland.fetch :as fetch]
+   [app.helpers :refer [current-path]]
+   [app.editor.core :refer [editor]]
+   [app.components.accordion :refer [accordion]]
+   [app.components.jumbotron :refer
+    [render-error
+     loading-screen]]
+   [app.three-column-layout.core :refer
+    [three-column-layout
+     instructions-item
+     instructions]]))
 
 (def files (r/atom nil))
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
-
 
 (defn init-data-review []
   (let [url (str "/frontend" (current-path))]
@@ -31,15 +31,14 @@
                    (do
                      (reset! error-title (:error data))
                      (reset! error-description (:description data)))
-                   (do
-                     (reset!
-                      files
-                      (vec (map (fn [log]
-                                  ;; We must html encode all HTML characters
-                                  ;; because we are going to render the log
-                                  ;; files dangerously
-                                  (update log :content #(.encode html-entities %)))
-                                (:logs data)))))))))))
+                   (reset!
+                    files
+                    (vec (map (fn [log]
+                                ;; We must html encode all HTML characters
+                                ;; because we are going to render the log
+                                ;; files dangerously
+                                (update log :content #(.encode html-entities %)))
+                              (:logs data))))))))))
 
 (defn left-column []
   (instructions
@@ -82,7 +81,7 @@
 (defn card [title text]
   [:div {:class "card"}
    [:div {:class "card-body"}
-       [:h5 {:class "card-title"} title]
+    [:h5 {:class "card-title"} title]
     [:p {:class "card-text"} text]
     (into [:<>] (buttons))]])
 
@@ -122,8 +121,7 @@
     @error-description
     (render-error @error-title @error-description)
 
-    true
-    ;; @files
+    @files
     (three-column-layout
      (left-column)
      (middle-column)

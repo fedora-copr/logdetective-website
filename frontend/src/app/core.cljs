@@ -5,7 +5,6 @@
             [app.contribute :refer [contribute init-data]]
             [app.review.core :refer [review init-data-review]]))
 
-
 (defn ^:dev/after-load render
   "Render the toplevel component for this app."
   []
@@ -14,8 +13,7 @@
   (cond (.getElementById js/document "app-homepage")
         (do
           (fetch-stats-backend)
-          (r/render [homepage] (.getElementById js/document "app-homepage"))
-          )
+          (r/render [homepage] (.getElementById js/document "app-homepage")))
 
         (.getElementById js/document "app-contribute")
         (do

@@ -2,15 +2,12 @@
   (:require [reagent.core :as r]
             [cljs.math :as math]
             [clojure.string :as str]
-            [cljs.source-map.base64 :as base64 :refer [encode]]
             [cljs.core.match :refer-macros [match]]
             [app.homepage-validation :refer [validate]]
             [lambdaisland.fetch :as fetch]
             [app.helpers :refer
-              [current-path
-              fontawesome-icon
+             [current-path
               remove-trailing-slash]]))
-
 
 (def input-values (r/atom nil))
 (def input-errors (r/atom []))
@@ -27,20 +24,20 @@
         (.then (fn [resp]
                  (-> resp :body (js->clj :keywordize-keys true))))
         (.then (fn [resp]
-                   (reset! backend-stats resp))))))
+                 (reset! backend-stats resp))))))
 
 (defn on-submit [event]
   (.preventDefault event)
   (validate current-hash-atom input-values input-errors)
   (let [source (str/replace @current-hash-atom "#" "")
         params (match @current-hash-atom
-                      "#copr"      [(get @input-values :copr-build-id)
-                                    (get @input-values :copr-chroot)]
-                      "#packit"    [(get @input-values :packit-id)]
-                      "#koji"      [(get @input-values :koji-build-id)
-                                    (get @input-values :koji-arch)]
-                      "#url"       [(js/btoa (get @input-values :url))]
-                      "#container" [(js/btoa (get @input-values :url))])
+                 "#copr"      [(get @input-values :copr-build-id)
+                               (get @input-values :copr-chroot)]
+                 "#packit"    [(get @input-values :packit-id)]
+                 "#koji"      [(get @input-values :koji-build-id)
+                               (get @input-values :koji-arch)]
+                 "#url"       [(js/btoa (get @input-values :url))]
+                 "#container" [(js/btoa (get @input-values :url))])
         url (str/join "/" (concat ["/contribute" source] (map str/trim params)))]
     (when (empty? @input-errors)
       (set! (.-href (.-location js/window)) url))))
@@ -85,32 +82,31 @@
       title]]))
 
 (defn render-navigation []
-   [:div {:class "card-header"}
-    [:ul {:class "nav nav-tabs card-header-tabs"}
-     (render-navigation-item "Copr" "#copr")
-     (render-navigation-item "Koji" "#koji")
-     (render-navigation-item "Packit" "#packit")
-     (render-navigation-item "URL" "#url")
-     (render-navigation-item "Upload" "#upload")
-     (render-navigation-item "Container" "#container")]])
+  [:div {:class "card-header"}
+   [:ul {:class "nav nav-tabs card-header-tabs"}
+    (render-navigation-item "Copr" "#copr")
+    (render-navigation-item "Koji" "#koji")
+    (render-navigation-item "Packit" "#packit")
+    (render-navigation-item "URL" "#url")
+    (render-navigation-item "Upload" "#upload")
+    (render-navigation-item "Container" "#container")]])
 
 (defn progress-width []
   (min
-    (math/ceil
-     (*
-      (float
-        (/
-          (:total_reports @backend-stats)
-    @report-target)) 100)) 100))
+   (math/ceil
+    (*
+     (float
+      (/
+       (:total_reports @backend-stats)
+       @report-target)) 100)) 100))
 
 (defn render-stats []
   [:div {:id "progressbar"}
-      [:h5 "Are we there yet?"]
-    [:div {:id "progressbar-number"}
-      [:p (progress-width) "%"]]
-    [:div {
-      :id "progress"
-      :style {:width (str (progress-width) "%")}}]])
+   [:h5 "Are we there yet?"]
+   [:div {:id "progressbar-number"}
+    [:p (progress-width) "%"]]
+   [:div {:id "progress"
+          :style {:width (str (progress-width) "%")}}]])
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
@@ -222,19 +218,18 @@
 
 (defn render-cards []
   (match @current-hash-atom
-         "#copr"      (render-copr-card)
-         "#packit"    (render-packit-card)
-         "#koji"      (render-koji-card)
-         "#url"       (render-url-card)
-         "#upload"    (render-upload-card)
-         "#container" (render-container-card)
-         :else        (render-copr-card)))
+    "#copr"      (render-copr-card)
+    "#packit"    (render-packit-card)
+    "#koji"      (render-koji-card)
+    "#url"       (render-url-card)
+    "#upload"    (render-upload-card)
+    "#container" (render-container-card)
+    :else        (render-copr-card)))
 
 (defn homepage []
   (reset! current-hash-atom
           (if (str/blank? (current-hash)) "#copr" (current-hash)))
-    [:div {:class "card text-center"}
-      (render-stats)
-      (render-navigation)
-      (render-cards)]
- )
+  [:div {:class "card text-center"}
+   (render-stats)
+   (render-navigation)
+   (render-cards)])

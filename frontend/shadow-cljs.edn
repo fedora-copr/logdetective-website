@@ -7,7 +7,9 @@
                 [devcards "0.2.6"]
                 [org.clojure/core.match "1.0.1"]
                 [clojure-interop/cljs-web-api "1.0.10"]
-                [lambdaisland/fetch "1.2.69"]]
+                [lambdaisland/fetch "1.2.69"]
+                [clj-kondo "2022.05.31"]
+                [dev.weavejester/lein-cljfmt "0.12.0"]]
  :dev-http {3000 "public"}
  :nrepl {:port 3333}
  :source-paths ["src"]}

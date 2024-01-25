@@ -1,4 +1,6 @@
-(ns app.helpers)
+(ns app.helpers
+  (:require
+   [clojure.string :as str]))
 
 (defn current-path []
   (.-pathname (.-location js/window)))

@@ -1,14 +1,9 @@
 (ns app.contribute
   (:require
-   [reagent.core :as r]
-   [clojure.string :as str]
-   [cljs.core.match :refer-macros [match]]
    [lambdaisland.fetch :as fetch]
-   [web.Range :refer [surround-contents]]
    ["html-entities" :as html-entities]
    [app.helpers :refer
     [current-path
-     fontawesome-icon
      remove-trailing-slash]]
    [app.three-column-layout.core :refer
     [three-column-layout
@@ -16,14 +11,12 @@
      instructions]]
    [app.editor.core :refer [editor]]
    [app.components.jumbotron :refer
-    [render-jumbotron
-     render-error
+    [render-error
      loading-screen
      render-succeeded]]
    [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
     [how-to-fix
-     fail-reason
      status
      snippets
      files
@@ -33,7 +26,6 @@
      error-title
      backend-data
      log
-     fas
      build-id
      build-id-title
      build-url]]
@@ -87,7 +79,7 @@
     (set-atoms data)))
 
 (defn init-data []
-  (if(= (remove-trailing-slash (current-path))  "/contribute/upload")
+  (if (= (remove-trailing-slash (current-path))  "/contribute/upload")
     (fetch-logs-upload)
     (fetch-logs-backend)))
 
@@ -195,9 +187,9 @@
 
    [:div {}
     [:label {:class "form-label"} "Ready to submit the results? "
-                                  "By submitting this form, you agree that your input "
-                                  "can be used for teaching AI and that the data are "
-                                  "available under " [:a {:href "https://cdla.dev/permissive-2-0/"} "CDLA-Permissive-2.0"] " license."]
+     "By submitting this form, you agree that your input "
+     "can be used for teaching AI and that the data are "
+     "available under " [:a {:href "https://cdla.dev/permissive-2-0/"} "CDLA-Permissive-2.0"] " license."]
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"

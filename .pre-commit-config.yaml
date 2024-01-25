@@ -42,3 +42,14 @@ repos:
         additional_dependencies:
           - types-PyYAML
           - types-requests
+
+  - repo: https://github.com/clj-kondo/clj-kondo
+    rev: v2023.12.15
+    hooks:
+      - id: clj-kondo-docker
+
+  - repo: https://github.com/allie-jo/cljfmt-docker
+    rev: v0.9.1
+    hooks:
+      - id: cljfmt-docker
+        args: [ check ]

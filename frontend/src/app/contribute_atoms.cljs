@@ -1,7 +1,6 @@
 (ns app.contribute-atoms
   (:require [reagent.core :as r]))
 
-
 (def how-to-fix (r/atom nil))
 (def fail-reason (r/atom nil))
 (def snippets (r/atom []))
