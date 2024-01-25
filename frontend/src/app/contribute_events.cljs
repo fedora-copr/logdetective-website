@@ -1,7 +1,6 @@
 (ns app.contribute-events
   (:require
    [clojure.set :refer [rename-keys]]
-   [reagent.core :as r]
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
     [current-path
@@ -26,7 +25,6 @@
      container
      files]]))
 
-
 (defn submit-form []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))
         ;; Clojure typically uses dashes instead of underscores in keyword
@@ -37,20 +35,20 @@
               :username (if @fas (str "FAS:" @fas) nil)
               :logs
               (map (fn [file]
-                      {:name (:name file)
-                       :content (:content file)
-                       :snippets
-                       (map (fn [snippet]
-                              (-> snippet
-                                  (rename-keys {:comment :user_comment
-                                                :start-index :start_index
-                                                :end-index :end_index})
-                                  (dissoc :text :file)))
+                     {:name (:name file)
+                      :content (:content file)
+                      :snippets
+                      (map (fn [snippet]
+                             (-> snippet
+                                 (rename-keys {:comment :user_comment
+                                               :start-index :start_index
+                                               :end-index :end_index})
+                                 (dissoc :text :file)))
                             ;; Only snippets for this file
-                            (filter
-                             (fn [snippet]
-                               (= (:file snippet) (:name file)))
-                             @snippets))})
+                           (filter
+                            (fn [snippet]
+                              (= (:file snippet) (:name file)))
+                            @snippets))})
                    ;; We can't use @files here because they contain highlight
                    ;; spans, HTML escaping, etc.
                    (:logs @backend-data))
@@ -66,11 +64,9 @@
                          (reset! error-description (:description data)))
 
                        (= (:status data) "ok")
-                       (do
-                         (reset! status "submitted"))
+                       (reset! status "submitted")
 
                        :else nil))))))
-
 
 (defn add-snippet []
   (when (and (= (selection-node-id) "log")
@@ -122,7 +118,7 @@
   (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
         snippet (nth @snippets snippet-id)
         file-name (:file snippet)]
-  (reset! active-file (file-id file-name))))
+    (reset! active-file (file-id file-name))))
 
 ;; We might need this function for enabling/disabling the "new snippet" button
 ;; based on whether user selected something (within the <pre>log</pre> area)

@@ -1,8 +1,6 @@
 (ns app.components.jumbotron
- (:require
-  [reagent.core :as r]
-  [app.helpers :refer [fontawesome-icon]]))
-
+  (:require
+   [app.helpers :refer [fontawesome-icon]]))
 
 (defn render-jumbotron [id h1 title description icon]
   [:div {:id id :class "py-5 text-center container rounded"}
@@ -37,4 +35,4 @@
    [:a {:type "submit"
         :class "btn btn-primary btn-lg"
         :href "/"}
-     [:<> (fontawesome-icon "fa-plus") " Add another log"]]))
+    [:<> (fontawesome-icon "fa-plus") " Add another log"]]))

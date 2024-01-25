@@ -1,7 +1,4 @@
-(ns app.components.accordion
- (:require
-  [reagent.core :as r]))
-
+(ns app.components.accordion)
 
 (defn accordion-item [i item show?]
   [:div {:class "accordion-item" :key i}

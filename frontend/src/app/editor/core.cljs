@@ -1,9 +1,7 @@
 (ns app.editor.core
   (:require [reagent.core :as r]))
 
-
 (def active-file (r/atom 0))
-
 
 (defn tab [name key active?]
   [:li {:class "nav-item" :key key}

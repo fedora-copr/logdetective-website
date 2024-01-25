@@ -1,7 +1,6 @@
 (ns app.three-column-layout.core
- (:require
-  [app.helpers :refer [fontawesome-icon]]))
-
+  (:require
+   [app.helpers :refer [fontawesome-icon]]))
 
 (defn three-column-layout [left middle right]
   [:div {:class "row"}

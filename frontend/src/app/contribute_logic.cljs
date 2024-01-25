@@ -4,7 +4,6 @@
     [files
      snippets]]))
 
-
 (defn clear-selection []
   ;; Generated from
   ;; https://stackoverflow.com/a/13415236/3285282
@@ -19,13 +18,13 @@
   ;; https://itecnote.com/tecnote/javascript-selected-text-highlighting-prob/
   ;; and translated it from Javascript to ClojureScript using:
   ;; https://roman01la.github.io/javascript-to-clojurescript/
-  (def rangee (.getRangeAt (.getSelection js/window) 0))
-  (def span (.createElement js/document "span"))
-  (set! (.-className span) "snippet")
-  (set! (.-id span) (str "snippet-" (count @snippets)))
-  (set! (.-index-number (.-dataset span)) (count @snippets))
-  (.appendChild span (.extractContents rangee))
-  (.insertNode rangee span))
+  (let [rangee (.getRangeAt (.getSelection js/window) 0)
+        span (.createElement js/document "span")]
+    (set! (.-className span) "snippet")
+    (set! (.-id span) (str "snippet-" (count @snippets)))
+    (set! (.-index-number (.-dataset span)) (count @snippets))
+    (.appendChild span (.extractContents rangee))
+    (.insertNode rangee span)))
 
 (defn selection-node-id []
   (let [base (.-anchorNode (.getSelection js/window))]
@@ -42,5 +41,5 @@
   (let [selection (.getSelection js/window)
         spans (.getElementsByClassName js/document "snippet")]
     (when (not-empty spans)
-     (some (fn [span] (.containsNode selection span true))
-           spans))))
+      (some (fn [span] (.containsNode selection span true))
+            spans))))
