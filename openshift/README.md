@@ -121,6 +121,14 @@ oc rsh deploy/log-detective-website
 [group2]: https://accounts.fedoraproject.org/group/communishift-log-detective/
 
 
+### Secrets
+
+Hugging Face token:
+```
+$ oc create secret generic hf-secret --from-literal=token=$TOKEN
+```
+
+
 ## TLS certificates
 
 This is a copy-pasta of Packit's process: https://github.com/packit/deployment/blob/main/docs/deployment/tls-certs.md
