@@ -1,0 +1,27 @@
+# https://gist.githubusercontent.com/jpodivin/7535915b58baab4e977af3bbccccf73c/raw/6584bc98c52cc46fd593127819bf6f33b69de4d6/compile_extraction_dataset.py
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hf-upload-dataset
+spec:
+  schedule: "22 2 * * *"
+  concurrencyPolicy: "Replace"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            parent: "cronjob-dataset"
+          name: hf-upload-dataset
+        spec:
+          containers:
+          - name: upload-dataset
+            image: quay.io/log-detective/website:latest
+            command: ["/compile_extraction_dataset.py"]
+            env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secret
+                  key: token
+          restartPolicy: OnFailure
