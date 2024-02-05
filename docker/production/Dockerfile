@@ -36,6 +36,7 @@ RUN dnf -y install python3-fastapi \
                    python3-requests \
                    python3-koji \
                    python3-copr \
+                   python3-pip \
                    koji \
                    htop \
                    btop \
@@ -51,10 +52,12 @@ RUN dnf -y install python3-fastapi \
                    python3-ipdb \
                    findutils \
     && dnf clean all \
+    && pip3 --no-cache-dir install datasets \
     && mkdir -p /src/{frontend,backend}
 
 COPY --from=0 /src/frontend/public /src/frontend/public
 COPY --from=0 /src/backend /src/backend
+COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extraction_dataset.py
 
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
