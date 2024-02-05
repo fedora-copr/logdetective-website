@@ -25,38 +25,42 @@ with open(os.path.join(tmp_dir, LOG_DETECTIVE_DATA_FILE), 'wb') as fd:
 
 print("Reports from Log Detective downloaded")
 
-with tarfile.open(os.path.join(tmp_dir, LOG_DETECTIVE_DATA_FILE), mode='r:gz') as f:
-    f.extractall(os.path.join(tmp_dir, EXTRACTION_DIR))
+try:
+    with tarfile.open(os.path.join(tmp_dir, LOG_DETECTIVE_DATA_FILE), mode='r:gz') as f:
+        f.extractall(os.path.join(tmp_dir, EXTRACTION_DIR))
 
-data = []
+    data = []
 
-for file in glob.glob(f"{os.path.join(tmp_dir, EXTRACTION_DIR)}/**/*.json", recursive=True):
-    with open(file) as f:
-        data.append(json.load(f))
+    for file in glob.glob(f"{os.path.join(tmp_dir, EXTRACTION_DIR)}/**/*.json", recursive=True):
+        with open(file) as f:
+            data.append(json.load(f))
 
-print(f"Total {len(data)} files loaded")
+    print(f"Total {len(data)} files loaded")
 
-parsed = []
+    parsed = []
 
-for e in data:
-    for k, v in e['logs'].items():
-        for s in v['snippets']:
-            parsed.append({
-                'answers': {
-                    'text': v['content'][s['start_index']-2:s['end_index']],
-                    'answer_start': s['start_index']-2
+    for e in data:
+        for k, v in e['logs'].items():
+            for s in v['snippets']:
+                parsed.append({
+                    'answers': {
+                        'text': v['content'][s['start_index']-2:s['end_index']],
+                        'answer_start': s['start_index']-2
                     },
-            'context': v['content'],
-            'user_comment': s['user_comment'],
-            'question': f"Which part of the log is interesting?"
-            })
+                    'context': v['content'],
+                    'user_comment': s['user_comment'],
+                    'question': "Which part of the log is interesting?"
+                })
 
-with open(os.path.join(tmp_dir, 'q_a_extract.json'), 'w') as f:
-    json.dump(parsed, f)
+    with open(os.path.join(tmp_dir, 'q_a_extract.json'), 'w') as f:
+        json.dump(parsed, f)
 
-data = load_dataset('json', data_files=os.path.join(tmp_dir, 'q_a_extract.json'))
+    dataset = load_dataset('json', data_files=os.path.join(tmp_dir, 'q_a_extract.json'))
 
-data.push_to_hub('fedora-copr/logdetective-extraction-wip',
-                 token=os.getenv('HF_TOKEN'))
+    if "HF_TOKEN" not in os.environ:
+        raise RuntimeError("Please set HF_TOKEN so you can upload the data set to HF.")
 
-shutil.rmtree(tmp_dir)
+    dataset.push_to_hub('fedora-copr/logdetective-extraction-wip',
+                        token=os.getenv('HF_TOKEN'))
+finally:
+    shutil.rmtree(tmp_dir)
