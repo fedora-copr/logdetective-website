@@ -101,12 +101,15 @@
        @report-target)) 100)) 100))
 
 (defn render-stats []
-  [:div {:id "progressbar"}
-   [:h5 "Are we there yet?"]
-   [:div {:id "progressbar-number"}
-    [:p (progress-width) "%"]]
-   [:div {:id "progress"
-          :style {:width (str (progress-width) "%")}}]])
+  [:<>
+   [:div {:id "progressbar"}
+    [:p {:id "progressbar-number"} (str (progress-width) "%")]
+    [:div {:id "progress"
+           :style {:width (str (progress-width) "%")}}]
+    [:div {:id "progressbar2"}
+     [:div
+      [:p "Collected " (:total_reports @backend-stats) " logs from "
+       [:a {:href "/documentation#goals"} @report-target]]]]]])
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}

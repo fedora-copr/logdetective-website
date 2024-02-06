@@ -35,7 +35,7 @@ class Storator3000:
     @classmethod
     def get_logs(cls) -> list:
         if not os.path.exists(FEEDBACK_DIR):
-            raise NoDataFound(f"Directory doesn't exist: {FEEDBACK_DIR}")
+            return []
 
         all_files = [[
                         os.path.join(subdir[0], file)
