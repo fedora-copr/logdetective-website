@@ -17,7 +17,8 @@ spec:
           containers:
           - name: upload-dataset
             image: quay.io/log-detective/website:latest
-            command: ["/compile_extraction_dataset.py"]
+            # for some reason we need to explicitly call the command like this -_-
+            command: ["python3", "/usr/bin/compile_extraction_dataset.py"]
             env:
             - name: HF_TOKEN
               valueFrom:
