@@ -1,4 +1,5 @@
-#!/bin/env python
+#!/bin/env python3
+# just 'python' doesn't work in container environment -_^
 # You need to have access to the HF dataset repo
 # Set it in the HF_TOKEN env var
 
