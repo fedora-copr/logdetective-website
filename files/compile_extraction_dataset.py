@@ -56,7 +56,12 @@ try:
     with open(os.path.join(tmp_dir, 'q_a_extract.json'), 'w') as f:
         json.dump(parsed, f)
 
-    dataset = load_dataset('json', data_files=os.path.join(tmp_dir, 'q_a_extract.json'))
+    # cache_dir: /tmp is the only writable place in an openshift pod
+    dataset = load_dataset(
+        'json',
+        data_files=os.path.join(tmp_dir, 'q_a_extract.json'),
+        cache_dir="/tmp"
+    )
 
     if "HF_TOKEN" not in os.environ:
         raise RuntimeError("Please set HF_TOKEN so you can upload the data set to HF.")
