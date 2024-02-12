@@ -160,6 +160,19 @@ class CoprProvider(RPMProvider):
         return {"name": spec_name, "content": response.text}
 
 
+def find_matching_koji_subtask(
+        task_id: int, client: koji.ClientSession,
+        task_state: int, arch: Optional[str] = None):
+    task_descendants = client.getTaskDescendents(task_id)[str(task_id)]
+    for task_info in task_descendants:
+        if task_info['method'] in ("buildArch", "buildSRPMFromSCM") \
+                and task_info['state'] == task_state:
+            if arch and task_info['arch'] != arch:
+                continue
+            # this is the one and only ring!
+            return task_info['id']
+
+
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     # checkout.log - for dist-git repo cloning problems
@@ -167,7 +180,7 @@ class KojiProvider(RPMProvider):
                         "checkout.log"]
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
-    def __init__(self, build_or_task_id: int, arch: str) -> None:
+    def __init__(self, build_or_task_id: int, arch: Optional[str] = None) -> None:
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
@@ -188,15 +201,9 @@ class KojiProvider(RPMProvider):
             root_task_id = self.build['task_id']
             # the response of getTaskDescendents:
             #   {'112162296': [{'arch': 'noarch', 'awaited': False...
-            task_descendants = self.client.getTaskDescendents(root_task_id)[str(root_task_id)]
-            for task_info in task_descendants:
-                if task_info['arch'] == arch \
-                        and task_info['method'] in ("buildArch", "buildSRPMFromSCM") \
-                        and task_info['state'] == 5:
-                    # this is the one and only ring!
-                    self.task_id = task_info['id']
-                    break
-            else:
+            self.task_id = find_matching_koji_subtask(root_task_id, self.client,
+                                                      koji.TASK_STATES['FAILED'], arch=arch)
+            if not self.task_id:
                 raise HTTPException(
                     detail=f"Build {build_or_task_id} doesn't have a failed task for arch {arch}",
                     status_code=HTTPStatus.BAD_REQUEST,
