@@ -54,6 +54,11 @@
                    (:logs @backend-data))
               :spec_file @spec
               :container_file @container}]
+
+    ;; Remember the username, so we can prefill it the next time
+    (when @fas
+      (.setItem js/localStorage "fas" @fas))
+
     (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))

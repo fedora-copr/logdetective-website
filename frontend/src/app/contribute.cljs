@@ -26,6 +26,7 @@
      error-title
      backend-data
      log
+     fas
      build-id
      build-id-title
      build-url]]
@@ -148,6 +149,7 @@
     [:input {:type "text"
              :class "form-control"
              :placeholder "Optional - Your FAS username"
+             :value (or @fas (.getItem js/localStorage "fas"))
              :on-change #(on-change-fas %)}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]
