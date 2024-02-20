@@ -13,6 +13,7 @@
    [app.components.jumbotron :refer
     [render-error
      loading-screen
+     loading-icon
      render-succeeded]]
    [app.components.accordion :refer [accordion]]
    [app.contribute-atoms :refer
@@ -68,6 +69,7 @@
         (.then (fn [data]
                  (if (:error data)
                    (do
+                     (reset! status "error")
                      (reset! error-title (:error data))
                      (reset! error-description (:description data)))
                    (set-atoms data)))))))
@@ -124,8 +126,26 @@
 
     (instructions-item nil "Submit")]))
 
+(defn display-error-middle-top []
+  (when @error-description
+    [:div
+     [:div {:class "alert alert-danger alert-dismissible fade show text-center"}
+      [:strong @error-title]
+      [:p @error-description]
+      [:button {:type "button" :class "btn-close" :data-bs-dismiss "alert"}]]]))
+
+(defn notify-being-uploaded []
+  (when (= @status "submitting")
+    [:h2 {:class "lead text-body-secondary"}
+     (loading-icon)
+     "  Uploading ..."]))
+
 (defn middle-column []
-  (editor @files))
+  [:<>
+   (or
+    (notify-being-uploaded)
+    (display-error-middle-top))
+   [editor @files]])
 
 (defn accordion-snippet [snippet]
   (when snippet
@@ -203,12 +223,24 @@
   ;; instead of like :on-click is done
   ;; (js/document.addEventListener "selectionchange" on-selection-change)
 
+  ;; The existing states
+  ;; -------------------
+  ;; "loading" (status=nil, the default)
+  ;;    A separate page. The logs are being downloaded from backend (backend
+  ;;    downloads the data external services)
+  ;; "has files" (status=nil, @files loaded, opt-in @error-{title,description})
+  ;;    Successfully loaded files.  Contributions are being added.  If @error-*
+  ;;    atoms are set, they are rendered at the top of the page.
+  ;; "submitting" (ditto ^^^, but status="submitting")
+  ;;    The form data is being uploaded, but form stays in an editable state so
+  ;;    we can recover (and e.g. fix the server-side validation errors).
+  ;; "submitted" (status="submitted")
+  ;;    A separate "thank you" page.
+  ;; "error page" (status="error")
+  ;;    A separate error page, e.g. for failed loading.
   (cond
-    @error-description
+    (= @status "error")
     (render-error @error-title @error-description)
-
-    (= @status "submitting")
-    (loading-screen "Please wait, submitting results.")
 
     (= @status "submitted")
     (render-succeeded)
