@@ -17,14 +17,17 @@
    description
    [:i {:class "fa-solid fa-bug"}]))
 
+(defn loading-icon []
+  [:div {:class "spinner-border", :role "status"}
+   [:span {:class "sr-only"} "Loading..."]])
+
 (defn loading-screen [title]
   (render-jumbotron
    "loading"
    "Loading"
    title
    "..."
-   [:div {:class "spinner-border", :role "status"}
-    [:span {:class "sr-only"} "Loading..."]]))
+   (loading-icon)))
 
 (defn render-succeeded []
   (render-jumbotron

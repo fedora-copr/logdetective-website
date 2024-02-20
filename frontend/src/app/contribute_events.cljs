@@ -66,7 +66,10 @@
                  (cond (:error data)
                        (do
                          (reset! error-title (:error data))
-                         (reset! error-description (:description data)))
+                         (reset! error-description (:description data))
+                         ;; go back to "has files" state, let users fix
+                         ;; validation errors
+                         (reset! status nil))
 
                        (= (:status data) "ok")
                        (reset! status "submitted")
