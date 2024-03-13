@@ -73,6 +73,23 @@ The best way to publish an image is to make a new release of the project,
 using the github [dialog](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release).
 This will also generate release notes.
 
+## Update production
+
+Once you created the new release, you should wait for our GitHub action to
+build a matching container image and push it to [our quay
+repository](https://quay.io/repository/log-detective/website?tab=history).
+
+When you see the image in the listing, continue with the regular Deploy process
+described below.
+
+You can then verify based on the Image digest what we are running production:
+```
+oc describe pod log-detective-website-xxxxxxxx-xxxxx | grep 'Image ID'
+   Image ID:       quay.io/log-detective/website@sha256:71a5cf95568e593df8a0723081b4bd17506d2236bdb431d9149f00337add3376
+```
+
+The Tag History shows these digests.
+
 ## Pull Image
 
 Alternativelly you can use existing image.
