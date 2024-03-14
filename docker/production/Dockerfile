@@ -61,7 +61,7 @@ COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extracti
 
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
-WORKDIR /src/backend
+WORKDIR /src/backend/src
 ENV PYTHONPATH="${PYTHONPATH}:/src/backend"
 
 # We should put this into a config file
