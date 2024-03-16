@@ -4,7 +4,8 @@
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
     [current-path
-     remove-trailing-slash]]
+     remove-trailing-slash
+     previous-siblings]]
    [app.editor.core :refer [active-file]]
    [app.contribute-logic :refer
     [file-id
@@ -88,8 +89,26 @@
 
     (let [selection (.getSelection js/window)
           content (.toString selection)
+
+          ;; The position is calculated from the end of the last node
+          ;; This can be be either a previous snippet span or if the text
+          ;; longer than 65536 characters than it is implictily split into
+          ;; multiple sibling text nodes
           start (.-anchorOffset selection)
+
+          ;; Calculate the real starting index from the beginning of the log
+          offset (->> selection
+                      .-anchorNode
+                      previous-siblings
+                      (map #(.-textContent %))
+                      (map #(count %))
+                      (reduce +))
+          start (+ start offset)
+
+          ;; Index of the last snippet character. When parsing in python, don't
+          ;; forget to do text[start:end+1]
           end (+ start (count content) -1)
+
           snippet
           {:text content
            :start-index start
