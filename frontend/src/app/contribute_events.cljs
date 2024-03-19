@@ -44,7 +44,7 @@
                                  (rename-keys {:comment :user_comment
                                                :start-index :start_index
                                                :end-index :end_index})
-                                 (dissoc :text :file)))
+                                 (dissoc :file)))
                             ;; Only snippets for this file
                            (filter
                             (fn [snippet]
