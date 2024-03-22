@@ -369,6 +369,16 @@ class PackitProvider(RPMProvider):
         self.packit_id = packit_id
         self.copr_url = f"{self.packit_api_url}/copr-builds/{self.packit_id}"
         self.koji_url = f"{self.packit_api_url}/koji-builds/{self.packit_id}"
+        self._provider = None
+
+    @property
+    def provider(self):
+        """
+        Cached so that we don't send HTTP requests for every call
+        """
+        if not self._provider:
+            self._provider = self._get_correct_provider()
+        return self._provider
 
     def _get_correct_provider(self) -> CoprProvider | KojiProvider:
         resp = requests.get(self.copr_url)
@@ -394,11 +404,19 @@ class PackitProvider(RPMProvider):
 
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
-        return self._get_correct_provider().fetch_logs()
+        return self.provider.fetch_logs()
 
     @handle_errors
     def fetch_spec_file(self) -> dict[str, str]:
-        return self._get_correct_provider().fetch_spec_file()
+        return self.provider.fetch_spec_file()
+
+    @property
+    def url(self):
+        if isinstance(self.provider, CoprProvider):
+            _url = "https://dashboard.packit.dev/results/copr-builds/{0}"
+        else:
+            _url = "https://dashboard.packit.dev/results/koji-builds/{0}"
+        return _url.format(self.packit_id)
 
 
 class URLProvider(RPMProvider):

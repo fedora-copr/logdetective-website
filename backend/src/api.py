@@ -18,7 +18,6 @@ from starlette.exceptions import HTTPException
 from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
-    PACKIT_BUILD_URL,
     FEEDBACK_DIR,
     BuildIdTitleEnum,
     ProvidersEnum,
@@ -143,7 +142,7 @@ def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
     return ContributeResponseSchema(
         build_id=packit_id,
         build_id_title=BuildIdTitleEnum.packit,
-        build_url=PACKIT_BUILD_URL,
+        build_url=provider.url,
         logs=provider.fetch_logs(),
         spec_file=provider.fetch_spec_file(),
     )

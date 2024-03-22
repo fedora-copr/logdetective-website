@@ -4,7 +4,6 @@ from enum import StrEnum
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
 KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
-PACKIT_BUILD_URL = "https://dashboard.packit.dev/jobs/copr-builds"
 FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/persistent/results")
 
 COPR_RESULT_TEMPLATE = "https://download.copr.fedorainfracloud.org" + \
