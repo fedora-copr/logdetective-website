@@ -118,7 +118,12 @@ def spec_feedback_input_output_schema_tuple():
                 "name": "log1",
                 "content": "log content 1",
                 "snippets": [
-                    {"start_index": 1, "end_index": 2, "user_comment": "comment1"}
+                    {
+                        "start_index": 1,
+                        "end_index": 2,
+                        "user_comment": "comment1",
+                        "text": "log content 1",
+                    }
                 ],
             },
         ],
@@ -132,7 +137,12 @@ def spec_feedback_input_output_schema_tuple():
                 "name": "log1",
                 "content": "log content 1",
                 "snippets": [
-                    {"start_index": 1, "end_index": 2, "user_comment": "comment1"}
+                    {
+                        "start_index": 1,
+                        "end_index": 2,
+                        "user_comment": "comment1",
+                        "text": "log content 1",
+                    }
                 ],
             }
         },
@@ -151,7 +161,12 @@ def container_feedback_input_output_schema_tuple():
                 "name": "log1",
                 "content": "log content 1",
                 "snippets": [
-                    {"start_index": 1, "end_index": 2, "user_comment": "comment1"}
+                    {
+                        "start_index": 1,
+                        "end_index": 2,
+                        "user_comment": "comment1",
+                        "text": "log content 1",
+                    }
                 ],
             },
         ],
@@ -168,7 +183,12 @@ def container_feedback_input_output_schema_tuple():
                 "name": "log1",
                 "content": "log content 1",
                 "snippets": [
-                    {"start_index": 1, "end_index": 2, "user_comment": "comment1"}
+                    {
+                        "start_index": 1,
+                        "end_index": 2,
+                        "user_comment": "comment1",
+                        "text": "log content 1",
+                    }
                 ],
             }
         },
