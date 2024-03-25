@@ -51,6 +51,7 @@ class SnippetSchema(BaseModel):
     start_index: int
     end_index: int
     user_comment: str
+    text: str
 
     # def _splitter(self, return_lines: bool) -> tuple[int, int]:
     #     fst, snd = self.log_part.split("-")
