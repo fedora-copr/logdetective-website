@@ -9,14 +9,15 @@
              [current-path
               remove-trailing-slash]]))
 
-(def input-values (r/atom nil))
-(def input-errors (r/atom []))
-(def current-hash-atom (r/atom nil))
-(def backend-stats (r/atom nil))
-(def report-target (r/atom 1000))
-
 (defn current-hash []
   (. (. js/document -location) -hash))
+
+(def input-values (r/atom nil))
+(def input-errors (r/atom []))
+(def backend-stats (r/atom nil))
+(def current-hash-atom (r/atom (or (current-hash) "#copr")))
+(def report-target (r/atom 1000))
+
 
 (defn fetch-stats-backend []
   (let [url (remove-trailing-slash (str "/stats" (current-path)))]
@@ -230,8 +231,6 @@
     :else        (render-copr-card)))
 
 (defn homepage []
-  (reset! current-hash-atom
-          (if (str/blank? (current-hash)) "#copr" (current-hash)))
   [:div {:class "card text-center"}
    (render-stats)
    (render-navigation)
