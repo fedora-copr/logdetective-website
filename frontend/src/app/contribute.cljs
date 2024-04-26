@@ -175,7 +175,7 @@
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
-      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Add"]
+      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Anotate selection"]
       [:br]
       [:br]])
 
@@ -192,7 +192,7 @@
              "'Add' button to annotate them")]
        [:button {:class "btn btn-secondary btn-lg"
                  :on-click #(add-snippet)}
-        "Add"]]])
+        "Anotate selection"]]])
 
    [:div {}
     [:label {:class "form-label"} "Why did the build fail?"]
