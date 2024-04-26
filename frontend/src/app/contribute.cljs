@@ -114,7 +114,7 @@
 
     (instructions-item
      (not-empty @snippets)
-     "Anotate snippets by selecting them, and clicking 'Anotate selection'")
+     "Annotate snippets by selecting them, and clicking 'Annotate selection'")
 
     (instructions-item
      (not-empty (:comment (first @snippets)))
@@ -175,7 +175,7 @@
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
-      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Anotate selection"]
+      [:button {:class "btn btn-secondary btn-lg" :on-click #(add-snippet)} "Annotate selection"]
       [:br]
       [:br]])
 
@@ -192,7 +192,7 @@
              "'Add' button to annotate them")]
        [:button {:class "btn btn-secondary btn-lg"
                  :on-click #(add-snippet)}
-        "Anotate selection"]]])
+        "Annotate selection"]]])
 
    [:div {}
     [:label {:class "form-label"} "Why did the build fail?"]
