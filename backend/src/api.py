@@ -198,9 +198,9 @@ class OkResponse(BaseModel):
 
 
 def _store_data_for_providers(
-    feedback_input: FeedbackInputSchema, provider: ProvidersEnum, id_: int | str, *args
+    feedback_input: FeedbackInputSchema, provider: str, id_: int | str, *args
 ) -> OkResponse:
-    storator = Storator3000(provider, id_)
+    storator = Storator3000(ProvidersEnum[provider], id_)
 
     if provider == ProvidersEnum.container:
         result_to_store = schema_inp_to_out(feedback_input, is_with_spec=False)
@@ -304,9 +304,8 @@ def download_results(_tar_path=Depends(_make_tpm_tar_file_from_results)):
     return StreamingResponse(
         iter_large_file(_tar_path),
         media_type="application/x-tar",
-        # TODO: https://github.com/fedora-copr/log-detective-website/issues/63
         headers={
-            "Content-Disposition": f"attachment; filename={_tar_path.name}",  # noqa: E702
+            "Content-Disposition": f"attachment; filename={_tar_path.name}",
             "Content-Length": str(_tar_path.stat().st_size),
         },
     )
