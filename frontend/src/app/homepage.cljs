@@ -18,7 +18,6 @@
 (def current-hash-atom (r/atom (or (current-hash) "#copr")))
 (def report-target (r/atom 1000))
 
-
 (defn fetch-stats-backend []
   (let [url (remove-trailing-slash (str "/stats" (current-path)))]
     (-> (fetch/get url {:accept :json :content-type :json})
