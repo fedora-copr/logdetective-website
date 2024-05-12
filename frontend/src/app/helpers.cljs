@@ -16,3 +16,18 @@
     (if-not sibling
       []
       (conj (previous-siblings sibling) sibling))))
+
+(defn local-storage-enabled []
+  (try
+    (.getItem js/localStorage "isenabled") true
+    (catch js/DOMException _ false)))
+
+(defn local-storage-get [name]
+  (when (local-storage-enabled)
+    (.getItem js/localStorage name)))
+
+(defn local-storage-error []
+  {:title "Local storage is blocked by the browser"
+   :description
+   (str "Log Detective needs to upload the file to a localStorage in order "
+        "to work properly. Please check your browser privacy settings.")})
