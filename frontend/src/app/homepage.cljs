@@ -5,8 +5,11 @@
             [cljs.core.match :refer-macros [match]]
             [app.homepage-validation :refer [validate]]
             [lambdaisland.fetch :as fetch]
+            [app.components.jumbotron :refer [render-error]]
             [app.helpers :refer
              [current-path
+              local-storage-enabled
+              local-storage-error
               remove-trailing-slash]]))
 
 (defn current-hash []
@@ -17,6 +20,7 @@
 (def backend-stats (r/atom nil))
 (def current-hash-atom (r/atom (or (current-hash) "#copr")))
 (def report-target (r/atom 1000))
+(def error (r/atom nil))
 
 (defn fetch-stats-backend []
   (let [url (remove-trailing-slash (str "/stats" (current-path)))]
@@ -44,11 +48,14 @@
 
 (defn on-submit-upload [event]
   (.preventDefault event)
-  (.setItem js/localStorage "name" (get @input-values :name))
-  (.setItem js/localStorage "content" (get @input-values :file))
-  (validate current-hash-atom input-values input-errors)
-  (when (empty? @input-errors)
-    (set! (.-href (.-location js/window)) "/contribute/upload")))
+  (if-not (local-storage-enabled)
+    (reset! error (local-storage-error))
+    (do
+      (.setItem js/localStorage "name" (get @input-values :name))
+      (.setItem js/localStorage "content" (get @input-values :file))
+      (validate current-hash-atom input-values input-errors)
+      (when (empty? @input-errors)
+        (set! (.-href (.-location js/window)) "/contribute/upload")))))
 
 (defn on-tab-click [href]
   (reset! current-hash-atom href)
@@ -230,7 +237,9 @@
     :else        (render-copr-card)))
 
 (defn homepage []
-  [:div {:class "card text-center"}
-   (render-stats)
-   (render-navigation)
-   (render-cards)])
+  (if @error
+    (render-error (:title @error) (:description @error))
+    [:div {:class "card text-center"}
+     (render-stats)
+     (render-navigation)
+     (render-cards)]))

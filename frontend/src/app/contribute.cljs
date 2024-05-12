@@ -4,7 +4,10 @@
    ["html-entities" :as html-entities]
    [app.helpers :refer
     [current-path
-     remove-trailing-slash]]
+     remove-trailing-slash
+     local-storage-enabled
+     local-storage-get
+     local-storage-error]]
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
@@ -75,11 +78,15 @@
                    (set-atoms data)))))))
 
 (defn fetch-logs-upload []
-  (let [data {:build_id_title "Upload"
-              :logs [{:name (.getItem js/localStorage "name")
-                      :content (.getItem js/localStorage "content")}]}]
-
-    (set-atoms data)))
+  (if (local-storage-enabled)
+    (let [data {:build_id_title "Upload"
+                :logs [{:name (.getItem js/localStorage "name")
+                        :content (.getItem js/localStorage "content")}]}]
+      (set-atoms data))
+    (do
+      (reset! status "error")
+      (reset! error-title (:title (local-storage-error)))
+      (reset! error-description (:description (local-storage-error))))))
 
 (defn init-data []
   (if (= (remove-trailing-slash (current-path))  "/contribute/upload")
@@ -169,7 +176,7 @@
     [:input {:type "text"
              :class "form-control"
              :placeholder "Optional - Your FAS username"
-             :value (or @fas (.getItem js/localStorage "fas"))
+             :value (or @fas (local-storage-get "fas"))
              :on-change #(on-change-fas %)}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]

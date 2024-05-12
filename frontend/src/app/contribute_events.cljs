@@ -5,7 +5,8 @@
    [app.helpers :refer
     [current-path
      remove-trailing-slash
-     previous-siblings]]
+     previous-siblings
+     local-storage-enabled]]
    [app.editor.core :refer [active-file]]
    [app.contribute-logic :refer
     [file-id
@@ -57,7 +58,7 @@
               :container_file @container}]
 
     ;; Remember the username, so we can prefill it the next time
-    (when @fas
+    (when (and @fas (local-storage-enabled))
       (.setItem js/localStorage "fas" @fas))
 
     (reset! status "submitting")
