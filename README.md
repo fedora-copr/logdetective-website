@@ -4,7 +4,7 @@ Production instance: http://log-detective.com
 
 ## DEMO
 
-![Video](./log_detective_demo.gif)
+![Video](./frontend/public/img/log_detective_demo.gif)
 
 ## Development
 
