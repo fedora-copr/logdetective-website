@@ -329,7 +329,7 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     with open(reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
         json.dump(content | {"id": original_file_id}, fp, indent=4)
 
-    with open(parsed_reviews_dir / f"{file_name}.json", "w") as fp:
+    with open(parsed_reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
         json.dump(
             _parse_feedback(content, original_file_id) | {"id": original_file_id},
             fp,
