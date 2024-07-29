@@ -1,5 +1,5 @@
 FROM registry.fedoraproject.org/fedora:38
-MAINTAINER copr-devel@lists.fedorahosted.org
+LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 RUN dnf -y update && \
     # Base packages
