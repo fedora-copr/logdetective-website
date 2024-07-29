@@ -1,11 +1,11 @@
 from typing import Optional
 
-from pydantic import AnyUrl, BaseModel, root_validator
+from pydantic import AnyUrl, BaseModel, model_validator
 
 from src.constants import BuildIdTitleEnum
 
 
-def _check_spec_container_are_exclusively_mutual(_, values):
+def _check_spec_container_are_exclusively_mutual(values):
     spec_file = values.get("spec_file")
     container_file = values.get("container_file")
     if spec_file and container_file:
@@ -35,10 +35,10 @@ class ContributeResponseSchema(BaseModel):
     spec_file: Optional[NameContentSchema] = None
     container_file: Optional[NameContentSchema] = None
 
-    # validators
-    _normalize_spec_and_container_file = root_validator(pre=True, allow_reuse=True)(
-        _check_spec_container_are_exclusively_mutual
-    )
+    @model_validator(mode="before")
+    @classmethod
+    def _verify_spec_and_container_file(cls, values):
+        return _check_spec_container_are_exclusively_mutual(values)
 
 
 class SnippetSchema(BaseModel):
@@ -82,10 +82,10 @@ class _WithoutLogsSchema(BaseModel):
     spec_file: Optional[NameContentSchema] = None
     container_file: Optional[NameContentSchema] = None
 
-    # validators
-    _normalize_spec_and_container_file = root_validator(pre=True, allow_reuse=True)(
-        _check_spec_container_are_exclusively_mutual
-    )
+    @model_validator(mode="before")
+    @classmethod
+    def _verify_spec_and_container_file(cls, values):
+        return _check_spec_container_are_exclusively_mutual(values)
 
 
 class FeedbackInputSchema(_WithoutLogsSchema):
