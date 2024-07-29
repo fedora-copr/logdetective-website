@@ -1,5 +1,5 @@
 FROM registry.fedoraproject.org/fedora:38
-MAINTAINER copr-devel@lists.fedorahosted.org
+LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 ENV ENV=production
 
@@ -21,7 +21,7 @@ RUN npm install -g shadow-cljs@">=2.26.0 <3.0.0"
 RUN npx shadow-cljs release app
 
 FROM registry.fedoraproject.org/fedora:38
-MAINTAINER copr-devel@lists.fedorahosted.org
+LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 ENV ENV=production
 
