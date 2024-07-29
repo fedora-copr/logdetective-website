@@ -121,7 +121,7 @@
 
     (instructions-item
      (not-empty @snippets)
-     "Annotate snippets by selecting them, and clicking 'Annotate selection'")
+     "Create snippets by selecting them and clicking 'Add', then writing annotations")
 
     (instructions-item
      (not-empty (:comment (first @snippets)))
