@@ -1,44 +1,181 @@
 (ns app.review.core
-  ;; This namespace is WIP and currently not working. Ignore lint errors
-  {:clj-kondo/config '{:linters {:unused-namespace {:level :off}}}}
-
   (:require
-   [reagent.core :as r]
-   [html-entities :as html-entities]
-   [lambdaisland.fetch :as fetch]
-   [app.helpers :refer [current-path]]
-   [app.editor.core :refer [editor]]
+   [clojure.set :refer [rename-keys]]
+   [ajax.core :refer [GET POST]]
+   [malli.core :as m]
+   [app.helpers :refer
+    [current-path
+     remove-trailing-slash
+     safe
+     fontawesome-icon]]
+   [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
    [app.components.jumbotron :refer
     [render-error
-     loading-screen]]
+     loading-screen
+     render-jumbotron]]
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions]]))
+     instructions
+     status-panel]]
+   [app.components.snippets :refer
+    [snippets
+     add-snippet
+     add-snippet-from-backend-map
+     on-snippet-textarea-change
+     snippet-color
+     snippet-color-square
+     highlight-text]]
+   [app.review.logic :refer [index-of-file]]
+   [app.review.events :refer
+    [on-accordion-item-show
+     vote on-vote-button-click
+     on-change-form-input]]
+   [app.review.atoms :refer
+    [files
+     error-description
+     error-title
+     status
+     form
+     votes]]))
 
-(def files (r/atom nil))
-(def error-description (r/atom nil))
-(def error-title (r/atom nil))
+(def InputSchema
+  (let [File [:map [:name :string] [:content :string]]]
+    [:map {:closed true}
+     [:username [:maybe :string]] ;; TODO We don't want username from backend
+     [:id :string]
+     [:fail_reason :string]
+     [:how_to_fix :string]
+     [:container_file [:maybe File]]
+     [:spec_file [:maybe File]]
+     [:logs [:map-of :any File]]]))
+
+(defn highlight-snippets-withing-log [log]
+  (let [snippets
+        (->> (:snippets log)
+             (sort-by :start_index)
+             (map-indexed
+              (fn [idx itm]
+                (let [text (subs (:content log)
+                                 (:start_index itm)
+                                 (:end_index itm))
+                      text (highlight-text idx
+                                           (safe text)
+                                           (:user_comment itm)
+                                           (:color (nth @snippets idx)))]
+                  (assoc itm :text text)))))
+
+        content
+        (->>
+         [(safe (subs (:content log) 0 (:start_index (first snippets))))
+          (for [[a b] (partition 2 snippets)]
+            [(:text a)
+             (safe (subs (:content log) (:end_index a) (:start_index b)))
+             (:text b)])
+          (safe (subs (:content log) (:end_index (second snippets))))]
+         (flatten)
+         (apply str))]
+
+    (assoc log :content content)))
+
+(defn handle-validated-backend-data [data]
+  (reset! form (assoc @form :id (:id data)))
+  (reset! form (assoc @form :how-to-fix (:how_to_fix data)))
+  (reset! form (assoc @form :fail-reason (:fail_reason data)))
+
+  ;; First we need to set the files, so that snippets can point to them. We
+  ;; will highlight them later
+  (reset! files (vec (vals (:logs data))))
+
+  ;; Parse snippets from backend and store them to @snippets
+  (doall (for [file (vals (:logs data))
+               :let [file-index (index-of-file (:name file))]]
+           (doall (for [snippet (:snippets file)]
+                    (add-snippet-from-backend-map
+                     @files
+                     file-index
+                     snippet)))))
+
+  (reset! snippets
+          (vec (map-indexed
+                (fn [i x] (assoc x :color (snippet-color i)))
+                @snippets)))
+
+  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data))))))
+
+(defn handle-backend-error [title description]
+  (reset! status "error")
+  (reset! error-title title)
+  (reset! error-description description))
+
+(defn handle-validation-error [title description]
+  ;; Go back to "has files" state, let users fix
+  ;; validation errors
+  (reset! status nil)
+  (reset! error-title title)
+  (reset! error-description description))
 
 (defn init-data-review []
-  (let [url (str "/frontend" (current-path))]
-    (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp]
-                 (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data]
-                 (if (:error data)
-                   (do
-                     (reset! error-title (:error data))
-                     (reset! error-description (:description data)))
-                   (reset!
-                    files
-                    (vec (map (fn [log]
-                                ;; We must html encode all HTML characters
-                                ;; because we are going to render the log
-                                ;; files dangerously
-                                (update log :content #(.encode html-entities %)))
-                              (:logs data))))))))))
+  (GET (str "/frontend" (remove-trailing-slash (current-path)) "/random")
+    :response-format :json
+    :keywords? true
+
+    :error-handler
+    (fn [error]
+      (handle-backend-error
+       (:error (:response error))
+       (:description (:response error))))
+
+    :handler
+    (fn [data]
+      (if (m/validate InputSchema data)
+        (handle-validated-backend-data data)
+        (handle-backend-error
+         "Invalid data"
+         "Got invalid data from the backend. This is likely a bug.")))))
+
+(defn submit-form []
+  (let [body {:id (:id @form)
+              :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
+              :fail_reason {:text (:fail-reason @form)
+                            :vote (:fail-reason @votes)}
+              :how_to_fix  {:text (:how-to-fix @form)
+                            :vote (:how-to-fix @votes)}
+              :snippets
+              (vec (map-indexed
+                    (fn [i x]
+                      (let [k (keyword (str "snippet-" i))
+                            vote (k @votes 0)]
+                        (rename-keys
+                         (assoc x :vote vote)
+                         {:start-index :start_index
+                          :end-index :end_index
+                          :user-comment :comment})))
+                    @snippets))}]
+
+    ;; Remember the username, so we can prefill it the next time
+    ;; TODO See PR #130
+    (when (:fas @form)
+      (.setItem js/localStorage "fas" (:fas @form)))
+
+    (reset! status "submitting")
+
+    (POST "/frontend/review/"
+      {:params body
+       :response-format :json
+       :format :json
+       :keywords? true
+
+       :error-handler
+       (fn [error]
+         (handle-validation-error
+          (:error (:response error))
+          (:description (:response error))))
+
+       :handler
+       (fn [_]
+         (reset! status "submitted"))})))
 
 (defn left-column []
   (instructions
@@ -47,15 +184,15 @@
      "We fetched a random sample from our collected data set")
 
     (instructions-item
-     nil
+     (>= (count (dissoc @votes :how-to-fix :fail-reason)) (count @snippets))
      "Go through all snippets and either upvote or downvote them")
 
     (instructions-item
-     nil
+     (not= (:fail-reason @votes) 0)
      "Is the explanation why did the build fail correct?")
 
     (instructions-item
-     nil
+     (not= (:how-to-fix @votes) 0)
      "Is the explanation how to fix the issue correct?")
 
     (instructions-item nil "Submit")]))
@@ -63,69 +200,134 @@
 (defn middle-column []
   (editor @files))
 
-(defn buttons []
-  [[:button {:type "button"
-             :class "btn btn-outline-primary"
-             :on-click nil}
-    "+1"]
-   [:button {:type "button"
-             :class "btn btn-outline-danger"
-             :on-click nil}
-    "-1"]])
+(defn buttons [name]
+  (let [key (keyword name)]
+    [[:button {:type "button"
+               :class ["btn btn-vote" (if (> (key @votes) 0)
+                                        "btn-primary"
+                                        "btn-outline-primary")]
+               :on-click #(on-vote-button-click key 1)}
+      (fontawesome-icon "fa-thumbs-up")]
+     [:button {:type "button"
+               :class ["btn btn-vote" (if (< (key @votes) 0)
+                                        "btn-danger"
+                                        "btn-outline-danger")]
+               :on-click #(on-vote-button-click key -1)}
+      (fontawesome-icon "fa-thumbs-down")]]))
 
-(defn snippet [text]
-  {:title "Snippet"
-   :body [:p {} text]
-   :buttons (buttons)})
+(defn snippet [text index color]
+  (let [name (str "snippet-" index)]
+    {:title [:<> (snippet-color-square color) "Snippet"]
+     :body
+     [:textarea
+      {:class "form-control"
+       :rows "3"
+       :placeholder "What makes this snippet relevant?"
+       :value text
+       :on-change #(do (on-snippet-textarea-change %)
+                       (vote (keyword name) 1))}]
+     :buttons (buttons name)}))
 
-(defn card [title text]
-  [:div {:class "card"}
+(defn card [title text name placeholder]
+  [:div {:class "card review-card"}
    [:div {:class "card-body"}
-    [:h5 {:class "card-title"} title]
-    [:p {:class "card-text"} text]
-    (into [:<>] (buttons))]])
+    [:h6 {:class "card-title"} title]
+    [:textarea {:class "form-control" :rows 3
+                :value text
+                :placeholder placeholder
+                :name name
+                :on-change #(do (on-change-form-input %)
+                                (vote (keyword name) 1))}]
+    [:div {:class "btn-group"}
+     (into [:<>] (buttons name))]]])
 
 (defn right-column []
   [:<>
-   [:br]
-   [:br]
+   [:label {:class "form-label"} "Your FAS username:"]
+   [:input {:type "text"
+            :class "form-control"
+            :placeholder "Optional - Your FAS username"
+            ;; TODO See PR #130
+            :value (or (:fas @form) (.getItem js/localStorage "fas"))
+            :name "fas"
+            :on-change #(on-change-form-input %)}]
 
-   ;; TODO When clicking any of the accordion items, the snippet should display
-   ;; in the middle column log file. That will be the only currently highlighted
-   ;; snippet, so that it is easily understandable.
+   [:label {:class "form-label"} "Interesting snippets:"]
+   (when (not-empty @snippets)
+     [:div {}
+      [:button {:class "btn btn-secondary btn-lg"
+                :on-click #(add-snippet files active-file)} "Add"]
+      [:br]])
+
+   [:label {:class "form-label"}
+    "You can edit existing snippets. This will automatically upvote them."]
    (accordion
-    "ID"
-    [(snippet "This is the annotation for the first snippet")
-     (snippet "And this is for the second snippet")])
+    "accordionItems"
+    (vec (map-indexed (fn [i x] (snippet (:comment x) i (:color x))) @snippets)))
+
+   (when (empty? @snippets)
+     [:div {:class "card" :id "no-snippets"}
+      [:div {:class "card-body"}
+       [:h5 {:class "card-title"} "No snippets yet"]
+       [:p {:class "card-text"}
+        (str "Please select interesting parts of the log files and press the "
+             "'Add' button to annotate them")]
+       [:button {:class "btn btn-secondary btn-lg"
+                 :on-click #(add-snippet files active-file)}
+        "Add"]]])
 
    [:br]
    (card
     "Why did the build fail?"
-    "Here is some explanation why the build failed")
+    (:fail-reason @form)
+    "fail-reason"
+    "Please describe what caused the build to fail.")
 
    [:br]
    (card
     "How to fix the issue?"
-    "Here is some explanation how to fix the issue")
+    (:how-to-fix @form)
+    "how-to-fix"
+    (str "Please describe how to fix the issue in "
+         "order for the build to succeed."))
 
    [:div {}
     [:label {:class "form-label"} "Ready to submit the results?"]
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"
-              :on-click nil}
+              :on-click #(submit-form)}
      "Submit"]]])
 
+(defn render-succeeded []
+  (render-jumbotron
+   "succeeded"
+   "Thank you!"
+   "Successfully submitted, thank you for your review."
+   "..."
+   [:a {:type "submit"
+        :class "btn btn-primary btn-lg"
+        :href "/review"}
+    [:<> [:i {:class "fa-solid fa-magnifying-glass"}] " Review another report"]]))
+
 (defn review []
+  ;; The js/document is too general, ideally we would like to limit this
+  ;; only to #accordionItems but it doesn't exist soon enough
+  (.addEventListener js/document "show.bs.collapse" on-accordion-item-show)
+
   (cond
-    @error-description
+    (= @status "error")
     (render-error @error-title @error-description)
+
+    (= @status "submitted")
+    (render-succeeded)
 
     @files
     (three-column-layout
      (left-column)
      (middle-column)
-     (right-column))
+     (right-column)
+     (status-panel @status @error-title @error-description))
 
     :else
     (loading-screen "Please wait, fetching logs from our dataset.")))

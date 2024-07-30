@@ -9,7 +9,7 @@
       :data-bs-toggle "collapse"
       :data-bs-target (str "#itemCollapse" i)
       :aria-controls (str "itemCollapse" i)}
-     (str (:title item) " " (+ i 1))]]
+     [:<> (:title item) " " (inc i)]]]
 
    [:div {:id (str "itemCollapse" i)
           :class ["accordion-collapse collapse" (if show? "show" nil)]
@@ -21,7 +21,8 @@
      (:body item)
      [:div {:class "accordion-buttons"
             :data-index-number i}
-      (into [:<>] (:buttons item))]]]])
+      [:div {:class "btn-group"}
+       (into [:<>] (:buttons item))]]]]])
 
 (defn accordion-items [items]
   (doall (for [enumerated-item (map-indexed list items)

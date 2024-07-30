@@ -1,6 +1,7 @@
 (ns app.helpers
   (:require
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   ["html-entities" :as html-entities]))
 
 (defn current-path []
   (.-pathname (.-location js/window)))
@@ -31,3 +32,6 @@
    :description
    (str "Log Detective needs to upload the file to a localStorage in order "
         "to work properly. Please check your browser privacy settings.")})
+
+(defn safe [text]
+  (.encode html-entities text))

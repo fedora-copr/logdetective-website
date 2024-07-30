@@ -9,7 +9,10 @@
                 [clojure-interop/cljs-web-api "1.0.10"]
                 [lambdaisland/fetch "1.2.69"]
                 [clj-kondo "2022.05.31"]
-                [dev.weavejester/lein-cljfmt "0.12.0"]]
+                [dev.weavejester/lein-cljfmt "0.12.0"]
+                [metosin/malli "0.14.0"]
+                [cljs-ajax "0.8.4"]]
+
  :dev-http {3000 "public"}
  :nrepl {:port 3333}
  :source-paths ["src"]}
