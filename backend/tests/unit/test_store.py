@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from unittest.mock import patch
 
@@ -34,17 +33,6 @@ class TestStorator:
             mock_walk.return_value = [(FEEDBACK_DIR, [], [])]
             with pytest.raises(NoDataFound):
                 storator.get_logs()
-
-    @patch.object(Storator3000, "get_logs")
-    def test_get_latest(self, mock_get_logs, storator):
-        mock_get_logs.return_value = [
-            "/path/123.json",
-            "/path/234.json",
-            "/path/345.json",
-        ]
-        expected_file = Path("/path/345.json")
-        latest_file = storator.get_latest()
-        assert latest_file == expected_file
 
     @patch.object(Storator3000, "get_logs")
     def test_get_stats(self, mock_get_logs, storator):

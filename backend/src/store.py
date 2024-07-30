@@ -35,7 +35,7 @@ class Storator3000:
     @classmethod
     def get_logs(cls) -> list:
         if not os.path.exists(FEEDBACK_DIR):
-            return []
+            raise NoDataFound(f"No directory {FEEDBACK_DIR} found to get results.")
 
         all_files = [[
                         os.path.join(subdir[0], file)
@@ -48,18 +48,6 @@ class Storator3000:
         if not all_files:
             raise NoDataFound(f"Results directory {FEEDBACK_DIR} is empty")
         return all_files
-
-    @classmethod
-    def get_latest(cls) -> Path:
-        """Sort stored logs by timestamp and return the newest.
-        """
-        files = cls.get_logs()
-        files = sorted(
-            files,
-            key=lambda x: x.split('/')[-1],
-            reverse=True)
-
-        return Path(files[0])
 
     @classmethod
     def get_random(cls) -> Path:
