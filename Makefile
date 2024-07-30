@@ -2,6 +2,7 @@ COMPOSE ?= $(shell command -v podman-compose 2> /dev/null || echo docker-compose
 CONTAINER_ENGINE ?= $(shell command -v podman 2> /dev/null || echo docker)
 TEST_IMAGE_NAME=log-detective-website_test-backend
 FEEDBACK_DIR=/persistent/results
+REVIEWS_DIR=/persistent/reviews
 PYTHONPATH=/opt/log-detective-website/backend
 
 
@@ -28,6 +29,7 @@ test-backend-in-container:
 	$(CONTAINER_ENGINE) run -t -i \
 		-e PYTHONPATH="$(PYTHONPATH)" \
 		-e FEEDBACK_DIR="$(FEEDBACK_DIR)" \
+		-e REVIEWS_DIR="$(REVIEWS_DIR)" \
 		-e ENV="devel" \
 		-v .:/opt/log-detective-website:z \
 		$(TEST_IMAGE_NAME) \

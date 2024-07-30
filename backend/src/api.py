@@ -19,6 +19,7 @@ from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
     FEEDBACK_DIR,
+    REVIEWS_DIR,
     BuildIdTitleEnum,
     ProvidersEnum,
 )
@@ -34,9 +35,10 @@ from src.schema import (
     ContributeResponseSchema,
     FeedbackInputSchema,
     FeedbackSchema,
+    FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, get_temporary_dir
+from src.spells import make_tar, get_temporary_dir, find_file_by_name
 from src.store import Storator3000
 
 logger = logging.getLogger(__name__)
@@ -259,26 +261,82 @@ def contribute_review_container_logs(
 
 
 @app.get("/frontend/review/random")
-def frontend_review_random() -> FeedbackSchema:
-    if os.environ.get("ENV") == "production":
-        raise NotImplementedError("Reviewing is not ready yet")
-
+def frontend_review_random():
     random_feedback_file = Storator3000.get_random()
     with open(random_feedback_file) as random_file:
         content = json.loads(random_file.read())
-        return FeedbackSchema(**content)
+        return FeedbackSchema(**content).dict() | {"id": random_feedback_file.name.rstrip(".json")}
 
 
-@app.get("/frontend/review/latest")
-def frontend_review_latest() -> FeedbackSchema:
-    if os.environ.get("ENV") == "production":
-        raise NotImplementedError("Reviewing is not ready yet")
+def _get_text_from_feedback(item: dict) -> str:
+    if item["vote"] != 1:
+        return ""
 
-    feedback_file = Storator3000.get_latest()
+    return item["text"]
 
-    with open(feedback_file) as file:
-        content = json.loads(file.read())
-        return FeedbackSchema(**content)
+
+def _parse_snippet(snippet: dict) -> dict:
+    return {
+        "start_index": snippet["start-index"],
+        "end_index": snippet["end-index"],
+        "user_comment": snippet["comment"],
+        "text": snippet["text"],
+    }
+
+
+def _parse_logs(logs_orig: dict[str, FeedbackLogSchema], review_snippets: list[dict]) -> None:
+    for name, item in logs_orig.items():
+        item.snippets = []
+        for snippet in review_snippets:
+            if snippet["file"] == name and snippet["vote"] == 1:
+                # mypy can't see this far and hinting to it is messy
+                item.snippets.append(_parse_snippet(snippet))  # type: ignore[arg-type]
+
+
+def _parse_feedback(review_d: dict, origin_id: int) -> FeedbackSchema:
+    original_file_path = find_file_by_name(f"{origin_id}.json", Path(FEEDBACK_DIR))
+    if original_file_path is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Original feedback file for ID {origin_id} not found",
+        )
+
+    with open(original_file_path, encoding="utf-8") as fp:
+        original_content = json.load(fp)
+        schema = FeedbackSchema(**original_content)
+        # no reason to store username
+        schema.username = None
+        schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
+        schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
+        _parse_logs(schema.logs, review_d["snippets"])
+        return schema.dict(exclude_unset=True)
+
+
+@app.post("/frontend/review")
+async def store_random_review(feedback_input: Request) -> OkResponse:
+    """
+    Store review from frontend.
+    """
+    # TODO: temporary silly solution until database is created
+    #  (missing provider but we can dig it from original feedback file)
+    reviews_dir = Path(REVIEWS_DIR)
+    parsed_reviews_dir = reviews_dir / "parsed"
+    parsed_reviews_dir.mkdir(parents=True, exist_ok=True)
+    content = await feedback_input.json()
+    original_file_id = content.pop("id")
+    # avoid duplicates - same ID can be reviewed multiple times
+    file_name = f"{original_file_id}-{int(datetime.now().timestamp())}"
+    with open(reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
+        json.dump(content | {"id": original_file_id}, fp, indent=4)
+
+    with open(parsed_reviews_dir / f"{file_name}.json", "w") as fp:
+        json.dump(
+            _parse_feedback(content, original_file_id) | {"id": original_file_id},
+            fp,
+            indent=4
+        )
+
+    return OkResponse()
 
 
 def _make_tpm_tar_file_from_results() -> Iterator[Path]:
