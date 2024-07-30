@@ -191,10 +191,6 @@ a:hover {
   --bs-btn-active-border-color: var(--newblue);
 }
 
-.snippet {
-  background-color: var(--lightpurple);
-}
-
 #left-column h4 {
   color: var(--darkblue);
 }
@@ -299,4 +295,24 @@ a:hover {
   left: 0;
   right: 0;
   text-align: center;
+}
+
+#right-column .review-card>.card-body  {
+  padding: 0px;
+}
+
+#right-column .review-card>*>.card-title {
+  background-color: var(--gray-1);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 15px;
+  margin-bottom: 0px;
+}
+
+
+button.btn-vote:hover {
+  /* Remove hover for vote buttons to easily distinguish clicked and */
+  /* unclicked buttons  */
+  background-color: var(--bs-btn-bg) !important;
+  color: var(--bs-btn-color) !important;
 }

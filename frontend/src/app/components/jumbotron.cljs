@@ -1,6 +1,4 @@
-(ns app.components.jumbotron
-  (:require
-   [app.helpers :refer [fontawesome-icon]]))
+(ns app.components.jumbotron)
 
 (defn render-jumbotron [id h1 title description icon]
   [:div {:id id :class "py-5 text-center container rounded"}
@@ -28,14 +26,3 @@
    title
    "..."
    (loading-icon)))
-
-(defn render-succeeded []
-  (render-jumbotron
-   "succeeded"
-   "Thank you!"
-   "Successfully submitted, thank you for your contribution."
-   "..."
-   [:a {:type "submit"
-        :class "btn btn-primary btn-lg"
-        :href "/"}
-    [:<> (fontawesome-icon "fa-plus") " Add another log"]]))

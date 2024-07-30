@@ -242,4 +242,8 @@
     [:div {:class "card text-center"}
      (render-stats)
      (render-navigation)
-     (render-cards)]))
+     (render-cards)])
+  [:div {:class "card text-center"}
+   (render-stats)
+   (render-navigation)
+   (render-cards)])
