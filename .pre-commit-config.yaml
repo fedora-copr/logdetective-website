@@ -30,7 +30,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
         args:
@@ -44,7 +44,7 @@ repos:
       - id: pyupgrade
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.0
+    rev: v1.11.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -52,7 +52,7 @@ repos:
           - types-requests
 
   - repo: https://github.com/clj-kondo/clj-kondo
-    rev: v2024.05.24
+    rev: v2024.08.01
     hooks:
       - id: clj-kondo-docker
 
