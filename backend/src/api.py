@@ -275,22 +275,13 @@ def _get_text_from_feedback(item: dict) -> str:
     return item["text"]
 
 
-def _parse_snippet(snippet: dict) -> dict:
-    return {
-        "start_index": snippet["start-index"],
-        "end_index": snippet["end-index"],
-        "user_comment": snippet["comment"],
-        "text": snippet["text"],
-    }
-
-
 def _parse_logs(logs_orig: dict[str, FeedbackLogSchema], review_snippets: list[dict]) -> None:
     for name, item in logs_orig.items():
         item.snippets = []
         for snippet in review_snippets:
             if snippet["file"] == name and snippet["vote"] == 1:
                 # mypy can't see this far and hinting to it is messy
-                item.snippets.append(_parse_snippet(snippet))  # type: ignore[arg-type]
+                item.snippets.append(snippet)  # type: ignore[arg-type]
 
 
 def _parse_feedback(review_d: dict, origin_id: int) -> FeedbackSchema:
