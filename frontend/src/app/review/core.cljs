@@ -161,7 +161,7 @@
 
     (reset! status "submitting")
 
-    (POST "/frontend/review/"
+    (POST "/frontend/review"
       {:params body
        :response-format :json
        :format :json
