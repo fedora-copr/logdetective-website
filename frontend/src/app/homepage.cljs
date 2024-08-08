@@ -12,13 +12,12 @@
               local-storage-error
               remove-trailing-slash]]))
 
-(defn current-hash []
-  (. (. js/document -location) -hash))
+(def current-hash (r/atom (. (. js/document -location) -hash)))
 
 (def input-values (r/atom nil))
 (def input-errors (r/atom []))
 (def backend-stats (r/atom nil))
-(def current-hash-atom (r/atom (or (current-hash) "#copr")))
+(def current-hash-atom (r/atom (or (and (not (str/blank? @current-hash)) @current-hash) "#copr")))
 (def report-target (r/atom 1000))
 (def error (r/atom nil))
 
