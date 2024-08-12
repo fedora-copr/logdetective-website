@@ -4,8 +4,8 @@ LABEL maintainer="copr-devel@lists.fedorahosted.org"
 ENV ENV=production
 
 RUN dnf -y update && \
-    # Base packages
-    dnf -y install git \
+    # Base packages; git-lfs for the gif we have on the frontpage
+    dnf -y install git-core git-lfs \
     # Frontend
     && dnf -y install \
                    npm \

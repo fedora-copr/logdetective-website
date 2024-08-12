@@ -10,7 +10,7 @@ RUN dnf -y update && \
                    iputils \
                    vim \
                    mlocate \
-                   git \
+                   git-core git-lfs \
                    sudo \
                    python3-ipdb \
                    findutils \
