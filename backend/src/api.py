@@ -1,18 +1,19 @@
 import json
 import logging
 import os
+import tempfile
 from base64 import b64decode
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Iterator
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
 from src.constants import (
@@ -38,7 +39,7 @@ from src.schema import (
     FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, get_temporary_dir, find_file_by_name
+from src.spells import make_tar, find_file_by_name
 from src.store import Storator3000
 
 logger = logging.getLogger(__name__)
@@ -330,34 +331,36 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     return OkResponse()
 
 
-def _make_tpm_tar_file_from_results() -> Iterator[Path]:
+@app.get("/download")
+def download_results():
+    """
+    Download all results we have as a tar.gz archive.
+
+    We create a temporary directory and store the archive in there.
+    After the client browser gets the whole file, we delete our temp
+    file and directory using the cleanup() method as a backgroun task.
+
+    This function was rewritten from an async implementataion that stopped working
+    (probably after an update to fastapi and starlette).
+    https://github.com/fedora-copr/log-detective-website/issues/157
+    """
     if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
 
-    with get_temporary_dir() as tmp_dir:
-        tar_path = make_tar(
-            f"results-{int(datetime.now().timestamp())}.tar.gz", Path(FEEDBACK_DIR), tmp_dir
-        )
-        try:
-            yield tar_path
-        finally:
-            os.unlink(tar_path)
+    tmp_dir = Path(tempfile.mkdtemp())
+    tar_name = f"results-{int(datetime.now().timestamp())}.tar.gz"
+    tar_path = make_tar(tar_name, Path(FEEDBACK_DIR), tmp_dir)
 
-
-@app.get("/download", response_class=StreamingResponse)
-def download_results(_tar_path=Depends(_make_tpm_tar_file_from_results)):
-    def iter_large_file(file_name: Path):
-        with open(file_name, mode="rb") as file:
-            yield from file
-
-    return StreamingResponse(
-        iter_large_file(_tar_path),
+    def cleanup():
+        os.unlink(tar_path)
+        os.rmdir(tmp_dir)
+    # https://fastapi.tiangolo.com/advanced/custom-response/?h=fileresponse#fileresponse
+    # https://fastapi.tiangolo.com/reference/background/?h=background
+    return FileResponse(
+        tar_path,
+        filename=tar_name,
         media_type="application/x-tar",
-        headers={
-            "Content-Disposition": f"attachment; filename={_tar_path.name}",
-            "Content-Length": str(_tar_path.stat().st_size),
-        },
-    )
+        background=BackgroundTask(cleanup))
 
 
 @app.get("/stats")

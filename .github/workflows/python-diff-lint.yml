@@ -18,6 +18,7 @@ jobs:
         id: VCS_Diff_Lint
         with:
           subdirectory: backend
+          install_rpm_packages: ["python3-starlette"]
 
       - name: Upload artifact with detected defects in SARIF format
         uses: actions/upload-artifact@v4
