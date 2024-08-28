@@ -58,6 +58,17 @@ class Storator3000:
         return Path(random.choice(files))
 
     @classmethod
+    def get_by_id(cls, result_id: str) -> Path | None:
+        """
+        Return a result based on its ID
+        """
+        files = cls.get_logs()
+        for path in files:
+            if os.path.basename(path).split(".")[0] == result_id:
+                return Path(path)
+        return None
+
+    @classmethod
     def get_stats(cls) -> dict:
         """Retrieve basic statistics about submitted reports.
         """

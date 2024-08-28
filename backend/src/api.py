@@ -9,7 +9,12 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    FileResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -41,6 +46,7 @@ from src.schema import (
 )
 from src.spells import make_tar, find_file_by_name
 from src.store import Storator3000
+from src.exceptions import NoDataFound
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +112,16 @@ def documentation(request: Request):
     return template_response("documentation.html", {"request": request})
 
 
-@app.get("/review", response_class=HTMLResponse)
+@app.get("/review", response_class=RedirectResponse)
+def review_redirect():
+    """
+    Redirect to a review URL that contains some result ID
+    """
+    result = Storator3000.get_random()
+    return f"/review/{result.stem}"
+
+
+@app.get("/review/{result_id}", response_class=HTMLResponse)
 def review(request: Request):
     return template_response("review.html", {"request": request})
 
@@ -261,12 +276,20 @@ def contribute_review_container_logs(
     return _store_data_for_providers(feedback_input, ProvidersEnum.container, url)
 
 
-@app.get("/frontend/review/random")
-def frontend_review_random():
-    random_feedback_file = Storator3000.get_random()
-    with open(random_feedback_file) as random_file:
-        content = json.loads(random_file.read())
-        return FeedbackSchema(**content).dict() | {"id": random_feedback_file.name.rstrip(".json")}
+@app.get("/frontend/review/{result_id}")
+def frontend_review_random(result_id):
+    if result_id == "random":
+        feedback_file = Storator3000.get_random()
+    else:
+        feedback_file = Storator3000.get_by_id(result_id)
+
+    if not feedback_file:
+        raise NoDataFound(f"No result with ID {result_id}")
+
+    with open(feedback_file) as fp:
+        content = json.loads(fp.read())
+        return FeedbackSchema(**content).dict() \
+            | {"id": feedback_file.name.rstrip(".json")}
 
 
 def _get_text_from_feedback(item: dict) -> str:
