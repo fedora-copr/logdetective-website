@@ -30,7 +30,7 @@ ENV STORAGE_DIR=/persistent
 ENV FEEDBACK_DIR=/persistent/results
 
 RUN dnf -y install python3-fastapi \
-                   python3-uvicorn \
+                   python3-uvicorn+standard \
                    python3-gunicorn \
                    python3-jinja2 \
                    python3-requests \
