@@ -2,11 +2,10 @@
   (:require
    [clojure.set :refer [rename-keys]]
    [ajax.core :refer [GET POST]]
+   [clojure.string :as str]
    [malli.core :as m]
    [app.helpers :refer
-    [current-path
-     remove-trailing-slash
-     safe
+    [safe
      fontawesome-icon]]
    [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
@@ -116,8 +115,13 @@
   (reset! error-title title)
   (reset! error-description description))
 
+(defn result-id-from-url []
+  (let [split (-> js/window .-location .-href (str/split "/review/"))]
+    (when (> (count split) 1)
+      (last split))))
+
 (defn init-data-review []
-  (GET (str "/frontend" (remove-trailing-slash (current-path)) "/random")
+  (GET (str "/frontend/review/" (or (result-id-from-url)  "random"))
     :response-format :json
     :keywords? true
 
