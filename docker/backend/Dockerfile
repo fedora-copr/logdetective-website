@@ -17,7 +17,7 @@ RUN dnf -y update && \
     # The dependencies for this project
     && dnf -y install \
                    python3-fastapi \
-                   python3-uvicorn \
+                   python3-uvicorn+standard \
                    python3-jinja2 \
                    python3-requests \
                    python3-koji \
