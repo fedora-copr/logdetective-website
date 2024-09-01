@@ -104,7 +104,8 @@ def home(request: Request):
 def contribute(request: Request, args: str):
     # TODO: once ready for production, drop path and use proper paths
     _ = args
-    return template_response("contribute.html", {"request": request})
+    mapping = {"name": "app-contribute", "request": request}
+    return template_response("app.html", mapping)
 
 
 @app.get("/documentation", response_class=HTMLResponse)
@@ -123,7 +124,14 @@ def review_redirect():
 
 @app.get("/review/{result_id}", response_class=HTMLResponse)
 def review(request: Request):
-    return template_response("review.html", {"request": request})
+    mapping = {"name": "app-review", "request": request}
+    return template_response("app.html", mapping)
+
+
+@app.get("/explain", response_class=HTMLResponse)
+def explain(request: Request):
+    mapping = {"name": "app-prompt", "request": request}
+    return template_response("app.html", mapping)
 
 
 # Frontend API routes
@@ -290,6 +298,92 @@ def frontend_review_random(result_id):
         content = json.loads(fp.read())
         return FeedbackSchema(**content).dict() \
             | {"id": feedback_file.name.rstrip(".json")}
+
+
+@app.post("/frontend/explain/")
+async def frontend_explain_post(request: Request):
+    # TODO Somebody needs write a code for communicating with the Log Detective
+    # server and return the actual values for given prompt.
+    data = await request.json()
+    print("TODO Query log detective based on:")
+    print(data)
+
+    # TODO These are hardcode values based on a Logdetective output I found in
+    # Slack.
+    # Please try to keep both the input and output schema unchanged
+    explanation = (
+        "The logs indicate that the build process for the gr-osmosdr "
+        "package failed due to missing required shared libraries for "
+        "the gr-funcube and gnuradio packages. "
+        "\n"  # TODO Instruct logdetective to respond in paragraphs
+        "Specifically, the packages gr-funcube, gnuradio, and uhd "
+        "required shared libraries libgnuradio-funcube.so.3.10.0, "
+        "libuhd.so.4.4.0, and libuhd.so.4.6.0 respectively, but none "
+        "of the available providers (copr_base and fedora) had these "
+        "libraries available for installation. As a result, the installation "
+        "process failed with dependency conflicts and unable to install the "
+        "required packages. "
+        "\n"
+        "Additionally, there were multiple versions of uhd (4.4.0 and "
+        "4.6.0) with conflicting dependencies that could not be installed "
+        "together. "
+        "\n"
+        "This is why the error message suggests adding "
+        "'--skip-broken' or '--nobest' to the dnf command to skip "
+        "uninstallable packages or use not only best candidate "
+        "packages respectively. "
+    )
+    reasoning = [
+        {
+            "snippet": "INFO: Reading stdout from command: git rev-parse HEAD",
+            "comment": (
+                "This is an informational message indicating that the Git "
+                "command \"git rev-parse HEAD\" is being executed to retrieve "
+                "the current branch or commit hash for the repository. "
+            )
+        },
+        {
+            "snippet": (
+                "No matches found for the following disable plugin "
+                "patterns: local, spacewalk, versionlock "
+            ),
+            "comment": (
+                "This message indicates that none of the specified disable "
+                "plugins (local, spacewalk, versionlock) were found in the "
+                "system configuration."
+            )
+        },
+        {
+            "snippet": (
+                "Wrote: /builddir/build/SRPMS/gr-osmosdr-0.2.5-5.fc38.src.rpm"
+            ),
+            "comment": (
+                "This message indicates that the source RPM file for "
+                "gr-osmosdr package has been created successfully."
+                ""
+            )
+        },
+        {
+            "snippet": (
+                "Copr repository                                  21 kB/s |"
+                " 1.5 kB     00:00     "
+            ),
+            "comment": (
+                "This is an informational message indicating the speed of "
+                "downloading packages from the Copr repository. "
+            )
+        },
+    ]
+    log = {
+        "name": "builder-live.log",
+        "content": "This is the full content of the log",
+    }
+    return {
+        "explanation": explanation,
+        "reasoning": reasoning,
+        "certainty": 75,
+        "log": log,
+    }
 
 
 def _get_text_from_feedback(item: dict) -> str:

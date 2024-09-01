@@ -31,6 +31,11 @@
   --gray-7: #535961;
   --gray-8: #4c4c4c;
   --gray-9: #1d252e;
+
+  --bs-primary-rgb: 81,162,218;
+  /* --bs-warning-rgb: 235,116,52; */
+  --bs-danger-rgb: 219,50,121;
+
 }
 
 body {
@@ -153,7 +158,7 @@ h2 {
   border-color: var(--magenta);
 }
 
-.input-group {
+#app-homepage .input-group {
   max-width: 600px;
 }
 
@@ -170,18 +175,6 @@ a:hover {
   height: 84vh;
 }
 
-#right-column .form-control:disabled {
-  background-color: var(--gray-1);
-}
-
-.accordion-button:not(.collapsed) {
-  background-color: var(--gray-1);
-}
-
-.accordion-button {
-  background-color: var(--gray-1);
-}
-
 .btn-primary {
   border-color: var(--newblue);
   background-color: var(--newblue);
@@ -191,37 +184,6 @@ a:hover {
   --bs-btn-active-border-color: var(--newblue);
 }
 
-#left-column h4 {
-  color: var(--darkblue);
-}
-
-#left-column .fa-li {
-  padding-right: 8px;
-}
-
-#left-column li.todo .fa-li {
-  color: var(--magenta);
-}
-
-#left-column li.done .fa-li {
-  color: var(--green);
-}
-
-#right-column label {
-  margin-top: 20px;
-}
-
-#right-column textarea {
-  background-color: var(--white);
-}
-
-#right-column .accordion-body {
-  padding: 0px;
-}
-
-#right-column .card {
-  background-color: var(--white);
-}
 
 #about {
   margin-top: 80px;
@@ -296,19 +258,6 @@ a:hover {
   right: 0;
   text-align: center;
 }
-
-#right-column .review-card>.card-body  {
-  padding: 0px;
-}
-
-#right-column .review-card>*>.card-title {
-  background-color: var(--gray-1);
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-left: 15px;
-  margin-bottom: 0px;
-}
-
 
 button.btn-vote:hover {
   /* Remove hover for vote buttons to easily distinguish clicked and */

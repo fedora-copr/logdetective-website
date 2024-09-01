@@ -1,0 +1,89 @@
+#content-wide {
+  max-width: 1700px;
+  margin-top: 0px;
+}
+
+#content {
+  padding-top: 30px;
+  background-color: white;
+  max-width: 1700px;
+}
+
+#content-narrow {
+  max-width: 1000px;
+}
+
+#left-column {
+  padding-left: 30px;
+  padding-right: 60px;
+  border-right: 1px solid var(--bs-gray-200);
+}
+
+#left-column h2 {
+  margin-bottom: 30px;
+}
+
+#right-column {
+  padding-left: 60px;
+}
+
+.reason {
+  margin-top: 20px;
+  border-bottom: 1px solid var(--bs-gray-300);
+}
+
+.reason p {
+  margin-bottom: 5px;
+}
+
+.reason i {
+  float: left;
+  font-size: 20px;
+  margin-right: 10px;
+  color: var(--bs-gray-400);
+}
+
+.reason pre {
+  margin-bottom: 10px;
+}
+
+footer {
+  height: 180px;
+}
+
+#prompt {
+  width: 700px;
+  height: 200px;
+  /* @FIXME We need to calculate the position from the bottom */
+  margin-top: 250px;
+}
+
+#prompt textarea {
+  background: var(--bs-gray-200);
+  resize: none;
+}
+
+.prompt-icon {
+  margin-top: 25px;
+}
+
+.accordion-button code {
+  color: var(--bs-black);
+  font-size: 13px;
+  font-family: var(--bs-font-monospace);
+
+}
+
+.accordion-button:after {
+    order: -1;
+    margin-left: -15px;
+    margin-right: 15px;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: var(--gray-1);
+}
+
+#prompt-examples button {
+  margin-right: 10px;
+}

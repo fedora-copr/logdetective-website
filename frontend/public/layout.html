@@ -16,6 +16,11 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
     />
     <link rel="stylesheet" href="/css/style.css" />
+    {% if name in ["app-contribute", "app-review"] %}
+    <link rel="stylesheet" href="/css/contribute-and-review.css" />
+    {% elif name == "app-prompt" %}
+    <link rel="stylesheet" href="/css/prompt.css" />
+    {% endif %}
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark" id="menu">
