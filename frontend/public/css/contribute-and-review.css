@@ -1,0 +1,55 @@
+#left-column h4 {
+  color: var(--darkblue);
+}
+
+#left-column .fa-li {
+  padding-right: 8px;
+}
+
+#left-column li.todo .fa-li {
+  color: var(--magenta);
+}
+
+#left-column li.done .fa-li {
+  color: var(--green);
+}
+
+#right-column label {
+  margin-top: 20px;
+}
+
+#right-column textarea {
+  background-color: var(--white);
+}
+
+#right-column .accordion-body {
+  padding: 0px;
+}
+
+#right-column .card {
+  background-color: var(--white);
+}
+
+#right-column .review-card>.card-body  {
+  padding: 0px;
+}
+
+#right-column .review-card>*>.card-title {
+  background-color: var(--gray-1);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 15px;
+  margin-bottom: 0px;
+}
+
+#right-column .form-control:disabled {
+  background-color: var(--gray-1);
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: var(--gray-1);
+}
+
+.accordion-button {
+  background-color: var(--gray-1);
+}
