@@ -3,6 +3,7 @@
    [reagent.core :as r]))
 
 (def files (r/atom nil))
+(def raw-files (r/atom nil))
 (def error-description (r/atom nil))
 (def error-title (r/atom nil))
 (def status (r/atom nil))

@@ -1,15 +1,16 @@
 (ns app.review.events
   (:require
    [app.editor.core :refer [active-file]]
-   [app.components.snippets :refer [snippets]]
+   [app.components.snippets :refer [snippets scroll-to-snippet]]
    [app.review.logic :refer [index-of-file]]
-   [app.review.atoms :refer [votes form]]))
+   [app.review.atoms :refer [votes form raw-files]]))
 
 (defn on-accordion-item-show [^js/Event event]
   (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
         snippet (nth @snippets snippet-id)
         file-name (:file snippet)]
-    (reset! active-file (index-of-file file-name))))
+    (reset! active-file (index-of-file file-name))
+    (scroll-to-snippet (get @raw-files @active-file) snippet)))
 
 (defn vote [key value]
   (reset! votes (assoc @votes key value)))
