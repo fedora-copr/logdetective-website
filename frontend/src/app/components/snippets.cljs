@@ -1,6 +1,7 @@
 (ns app.components.snippets
   (:require
    [reagent.core :as r]
+   [clojure.string :as str]
    [reagent.dom.server :refer [render-to-string]]
    [app.helpers :refer [previous-siblings]]))
 
@@ -147,3 +148,23 @@
     (let [span (.getElementById js/document (str "snippet-" snippet-id))
           text (.-innerHTML span)]
       (.replaceWith span text))))
+
+(defn scroll-to-snippet [file snippet]
+  (let [log (.getElementById js/document "log")
+        lines (-> file
+                  (:content)
+                  (subs 0 (:start-index snippet))
+                  (str/split #"\n")
+                  (count)
+                  (- 1))
+
+        ;; This is the line height in pixels. The applicable CSS line-height
+        ;; is `--bs-body-line-height' which is 1.5 and the font-size is
+        ;; 0.875em which equals to 14px.
+        lineheight (* 1.5 14)
+
+        ;; We want to scroll few more lines so that the snippet isn't at the
+        ;; exact top of the editor and it is more close to the center
+        offset (* 5 lineheight)
+        pixels (- (* lines lineheight) offset)]
+    (set! (.-scrollTop log) pixels)))

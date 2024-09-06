@@ -25,7 +25,8 @@
      on-snippet-textarea-change
      snippet-color
      snippet-color-square
-     highlight-text]]
+     highlight-text
+     scroll-to-snippet]]
    [app.review.logic :refer [index-of-file]]
    [app.review.events :refer
     [on-accordion-item-show
@@ -33,6 +34,7 @@
      on-change-form-input]]
    [app.review.atoms :refer
     [files
+     raw-files
      error-description
      error-title
      status
@@ -87,6 +89,7 @@
   ;; First we need to set the files, so that snippets can point to them. We
   ;; will highlight them later
   (reset! files (vec (vals (:logs data))))
+  (reset! raw-files (vec (vals (:logs data))))
 
   ;; Parse snippets from backend and store them to @snippets
   (doall (for [file (vals (:logs data))
@@ -102,7 +105,10 @@
                 (fn [i x] (assoc x :color (snippet-color i)))
                 @snippets)))
 
-  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data))))))
+  (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data)))))
+
+  (when @snippets
+    (reset! active-file (index-of-file (:file (last @snippets))))))
 
 (defn handle-backend-error [title description]
   (reset! status "error")
@@ -202,8 +208,15 @@
 
     (instructions-item nil "Submit")]))
 
+(defn on-editor-rendered [element]
+  (when element
+    (scroll-to-snippet
+     (get @raw-files @active-file)
+     (last @snippets))))
+
 (defn middle-column []
-  (editor @files))
+  [:div {:ref on-editor-rendered}
+   (editor @files)])
 
 (defn buttons [name]
   (let [key (keyword name)]
