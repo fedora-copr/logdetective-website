@@ -68,11 +68,12 @@
         content
         (->>
          [(safe (subs (:content log) 0 (:start_index (first snippets))))
-          (for [[a b] (partition 2 snippets)]
+          (for [[a b] (partition-all 2 snippets)]
             [(:text a)
-             (safe (subs (:content log) (:end_index a) (:start_index b)))
-             (:text b)])
-          (safe (subs (:content log) (:end_index (second snippets))))]
+             (when b
+               (safe (subs (:content log) (:end_index a) (:start_index b)))
+               (:text b))])
+          (safe (subs (:content log) (:end_index (last snippets))))]
          (flatten)
          (apply str))]
 
