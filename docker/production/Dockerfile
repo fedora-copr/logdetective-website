@@ -12,7 +12,7 @@ RUN dnf -y update && \
                    java
 
 
-RUN git clone https://github.com/fedora-copr/log-detective-website.git /src
+RUN git clone https://github.com/fedora-copr/logdetective-website.git /src
 
 
 WORKDIR /src/frontend
@@ -65,4 +65,4 @@ WORKDIR /src/backend/src
 ENV PYTHONPATH="${PYTHONPATH}:/src/backend"
 
 # We should put this into a config file
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/log-detective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080"]

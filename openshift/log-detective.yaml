@@ -2,7 +2,7 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: log-detective-website
+  name: logdetective-website
 spec:
   selector:
     matchLabels:
@@ -17,8 +17,8 @@ spec:
           persistentVolumeClaim:
             claimName: persistent
       containers:
-        - name: log-detective-website
-          image: quay.io/log-detective/website:latest
+        - name: logdetective-website
+          image: quay.io/logdetective/website:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -56,10 +56,10 @@ status: {}
 kind: Service
 apiVersion: v1
 metadata:
-  name: log-detective-website
+  name: logdetective-website
 spec:
   ports:
-    - name: log-detective-website
+    - name: logdetective-website
       port: 8080
       protocol: TCP
       targetPort: 8080
@@ -69,51 +69,19 @@ spec:
 # Route stuff stolen from Packit:
 # https://github.com/packit/deployment/blob/main/openshift/packit-service.yml.j2#L147
 # Gunicorn can't do 2 domains at the same time, we need nginx for that:
-#   https://github.com/fedora-copr/log-detective-website/issues/61
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: log-detective-website
-  namespace: communishift-log-detective
-spec:
-  host: log-detective.com
-  to:
-    kind: Service
-    name: log-detective-website
-  port:
-    targetPort: log-detective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: log-detective-website-www
-  namespace: communishift-log-detective
-spec:
-  host: www.log-detective.com
-  to:
-    kind: Service
-    name: log-detective-website
-  port:
-    targetPort: log-detective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
+#   https://github.com/fedora-copr/logdetective-website/issues/61
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website
-  namespace: communishift-log-detective
+  namespace: communishift-logdetective
 spec:
   host: logdetective.com
   to:
     kind: Service
-    name: log-detective-website
+    name: logdetective-website
   port:
-    targetPort: log-detective-website
+    targetPort: logdetective-website
   tls:
     termination: passthrough
     insecureEdgeTerminationPolicy: Redirect
@@ -122,14 +90,46 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website-www
-  namespace: communishift-log-detective
+  namespace: communishift-logdetective
 spec:
   host: www.logdetective.com
   to:
     kind: Service
-    name: log-detective-website
+    name: logdetective-website
   port:
-    targetPort: log-detective-website
+    targetPort: logdetective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: logdetective-website
+  namespace: communishift-logdetective
+spec:
+  host: logdetective.com
+  to:
+    kind: Service
+    name: logdetective-website
+  port:
+    targetPort: logdetective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: logdetective-website-www
+  namespace: communishift-logdetective
+spec:
+  host: www.logdetective.com
+  to:
+    kind: Service
+    name: logdetective-website
+  port:
+    targetPort: logdetective-website
   tls:
     termination: passthrough
     insecureEdgeTerminationPolicy: Redirect

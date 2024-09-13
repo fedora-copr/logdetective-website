@@ -14,7 +14,7 @@ dnf install python3-fastapi python3-uvicorn
 Run the development ASGI server with
 
 ```
-PYTHONPATH=/opt/log-detective-website uvicorn api:app --host 0.0.0.0 --port 5020 --reload
+PYTHONPATH=/opt/logdetective-website uvicorn api:app --host 0.0.0.0 --port 5020 --reload
 ```
 
 or use compose:

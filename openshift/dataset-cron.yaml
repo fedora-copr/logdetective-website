@@ -16,7 +16,7 @@ spec:
         spec:
           containers:
           - name: upload-dataset
-            image: quay.io/log-detective/website:latest
+            image: quay.io/logdetective/website:latest
             imagePullPolicy: Always
             # for some reason we need to explicitly call the command like this -_-
             command: ["python3", "/usr/bin/compile_extraction_dataset.py"]

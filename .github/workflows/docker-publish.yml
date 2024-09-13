@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: quay.io
-  IMAGE_NAME: log-detective/website
+  IMAGE_NAME: logdetective/website
 
 
 jobs:

@@ -25,7 +25,7 @@ RUN npm install -g shadow-cljs@">=2.26.0 <3.0.0"
 # TODO In the next steps we want to copy the source code to the container,
 # install all Javascript dependencies and pre-install all ClojureScript
 # dependencies. However we want to make them available to the bind-mounted
-# directory in /opt/log-detective-website that will be used when running the
+# directory in /opt/logdetective-website that will be used when running the
 # container. Unfortunatelly, I don't know how to do that, which makes running
 # the container for the first time take a couple of minutes before it is ready.
 # To whomever trying to fix this, here are some useful commands:

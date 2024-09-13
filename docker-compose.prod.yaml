@@ -4,8 +4,8 @@ services:
     build:
       context: docker/production
       dockerfile: Dockerfile
-    image: quay.io/log-detective/website
-    hostname: log-detective
+    image: quay.io/logdetective/website
+    hostname: logdetective
     stdin_open: true
     tty: true
     ports:
