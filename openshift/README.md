@@ -1,6 +1,6 @@
 # OpenShift deployment
 
-At this time, the `log-detective` website is deployed in Fedora
+At this time, the `logdetective` website is deployed in Fedora
 CommuniShift.
 
 - Dashboard: https://console-openshift-console.apps.fedora.cj14.p1.openshiftapps.com/
@@ -18,7 +18,7 @@ https://docs.okd.io/latest/cli_reference/openshift_cli/getting-started-cli.html
 
 To be able to access the OpenShift project please ping fedora-infra to
 add you to [communishift][group1] group and @FrostyX, to add you to
-[communishift-log-detective][group2] group.
+[communishift-logdetective][group2] group.
 
 ## Login
 
@@ -33,7 +33,7 @@ oc login --token=... --server=https://api.fedora.cj14.p1.openshiftapps.com:6443
 ## Build
 
 The production container uses code from
-https://github.com/fedora-copr/log-detective-website
+https://github.com/fedora-copr/logdetective-website
 so commit and push your changes.
 
 Build the container image:
@@ -49,7 +49,7 @@ make build-prod
 ```
 
 Push the image to quay.io
-[quay.io/log-detective][quay-organization]:
+[quay.io/logdetective][quay-organization]:
 
 ```
 docker-compose -f docker-compose.prod.yaml push
@@ -77,15 +77,15 @@ This will also generate release notes.
 
 Once you created the new release, you should wait for our GitHub action to
 build a matching container image and push it to [our quay
-repository](https://quay.io/repository/log-detective/website?tab=history).
+repository](https://quay.io/repository/logdetective/website?tab=history).
 
 When you see the image in the listing, continue with the regular Deploy process
 described below.
 
 You can then verify based on the Image digest what we are running production:
 ```
-oc describe pod log-detective-website-xxxxxxxx-xxxxx | grep 'Image ID'
-   Image ID:       quay.io/log-detective/website@sha256:71a5cf95568e593df8a0723081b4bd17506d2236bdb431d9149f00337add3376
+oc describe pod logdetective-website-xxxxxxxx-xxxxx | grep 'Image ID'
+   Image ID:       quay.io/logdetective/website@sha256:71a5cf95568e593df8a0723081b4bd17506d2236bdb431d9149f00337add3376
 ```
 
 The Tag History shows these digests.
@@ -93,11 +93,11 @@ The Tag History shows these digests.
 ## Pull Image
 
 Alternativelly you can use existing image.
-Pre-build images are available at quay.io/log-detective, semantically versioned,
+Pre-build images are available at quay.io/logdetective, semantically versioned,
 with versions correponding to tags of this repo.
 
 ```bash
-docker pull quay.io/log-detective/website:latest
+docker pull quay.io/logdetective/website:latest
 ```
 
 Images are build and pushed with every new tag by a github action.
@@ -108,34 +108,34 @@ Images are build and pushed with every new tag by a github action.
 Make sure you are using the correct OpenShift project
 
 ```
-oc project communishift-log-detective
+oc project communishift-logdetective
 ```
 
 If a Kubernetes/OpenShift configuration change needs to be applied,
 run the following command. Otherwise you can skip it.
 
 ```
-oc apply -f openshift/log-detective.yaml
+oc apply -f openshift/logdetective.yaml
 ```
 
 To kill the current deployment and start a fresh, up-to-date
 container, run
 
 ```
-oc rollout restart deploy/log-detective-website
+oc rollout restart deploy/logdetective-website
 ```
 
 You can debug the instance using
 
 ```
-oc logs -f deploy/log-detective-website
+oc logs -f deploy/logdetective-website
 # or
-oc rsh deploy/log-detective-website
+oc rsh deploy/logdetective-website
 ```
 
-[quay-organization]: https://quay.io/repository/log-detective/website
+[quay-organization]: https://quay.io/repository/logdetective/website
 [group1]: https://accounts.fedoraproject.org/group/communishift/
-[group2]: https://accounts.fedoraproject.org/group/communishift-log-detective/
+[group2]: https://accounts.fedoraproject.org/group/communishift-logdetective/
 
 
 ### Secrets
@@ -160,17 +160,17 @@ $ dnf install certbot
 
 Run certbot in the root of this git repo.
 ```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.log-detective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.logdetective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
 ```
 
 We will create one certificate file that will contain data for both
-log-detective.com and logdetective.com. With wildcards and naked. We need all
+logdetective.com and logdetective.com. With wildcards and naked. We need all
 these 4 entries to get https://log... and https://www... working.
 ```
 Please deploy a DNS TXT record under the name:
 ```
 
-Set those 2 TXT DNS entries for log-detective.com and logdetective.com
+Set those 2 TXT DNS entries for logdetective.com and logdetective.com
 
 Wait for those 2 entries to be up:
 ```
@@ -184,24 +184,24 @@ $ dig -t txt _acme-challenge.logdetective.com. @curitiba.ns.porkbun.com.
 
 You can verify the newly created cert with `openssl` CLI. Here we check that both domains are set as SAN:
 ```
-$ openssl x509 -inform pem -noout -text -in 'cert/live/log-detective.com/fullchain.pem'
+$ openssl x509 -inform pem -noout -text -in 'cert/live/logdetective.com/fullchain.pem'
 ...
             X509v3 Subject Alternative Name:
-                DNS:log-detective.com, DNS:logdetective.com
+                DNS:logdetective.com, DNS:logdetective.com
 ```
 
 Once verified, you should delete those TXT DNS records.
 
 All certificate stuff is in gitignored cert/ folder.
 
-Copy the content to the running log-detective:
+Copy the content to the running logdetective:
 ```
-$ oc cp cert/ log-detective-website-$pod:/persistent
+$ oc cp cert/ logdetective-website-$pod:/persistent
 ```
 
 Connect to the pod, back up old certs and rename cert/ to letsencrypt/:
 ```
-$ oc rsh deployment/log-detective-website
+$ oc rsh deployment/logdetective-website
 
 $ mv /persistent/letsencrypt{,-old}
 $ mv /persistent/{cert,letsencrypt}

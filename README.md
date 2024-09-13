@@ -1,6 +1,6 @@
 # Log Detective website
 
-Production instance: http://log-detective.com
+Production instance: http://logdetective.com
 
 ## DEMO
 
