@@ -23,6 +23,7 @@
      add-snippet
      add-snippet-from-backend-map
      on-snippet-textarea-change
+     on-click-delete-snippet
      snippet-color
      snippet-color-square
      highlight-text
@@ -61,7 +62,7 @@
                 (let [text (subs (:content log)
                                  (:start_index itm)
                                  (:end_index itm))
-                      text (highlight-text idx
+                      text (highlight-text (str "snippet-" idx)
                                            (safe text)
                                            (:user_comment itm)
                                            (:color (nth @snippets idx)))]
@@ -163,7 +164,7 @@
                          {:start-index :start_index
                           :end-index :end_index
                           :user-comment :comment})))
-                    @snippets))}]
+                    (remove nil? @snippets)))}]
 
     ;; Remember the username, so we can prefill it the next time
     ;; TODO See PR #130
@@ -234,17 +235,23 @@
       (fontawesome-icon "fa-thumbs-down")]]))
 
 (defn snippet [text index color]
-  (let [name (str "snippet-" index)]
-    {:title [:<> (snippet-color-square color) "Snippet"]
-     :body
-     [:textarea
-      {:class "form-control"
-       :rows "3"
-       :placeholder "What makes this snippet relevant?"
-       :value text
-       :on-change #(do (on-snippet-textarea-change %)
-                       (vote (keyword name) 1))}]
-     :buttons (buttons name)}))
+  (when color
+    (let [name (str "snippet-" index)]
+      {:title [:<> (snippet-color-square color) "Snippet"]
+       :body
+       [:textarea
+        {:class "form-control"
+         :rows "3"
+         :placeholder "What makes this snippet relevant?"
+         :value text
+         :on-change #(do (on-snippet-textarea-change %)
+                         (vote (keyword name) 1))}]
+       :buttons
+       (conj (buttons name)
+             [:button {:type "button"
+                       :class ["btn btn-vote btn-outline-danger"]
+                       :on-click #(on-click-delete-snippet %)}
+              (fontawesome-icon "fa-trash-can")])})))
 
 (defn card [title text name placeholder]
   [:div {:class "card review-card"}
