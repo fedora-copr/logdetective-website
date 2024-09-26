@@ -73,7 +73,6 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website
-  namespace: communishift-logdetective
 spec:
   host: logdetective.com
   to:
@@ -89,7 +88,6 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website-www
-  namespace: communishift-logdetective
 spec:
   host: www.logdetective.com
   to:
@@ -105,7 +103,6 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website
-  namespace: communishift-logdetective
 spec:
   host: logdetective.com
   to:
@@ -121,7 +118,6 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website-www
-  namespace: communishift-logdetective
 spec:
   host: www.logdetective.com
   to:
