@@ -160,17 +160,17 @@ $ dnf install certbot
 
 Run certbot in the root of this git repo.
 ```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.logdetective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.log-detective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
 ```
 
 We will create one certificate file that will contain data for both
-logdetective.com and logdetective.com. With wildcards and naked. We need all
+log-detective.com and logdetective.com. With wildcards and naked. We need all
 these 4 entries to get https://log... and https://www... working.
 ```
 Please deploy a DNS TXT record under the name:
 ```
 
-Set those 2 TXT DNS entries for logdetective.com and logdetective.com
+Set those 2 TXT DNS entries for log-detective.com and logdetective.com
 
 Wait for those 2 entries to be up:
 ```
@@ -187,7 +187,7 @@ You can verify the newly created cert with `openssl` CLI. Here we check that bot
 $ openssl x509 -inform pem -noout -text -in 'cert/live/logdetective.com/fullchain.pem'
 ...
             X509v3 Subject Alternative Name:
-                DNS:logdetective.com, DNS:logdetective.com
+                DNS:log-detective.com, DNS:logdetective.com
 ```
 
 Once verified, you should delete those TXT DNS records.
