@@ -72,9 +72,9 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: logdetective-website
+  name: log-detective-website
 spec:
-  host: logdetective.com
+  host: log-detective.com
   to:
     kind: Service
     name: logdetective-website
@@ -87,9 +87,9 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: logdetective-website-www
+  name: log-detective-website-www
 spec:
-  host: www.logdetective.com
+  host: www.log-detective.com
   to:
     kind: Service
     name: logdetective-website
