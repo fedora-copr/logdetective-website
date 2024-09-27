@@ -33,7 +33,7 @@ def make_tar(name: str, source: Path, destination: Path) -> Path:
     """
     tar_path = destination / name
     with tarfile.open(tar_path, "w:gz") as tar_f:
-        tar_f.add(source, arcname=name)
+        tar_f.add(source, arcname="results")
 
     return tar_path
 
