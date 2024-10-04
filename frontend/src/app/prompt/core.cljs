@@ -88,26 +88,27 @@
     (reset! prompt-value value)))
 
 (defn prompt-form []
-  [:label {:for "exampleFormControlTextarea1"}]
-  [:form
-   [:div
-    {:class "input-group text-center"}
-    [:span
-     {:class "input-group-addon btn btn-secondary"}
-     [:i {:class "fa-solid fa-upload prompt-icon"}]]
-    [:textarea
-     {:class "form-control"
-      :id "exampleFormControlTextarea1"
-      :rows "3",
-      :placeholder
-      (str "Either upload your failed build log as a file, "
-           "paste it contents as a text, or point to fully qualified URL "
-           "where it can be downloaded as a raw file.")
-      :on-change on-change-prompt}]
-    [:span
-     {:class "input-group-addon btn btn-primary"
-      :on-click send}
-     [:i {:class "fa-solid fa-play prompt-icon"}]]]])
+  [:<>
+   [:label {:for "promptTextarea"}]
+   [:form
+    [:div
+     {:class "input-group text-center"}
+     [:span
+      {:class "input-group-addon btn btn-secondary"}
+      [:i {:class "fa-solid fa-upload prompt-icon"}]]
+     [:textarea
+      {:class "form-control"
+       :id "promptTextarea"
+       :rows "3",
+       :placeholder
+       (str "Either upload your failed build log as a file, "
+            "paste it contents as a text, or point to fully qualified URL "
+            "where it can be downloaded as a raw file.")
+       :on-change on-change-prompt}]
+     [:span
+      {:class "input-group-addon btn btn-primary"
+       :on-click send}
+      [:i {:class "fa-solid fa-play prompt-icon"}]]]]])
 
 (defn certainty-icon [percent]
   (let [title (str "The AI is " percent "% certain of this response")]
