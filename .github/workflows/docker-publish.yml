@@ -1,4 +1,4 @@
-name: Docker
+name: Docker Build and Publish
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -12,11 +12,10 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main" ]
-
+  workflow_dispatch:
 env:
   REGISTRY: quay.io
   IMAGE_NAME: logdetective/website
-
 
 jobs:
   build:
@@ -33,13 +32,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Install the cosign tool except on PR
+      # Install and test the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
         if: ${{ github.event_name != 'pull_request' && contains(github.ref, 'refs/tags/') }}
-        uses: sigstore/cosign-installer@6e04d228eb30da1757ee4e1dd75a0ec73a653e06 #v3.1.1
-        with:
-          cosign-release: 'v2.1.1'
+        uses: sigstore/cosign-installer@v3.6.0
+      - name: Check install!
+        if: ${{ github.event_name != 'pull_request' && contains(github.ref, 'refs/tags/') }}
+        run: cosign version
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
