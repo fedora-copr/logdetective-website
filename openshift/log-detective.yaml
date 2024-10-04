@@ -50,8 +50,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
-status: {}
+      storage: 2Gi
 ---
 kind: Service
 apiVersion: v1
@@ -73,8 +72,37 @@ spec:
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
+  name: log-detective-website
+spec:
+  host: log-detective.com
+  to:
+    kind: Service
+    name: logdetective-website
+  port:
+    targetPort: logdetective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: log-detective-website-www
+spec:
+  host: www.log-detective.com
+  to:
+    kind: Service
+    name: logdetective-website
+  port:
+    targetPort: logdetective-website
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: Redirect
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
   name: logdetective-website
-  namespace: communishift-logdetective
 spec:
   host: logdetective.com
   to:
@@ -90,39 +118,6 @@ kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
   name: logdetective-website-www
-  namespace: communishift-logdetective
-spec:
-  host: www.logdetective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: logdetective-website
-  namespace: communishift-logdetective
-spec:
-  host: logdetective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: logdetective-website-www
-  namespace: communishift-logdetective
 spec:
   host: www.logdetective.com
   to:
