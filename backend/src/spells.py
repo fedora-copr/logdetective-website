@@ -19,13 +19,13 @@ def get_temporary_dir() -> Iterator[Path]:
         shutil.rmtree(temp_dir)
 
 
-def make_tar(name: str, source: Path, destination: Path) -> Path:
+def make_tar(name: str, sources: list[Path], destination: Path) -> Path:
     """
     Make tar from source path.
 
     Args:
         name: Name of the tar file
-        source: Source to be tarred
+        sources: Sources to be tarred
         destination: Folder where to put tar file
 
     Returns:
@@ -33,7 +33,8 @@ def make_tar(name: str, source: Path, destination: Path) -> Path:
     """
     tar_path = destination / name
     with tarfile.open(tar_path, "w:gz") as tar_f:
-        tar_f.add(source, arcname="results")
+        for source in sources:
+            tar_f.add(source, arcname=f"results/{source.name}")
 
     return tar_path
 
