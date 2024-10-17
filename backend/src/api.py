@@ -466,7 +466,7 @@ def download_results():
 
     tmp_dir = Path(tempfile.mkdtemp())
     tar_name = f"results-{int(datetime.now().timestamp())}.tar.gz"
-    tar_path = make_tar(tar_name, Path(FEEDBACK_DIR), tmp_dir)
+    tar_path = make_tar(tar_name, [Path(FEEDBACK_DIR), Path(REVIEWS_DIR)], tmp_dir)
 
     def cleanup():
         os.unlink(tar_path)
