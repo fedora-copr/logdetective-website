@@ -455,9 +455,9 @@ def download_results():
 
     We create a temporary directory and store the archive in there.
     After the client browser gets the whole file, we delete our temp
-    file and directory using the cleanup() method as a backgroun task.
+    file and directory using the cleanup() method as a background task.
 
-    This function was rewritten from an async implementataion that stopped working
+    This function was rewritten from an async implementation that stopped working
     (probably after an update to fastapi and starlette).
     https://github.com/fedora-copr/log-detective-website/issues/157
     """
