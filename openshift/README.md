@@ -147,32 +147,84 @@ $ oc create secret generic hf-secret --from-literal=token=$TOKEN
 
 
 ## TLS certificates
+We use the `certbot` tool to get our Let's Encrypt certificates.
 
-This is a copy-pasta of Packit's process: https://github.com/packit/deployment/blob/main/docs/deployment/tls-certs.md
-Praise @jpopelka
+We generate a single certificate that works for both of our domains in 4 combinations:
+1. `*.log-detective.com`
+1. `.log-detective.com`
+1. `*.logdetective.com`
+1. `.logdetective.com`
 
-We will use DNS TXT entries to verify we own the domain. Ping @TomasTomecek to get access to the domain.
+We need all these 4 entries to get https://log... and https://www... working.
 
-Locally:
+Both our domains are hosted on `porkbun.com`. We use DNS TXT entries to verify
+we own the domain during the cert generation process.
+
+Ping @TomasTomecek to get access to the domain if you want to refresh the certs
+or set up a DNS entry.
+
+Start by installing certbot:
 ```
 $ dnf install certbot
 ```
 
-Run certbot in the root of this git repo.
+### Automated
+
+There is a plugin
+[certbot_dns_porkbun](https://github.com/infinityofspace/certbot_dns_porkbun)
+for certbot that makes domain refresh trivial.
+
+Makes sure the plugin is installed in the same python sitelib as the main
+certbot tool. Otherwise certbot tool won't find it.
+
+You can verify it works correctly like this:
 ```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ --manual --preferred-challenges dns --email ttomecek@redhat.com -d '*.log-detective.com' -d '*.logdetective.com' -d 'log-detective.com' -d 'logdetective.com'
+$ certbot plugins
+
+* dns-porkbun
+Description: Obtain certificates using a DNS TXT record for Porkbun domains
+Interfaces: Authenticator, Plugin
+Entry point: EntryPoint(name='dns-porkbun',
+value='certbot_dns_porkbun.cert.client:Authenticator', group='certbot.plugins')
 ```
 
-We will create one certificate file that will contain data for both
-log-detective.com and logdetective.com. With wildcards and naked. We need all
-these 4 entries to get https://log... and https://www... working.
+The plugin uses porkbun's API secret and a key to authenticate. Once you have
+it, just fire this command and it should yield the certificates in a few
+minutes (DNS propagation can take some time, hence the 120 seconds below).
+
+```
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ \
+  --authenticator dns-porkbun --preferred-challenges dns --email $USER@redhat.com \
+  -d '*.log-detective.com' -d '*.logdetective.com' \
+  -d 'log-detective.com' -d 'logdetective.com' \
+  --dns-porkbun-key $KEY \
+  --dns-porkbun-secret $SECRET \
+  --dns-porkbun-propagation-seconds 120
+```
+
+Head over now to the section [Apply certificates](#apply-certificates).
+
+### Manual
+
+This is a copy-pasta of Packit's process: https://github.com/packit/deployment/blob/main/docs/deployment/tls-certs.md
+Praise @jpopelka
+
+Run certbot in the root of this git repo.
+```
+$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ \
+  --manual --preferred-challenges dns \
+  --email $USER@redhat.com \
+  -d '*.log-detective.com' -d '*.logdetective.com' \
+  -d 'log-detective.com' -d 'logdetective.com'
+```
+
+You will soon be prompted:
 ```
 Please deploy a DNS TXT record under the name:
 ```
 
 Set those 2 TXT DNS entries for log-detective.com and logdetective.com
-
-Wait for those 2 entries to be up:
+and wait for DNS to resolve them:
 ```
 $ watch -d nslookup -q=TXT _acme-challenge.logdetective.com
 ```
@@ -181,20 +233,30 @@ Alternatively check the record using porkbun's DNS server:
 ```
 $ dig -t txt _acme-challenge.logdetective.com. @curitiba.ns.porkbun.com.
 ```
+Delete those TXT DNS records.
+
+All certificate stuff is in gitignored cert/ folder.
+
+
+### Apply certificates
 
 You can verify the newly created cert with `openssl` CLI. Here we check that both domains are set as SAN:
 ```
 $ openssl x509 -inform pem -noout -text -in 'cert/live/logdetective.com/fullchain.pem'
 ...
-            X509v3 Subject Alternative Name:
-                DNS:log-detective.com, DNS:logdetective.com
+  X509v3 Subject Alternative Name:
+      DNS:*.log-detective.com, DNS:*.logdetective.com, DNS:log-detective.com, DNS:logdetective.com
 ```
 
-Once verified, you should delete those TXT DNS records.
+Make sure these paths point to the correct certificates:
 
-All certificate stuff is in gitignored cert/ folder.
+- "/persistent/letsencrypt/live/logdetective.com/cert.pem"
+- "/persistent/letsencrypt/live/log-detective.com/privkey.pem"
+- "/persistent/letsencrypt/live/log-detective.com/fullchain.pem"
 
-Copy the content to the running logdetective:
+The webserver expects them (see the production Dockerfile).
+
+Copy the content of directory `cert/` to the running logdetective website pod:
 ```
 $ oc cp cert/ logdetective-website-$pod:/persistent
 ```
