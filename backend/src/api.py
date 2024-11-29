@@ -2,10 +2,13 @@ import json
 import logging
 import os
 import tempfile
+from asyncio import create_task
 from base64 import b64decode
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
+
+import requests
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -26,6 +29,7 @@ from src.constants import (
     KOJI_BUILD_URL,
     FEEDBACK_DIR,
     REVIEWS_DIR,
+    SERVER_URL,
     BuildIdTitleEnum,
     ProvidersEnum,
 )
@@ -302,88 +306,118 @@ def frontend_review_random(result_id):
 
 @app.post("/frontend/explain/")
 async def frontend_explain_post(request: Request):
-    # TODO Somebody needs write a code for communicating with the Log Detective
-    # server and return the actual values for given prompt.
-    data = await request.json()
-    print("TODO Query log detective based on:")
-    print(data)
+    """Communicate with the logdetective server and process data.
 
-    # TODO These are hardcode values based on a Logdetective output I found in
-    # Slack.
-    # Please try to keep both the input and output schema unchanged
-    explanation = (
-        "The logs indicate that the build process for the gr-osmosdr "
-        "package failed due to missing required shared libraries for "
-        "the gr-funcube and gnuradio packages. "
-        "\n"  # TODO Instruct logdetective to respond in paragraphs
-        "Specifically, the packages gr-funcube, gnuradio, and uhd "
-        "required shared libraries libgnuradio-funcube.so.3.10.0, "
-        "libuhd.so.4.4.0, and libuhd.so.4.6.0 respectively, but none "
-        "of the available providers (copr_base and fedora) had these "
-        "libraries available for installation. As a result, the installation "
-        "process failed with dependency conflicts and unable to install the "
-        "required packages. "
-        "\n"
-        "Additionally, there were multiple versions of uhd (4.4.0 and "
-        "4.6.0) with conflicting dependencies that could not be installed "
-        "together. "
-        "\n"
-        "This is why the error message suggests adding "
-        "'--skip-broken' or '--nobest' to the dnf command to skip "
-        "uninstallable packages or use not only best candidate "
-        "packages respectively. "
-    )
-    reasoning = [
-        {
-            "snippet": "INFO: Reading stdout from command: git rev-parse HEAD",
-            "comment": (
-                "This is an informational message indicating that the Git "
-                "command \"git rev-parse HEAD\" is being executed to retrieve "
-                "the current branch or commit hash for the repository. "
-            )
-        },
-        {
-            "snippet": (
-                "No matches found for the following disable plugin "
-                "patterns: local, spacewalk, versionlock "
-            ),
-            "comment": (
-                "This message indicates that none of the specified disable "
-                "plugins (local, spacewalk, versionlock) were found in the "
-                "system configuration."
-            )
-        },
-        {
-            "snippet": (
-                "Wrote: /builddir/build/SRPMS/gr-osmosdr-0.2.5-5.fc38.src.rpm"
-            ),
-            "comment": (
-                "This message indicates that the source RPM file for "
-                "gr-osmosdr package has been created successfully."
-                ""
-            )
-        },
-        {
-            "snippet": (
-                "Copr repository                                  21 kB/s |"
-                " 1.5 kB     00:00     "
-            ),
-            "comment": (
-                "This is an informational message indicating the speed of "
-                "downloading packages from the Copr repository. "
-            )
-        },
-    ]
-    log = {
-        "name": "builder-live.log",
-        "content": "This is the full content of the log",
+    :returns: {
+        "explanation": str,
+        "reasoning": {"snippet": str, "comment": str},
+        "certainty": int,
+        "log": {"name": str, "content": str}
     }
+    """
+    data = await request.json()
+    log_url = data['prompt']
+
+    logger.info("Asking server to analyze log '%s'", log_url)
+    data = {"url": log_url}
+    headers = {"Content-Type": "application/json"}
+    server_url = f"{SERVER_URL}/analyze/staged"
+
+    # download log_file when waiting for logdetective server processing
+    download_log_task = create_task(_download_log_content(log_url))
+
+    try:
+        response = requests.post(server_url, headers=headers, data=json.dumps(data), timeout=1800)
+    except (requests.ConnectionError, requests.Timeout) as ex:
+        raise HTTPException(
+            status_code=408, detail=str(ex)
+        ) from ex
+
+    try:
+        logger.debug("headers: %s data: %s", response.request.headers, response.request.body)
+        response.raise_for_status()
+    except requests.HTTPError as ex:
+        detail = (
+            f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
+        )
+        raise HTTPException(
+            status_code=ex.response.status_code, detail=detail
+        ) from ex
+
+    result = _process_server_data(response.content)
+
+    log = {
+        "name": f"{log_url}",
+        "content": await download_log_task
+    }
+
+    # add missing data from the original log
+    result["log"] = log
+
+    print(result)
+    return result
+
+
+def _process_server_data(data):
+    """Process data received from logdetective server.
+
+    Return them in format:
+    {
+        "explanation": str,
+        "reasoning": {"snippet": str, "comment": str},
+        "certainty": int,
+    }
+    """
+    try:
+        r_data = json.loads(data)
+    except json.JSONDecodeError as ex:
+        raise HTTPException(
+            status_code=408, detail="Received invalid data from server"
+        ) from ex
+
+    explanation = r_data["explanation"]["choices"][0]["text"]
+    reasoning = []
+
+    for snippet in r_data["snippets"]:
+        reasoning.append({
+            "snippet": snippet["snippet"],
+            "comment": snippet["comment"]["choices"][0]["text"]
+        })
+
+    try:
+        certainty = int(r_data["response_certainty"])
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=408, detail="Wrong certainty data received from the server"
+        ) from ex
+
     return {
         "explanation": explanation,
         "reasoning": reasoning,
-        "certainty": 75,
-        "log": log,
+        "certainty": certainty,
     }
+
+
+async def _download_log_content(url):
+    """Download content of the log file and returns it."""
+
+    try:
+        response = requests.get(url, timeout=600)
+    except (requests.ConnectionError, requests.Timeout, requests.RequestException) as ex:
+        raise HTTPException(
+            status_code=408, detail=str(ex)
+        ) from ex
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as ex:
+        detail = (
+            f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
+        )
+        raise HTTPException(
+            status_code=ex.response.status_code, detail=detail
+        ) from ex
+
+    return response.text
 
 
 def _get_text_from_feedback(item: dict) -> str:
