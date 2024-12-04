@@ -9,6 +9,8 @@ REVIEWS_DIR = os.environ.get("REVIEWS_DIR", "/persistent/reviews")
 
 COPR_RESULT_TEMPLATE = "https://download.copr.fedorainfracloud.org" + \
                        "/results/{0}/{1}/srpm-builds/{2:08}"
+# logdetective server URL
+SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:8000")
 
 
 class ProvidersEnum(StrEnum):
