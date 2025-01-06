@@ -33,6 +33,9 @@ spec:
             limits:
               memory: "800Mi"
               cpu: "500m"
+          env:
+            - name: SERVER_URL
+              value: http://logdetective01.fedorainfracloud.org:8080
   replicas: 1
   strategy:
     type: Recreate
