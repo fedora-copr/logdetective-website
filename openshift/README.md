@@ -108,7 +108,7 @@ Images are build and pushed with every new tag by a github action.
 Make sure you are using the correct OpenShift project
 
 ```
-oc project communishift-logdetective
+oc project communishift-log-detective
 ```
 
 If a Kubernetes/OpenShift configuration change needs to be applied,
