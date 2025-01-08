@@ -28,14 +28,16 @@ spec:
               mountPath: /persistent
           resources:
             requests:
-              memory: "400Mi"
+              memory: "800Mi"
               cpu: "50m"
             limits:
-              memory: "800Mi"
+              memory: "1600Mi"
               cpu: "500m"
           env:
             - name: SERVER_URL
               value: http://logdetective01.fedorainfracloud.org:8080
+          command: ["gunicorn"]
+          args: ["-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080", "--timeout", "1800", "--workers", "2"]
   replicas: 1
   strategy:
     type: Recreate
@@ -44,7 +46,6 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: persistent
   name: persistent
