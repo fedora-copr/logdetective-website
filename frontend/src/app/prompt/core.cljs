@@ -214,30 +214,30 @@
       [:div {:class "py-4"}
        (prompt-form)]
 
-      [:div {:id "prompt-examples"}
-       [:button {:type "button"
-                 :class "btn btn-outline-secondary"
-                 :on-click on-click-example
-                 :data-prompt "TODO Example 1 prompt"}
-        "Example 1"]
+      ;;[:div {:id "prompt-examples"}
+      ;; [:button {:type "button"
+      ;;           :class "btn btn-outline-secondary"
+      ;;           :on-click on-click-example
+      ;;           :data-prompt "TODO Example 1 prompt"}
+      ;;  "Example 1"]
 
-       [:button {:type "button"
-                 :class "btn btn-outline-secondary"
-                 :on-click on-click-example
-                 :data-prompt "TODO Example 2 prompt"}
-        "Example 2"]
+      ;; [:button {:type "button"
+      ;;           :class "btn btn-outline-secondary"
+      ;;           :on-click on-click-example
+      ;;           :data-prompt "TODO Example 2 prompt"}
+      ;;  "Example 2"]
 
-       [:button {:type "button"
-                 :class "btn btn-outline-secondary"
-                 :on-click on-click-example
-                 :data-prompt "TODO Example 3 prompt"}
-        "Example 3"]
+      ;; [:button {:type "button"
+      ;;           :class "btn btn-outline-secondary"
+      ;;           :on-click on-click-example
+      ;;           :data-prompt "TODO Example 3 prompt"}
+      ;;  "Example 3"]
 
-       [:button {:type "button"
-                 :class "btn btn-outline-secondary"
-                 :on-click on-click-example
-                 :data-prompt "TODO Example 4 prompt"}
-        "Example 4"]]]]]
+      ;; [:button {:type "button"
+      ;;           :class "btn btn-outline-secondary"
+      ;;           :on-click on-click-example
+      ;;           :data-prompt "TODO Example 4 prompt"}
+      ;;  "Example 4"]]]]]
 
    [:div {:class "container" :id "about"}
     [:h2 {:class "text-center"} "About the project"]
