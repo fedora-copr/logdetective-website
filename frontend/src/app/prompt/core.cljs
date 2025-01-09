@@ -101,9 +101,7 @@
        :id "promptTextarea"
        :rows "3",
        :placeholder
-       (str "Either upload your failed build log as a file, "
-            "paste it contents as a text, or point to fully qualified URL "
-            "where it can be downloaded as a raw file.")
+       (str "Paste a link to your failed RPM build log.")
        :on-change on-change-prompt}]
      [:span
       {:class "input-group-addon btn btn-primary"
