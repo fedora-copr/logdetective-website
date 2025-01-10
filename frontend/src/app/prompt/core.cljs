@@ -212,7 +212,7 @@
             "logs and explaining the failure in simple words.")]
 
       [:div {:class "py-4"}
-       (prompt-form)]
+       (prompt-form)]]]]
 
       ;;[:div {:id "prompt-examples"}
       ;; [:button {:type "button"
