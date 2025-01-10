@@ -93,9 +93,9 @@
    [:form
     [:div
      {:class "input-group text-center"}
-     [:span
-      {:class "input-group-addon btn btn-secondary"}
-      [:i {:class "fa-solid fa-upload prompt-icon"}]]
+     ;; [:span
+     ;;  {:class "input-group-addon btn btn-secondary"}
+     ;;  [:i {:class "fa-solid fa-upload prompt-icon"}]]
      [:textarea
       {:class "form-control"
        :id "promptTextarea"
