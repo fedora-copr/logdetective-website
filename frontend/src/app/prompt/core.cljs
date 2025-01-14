@@ -197,6 +197,15 @@
     (reset! prompt-value value)
     (send)))
 
+(defn disclaimer []
+  [:div {:class "alert alert-warning text-left" :role "alert"}
+   [:p (str "Welcome to the new experimental functionality of Log Detective, thank you for your interest!")]
+   [:p (str "This is our initial prototype that will 'Explain' a log of your choice to you. It has several limitations:")]
+   [:ol
+    [:li (str "The inference is slow and serial. We can only process a single request in the background. It will take at least 30 seconds to give you a response. In case of multiple requests, it can ramp up to minutes.")]
+    [:li (str "We use a general-purpose mistral model in the background. The collected data are not being used here just yet. We are still working on fine-tuning our own model.")]
+    [:li (str "Please report any issues you'll encounter. We don't have any alerting in place, the deployment is highly experimental.")]]])
+
 (defn prompt-only []
   [:div {:id "content-narrow" :class "container"}
    [:section
@@ -210,6 +219,7 @@
        {:class "lead text-body-secondary"}
        (str "Trying to improve RPM packaging experience by analyzing build "
             "logs and explaining the failure in simple words.")]
+      (disclaimer)
 
       [:div {:class "py-4"}
        (prompt-form)]]]]
