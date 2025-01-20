@@ -52,7 +52,7 @@ repos:
           - types-requests
 
   - repo: https://github.com/clj-kondo/clj-kondo
-    rev: v2024.11.14
+    rev: v2025.01.16
     hooks:
       - id: clj-kondo-docker
 
