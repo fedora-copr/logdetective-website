@@ -4,6 +4,7 @@
    [malli.core :as m]
    [clojure.string :as str]
    [ajax.core :refer [POST]]
+   [app.helpers :refer [query-params-get]]
    [app.components.jumbotron :refer
     [render-error
      loading-screen]]))
@@ -51,8 +52,8 @@
   [:map {:closed true}
    [:prompt [:maybe :string]]])
 
-(defn send []
-  (let [data {:prompt @prompt-value}]
+(defn send [url]
+  (let [data {:prompt url}]
     (if (m/validate OutputSchema data)
       (do
         (reset! status "waiting")
@@ -78,9 +79,11 @@
                "Invalid data"
                "Got invalid data from the backend. This is likely a bug.")))))
 
-      (handle-backend-error
-       "Client error"
-       "Something went wrong when preparing a request to server"))))
+      (if (not url)
+        (reset! status "No URL provided. Please enter a URL.")
+        (handle-backend-error
+         "Client error"
+         "Something went wrong when preparing a request to server")))))
 
 (defn on-change-prompt [event]
   (let [target (.-target event)
@@ -105,7 +108,7 @@
        :on-change on-change-prompt}]
      [:span
       {:class "input-group-addon btn btn-primary"
-       :on-click send}
+       :on-click #(send @prompt-value)}
       [:i {:class "fa-solid fa-play prompt-icon"}]]]]])
 
 (defn certainty-icon [percent]
@@ -195,7 +198,7 @@
   (let [target (.-target event)
         value (.-prompt (.-dataset target))]
     (reset! prompt-value value)
-    (send)))
+    (send value)))
 
 (defn disclaimer []
   [:div {:class "alert alert-warning text-left" :role "alert"}
@@ -269,17 +272,23 @@
                "it. You won't need to open the logs at all."))]])
 
 (defn prompt []
-  (cond
-    (= @status "error")
-    (render-error @error-title @error-description)
+  (let [query-url (query-params-get "url")]
+    (cond
+      (= @status "error")
+      (render-error @error-title @error-description)
 
-    ;; TODO If we are already in a two-column-layout, we should print only
-    ;; a small loading icon somewhere, not a jumbotron
-    (= @status "waiting")
-    (loading-screen "Getting a response from the server")
+      ;; TODO If we are already in a two-column-layout, we should print only
+      ;; a small loading icon somewhere, not a jumbotron
+      (= @status "waiting")
+      (loading-screen "Getting a response from the server")
 
-    @form
-    (two-column-layout)
+      (and query-url (not= @status "ok"))
+      (do
+        (send query-url)
+        (loading-screen "Getting a response from the server"))
 
-    :else
-    (prompt-only)))
+      @form
+      (two-column-layout)
+
+      :else
+      (prompt-only))))
