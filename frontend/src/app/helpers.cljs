@@ -27,6 +27,13 @@
   (when (local-storage-enabled)
     (.getItem js/localStorage name)))
 
+(defn query-params-get [name]
+  (-> js/window
+      .-location
+      .-search
+      js/URLSearchParams.
+      (.get name)))
+
 (defn local-storage-error []
   {:title "Local storage is blocked by the browser"
    :description
