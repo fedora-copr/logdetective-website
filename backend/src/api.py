@@ -31,6 +31,8 @@ from src.constants import (
     FEEDBACK_DIR,
     REVIEWS_DIR,
     SERVER_URL,
+    LOGDETECTIVE_READ_TIMEOUT,
+    LOGDETECTIVE_CONNECT_TIMEOUT,
     BuildIdTitleEnum,
     ProvidersEnum,
 )
@@ -331,7 +333,12 @@ async def frontend_explain_post(request: Request):
     download_log_task = create_task(_download_log_content(log_url))
 
     try:
-        response = requests.post(server_url, headers=headers, data=json.dumps(data), timeout=1800)
+        # First value of `timeout` is for connection, second is for recieving the response
+        response = requests.post(
+            server_url,
+            headers=headers,
+            data=json.dumps(data),
+            timeout=(LOGDETECTIVE_CONNECT_TIMEOUT, LOGDETECTIVE_READ_TIMEOUT))
     except (requests.ConnectionError, requests.Timeout) as ex:
         raise HTTPException(
             status_code=408, detail=str(ex)
