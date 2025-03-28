@@ -35,7 +35,7 @@ spec:
               cpu: "500m"
           env:
             - name: SERVER_URL
-              value: http://logdetective01.fedorainfracloud.org:8080
+              value: https://logdetective01.fedorainfracloud.org
           command: ["gunicorn"]
           args: ["-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080", "--timeout", "1800", "--workers", "2"]
   replicas: 1
