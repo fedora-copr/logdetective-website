@@ -386,13 +386,13 @@ def _process_server_data(data):
             status_code=408, detail="Received invalid data from server"
         ) from ex
 
-    explanation = r_data["explanation"]["choices"][0]["text"]
+    explanation = r_data["explanation"]["text"]
     reasoning = []
 
     for snippet in r_data["snippets"]:
         reasoning.append({
-            "snippet": snippet["snippet"],
-            "comment": snippet["comment"]["choices"][0]["text"]
+            "snippet": snippet["text"],
+            "comment": r_data["snippets"][0]["explanation"]["text"],
         })
 
     try:
