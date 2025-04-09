@@ -392,7 +392,7 @@ def _process_server_data(data):
     for snippet in r_data["snippets"]:
         reasoning.append({
             "snippet": snippet["text"],
-            "comment": r_data["snippets"][0]["explanation"]["text"],
+            "comment": snippet["explanation"]["text"],
         })
 
     try:
