@@ -4,7 +4,7 @@
    [malli.core :as m]
    [clojure.string :as str]
    [ajax.core :refer [POST]]
-   [app.helpers :refer [query-params-get]]
+   [app.helpers :refer [query-params-get change-url]]
    [app.components.jumbotron :refer
     [render-error
      loading-screen]]))
@@ -56,6 +56,7 @@
   (let [data {:prompt url}]
     (if (m/validate OutputSchema data)
       (do
+        (change-url (str "?url=" url))
         (reset! status "waiting")
         (POST "/frontend/explain/"
           :params data
@@ -273,7 +274,13 @@
                "the failure in simple words, with recommendations how to fix "
                "it. You won't need to open the logs at all."))]])
 
+(defn on-url-change []
+  (if (query-params-get "url")
+    (send (query-params-get "url"))
+    (reset! status nil)))
+
 (defn prompt []
+  (.addEventListener js/window "popstate" on-url-change)
   (let [query-url (query-params-get "url")]
     (cond
       (= @status "error")
