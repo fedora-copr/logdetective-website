@@ -155,7 +155,9 @@
        :aria-labelledby heading-id
        :data-bs-parent accordion-id}
       [:div
-       {:class "accordion-body"} comment]]]))
+       {:class "accordion-body"}
+       [:code snippet]
+       comment]]]))
 
 (defn download []
   (let [name (-> @form :log :name)
