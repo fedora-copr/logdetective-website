@@ -16,3 +16,5 @@
 (def build-id (r/atom nil))
 (def build-id-title (r/atom nil))
 (def build-url (r/atom nil))
+
+(def text-in-log-selected? (r/atom nil))

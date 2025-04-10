@@ -24,6 +24,7 @@
     [snippets
      add-snippet
      snippet-color-square
+     selection-node-id
      on-click-delete-snippet
      on-snippet-textarea-change]]
    [app.contribute-atoms :refer
@@ -39,7 +40,8 @@
      fas
      build-id
      build-id-title
-     build-url]]
+     build-url
+     text-in-log-selected?]]
    [app.contribute-events :refer
     [submit-form
      on-how-to-fix-textarea-change
@@ -154,6 +156,17 @@
                 :on-click #(on-click-delete-snippet %)}
        "Delete"]]}))
 
+(defn add-button []
+  (let [title (if @text-in-log-selected?
+                "Add the selected snippet"
+                "Select a relevant text in the log file first")
+        color (if @text-in-log-selected? "btn-primary" "btn-secondary")]
+    [:button
+     {:class ["btn" "btn-lg" color]
+      :on-click #(add-snippet files active-file)
+      :title title}
+     "Add"]))
+
 (defn right-column []
   [:<>
    [:div {}
@@ -167,8 +180,7 @@
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
-      [:button {:class "btn btn-secondary btn-lg"
-                :on-click #(add-snippet files active-file)} "Add"]
+      (add-button)
       [:br]
       [:br]])
 
@@ -183,9 +195,7 @@
        [:p {:class "card-text"}
         (str "Please select interesting parts of the log files and press the "
              "'Add' button to annotate them")]
-       [:button {:class "btn btn-secondary btn-lg"
-                 :on-click #(add-snippet files active-file)}
-        "Add"]]])
+       (add-button)]])
 
    [:div {}
     [:label {:class "form-label"} "Why did the build fail?"]
@@ -222,6 +232,13 @@
         :href "/"}
     [:<> (fontawesome-icon "fa-plus") " Add another log"]]))
 
+(defn on-text-selected []
+  (reset!
+   text-in-log-selected?
+   (and
+    (= (.-type (js/window.getSelection)) "Range")
+    (= (selection-node-id) "log"))))
+
 (defn contribute []
   ;; I don't know why we need to do it this way,
   ;; instead of like :on-click is done
@@ -251,6 +268,7 @@
 
     @files
     (do
+      (.addEventListener js/document "selectionchange" on-text-selected)
       (when (not-empty @snippets)
         (let [accordion (.getElementById js/document "accordionItems")]
           (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
