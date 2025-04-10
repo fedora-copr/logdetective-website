@@ -8,6 +8,7 @@
             [app.components.jumbotron :refer [render-error]]
             [app.helpers :refer
              [current-path
+              redirect
               local-storage-enabled
               local-storage-error
               remove-trailing-slash]]))
@@ -43,7 +44,7 @@
                  "#container" [(js/btoa (get @input-values :url))])
         url (str/join "/" (concat ["/contribute" source] (map str/trim params)))]
     (when (empty? @input-errors)
-      (set! (.-href (.-location js/window)) url))))
+      (redirect url))))
 
 (defn on-submit-upload [event]
   (.preventDefault event)
