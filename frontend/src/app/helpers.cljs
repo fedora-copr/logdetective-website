@@ -42,3 +42,6 @@
 
 (defn safe [text]
   (.encode html-entities text))
+
+(defn redirect [url]
+  (set! (.-href (.-location js/window)) url))
