@@ -45,3 +45,8 @@
 
 (defn redirect [url]
   (set! (.-href (.-location js/window)) url))
+
+(defn change-url
+  "Change URL without a full page reload or redirect"
+  [url]
+  (.pushState (.-history js/window) nil nil url))
