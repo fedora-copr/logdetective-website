@@ -70,7 +70,8 @@
 (defn add-snippet [files active-file]
   ;; The `files` and `active-file` parameters needs to be passed as atom
   ;; references, not their dereferenced value
-  (when (and (= (selection-node-id) "log")
+  (when (and (= (.-type (js/window.getSelection)) "Range")
+             (= (selection-node-id) "log")
              (not (selection-contains-snippets?)))
 
     (let [color (snippet-color (count @snippets))]
