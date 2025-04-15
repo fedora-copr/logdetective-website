@@ -54,12 +54,14 @@
      [:logs [:map-of :any File]]]))
 
 (defn highlight-snippets-withing-log [log]
-  (let [snippets
+  (let [original-order (:snippets log)
+        snippets
         (->> (:snippets log)
              (sort-by :start_index)
-             (map-indexed
-              (fn [idx itm]
-                (let [text (subs (:content log)
+             (map
+              (fn [itm]
+                (let [idx (.indexOf original-order itm)
+                      text (subs (:content log)
                                  (:start_index itm)
                                  (:end_index itm))
                       text (highlight-text (str "snippet-" idx)
