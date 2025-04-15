@@ -1,0 +1,22 @@
+{% extends "layout.html" %} {%block content %}
+<div class="container" id="content">
+  <h1>Contributions from {{ username }}</h1>
+
+  {% if contributions %}
+    <p>
+      Thank you for the {{ contributions |count }} contributions,
+      <code>{{ username }}</code>!
+    </p>
+
+    <ul>
+    {% for name, url in contributions %}
+      <li><a href="{{ url }}">{{ name }}</a></li>
+    {% endfor %}
+    </ul>
+
+  {% else %}
+    <p>No contributions from <code>{{ username }}</code> yet.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

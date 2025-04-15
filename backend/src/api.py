@@ -528,3 +528,30 @@ def download_results():
 @app.get("/stats")
 def get_report_stats() -> dict:
     return Storator3000.get_stats()
+
+
+@app.get("/contributions/{username}")
+def get_contributions(request: Request, username: str):
+    """
+    A list of contributions for a given FAS username
+    """
+    logs = Storator3000.get_logs()
+
+    # This is brutal ... but we don't have a database so there is no other way
+    contributions = []
+    for path in logs:
+        with open(path, "r", encoding="utf-8") as fp:
+            data = json.load(fp)
+            if data["username"] != "FAS:" + username:
+                continue
+            contribution_id = os.path.basename(path).removesuffix(".json")
+            url = f"/review/{contribution_id}"
+            name = path.removeprefix(FEEDBACK_DIR).removesuffix(".json")
+            contributions.append((name, url))
+
+    data = {
+        "request": request,
+        "username": username,
+        "contributions": contributions,
+    }
+    return template_response("contributions.html", data)
