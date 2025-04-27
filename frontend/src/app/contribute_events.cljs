@@ -5,7 +5,8 @@
    [app.helpers :refer
     [current-path
      remove-trailing-slash
-     local-storage-enabled]]
+     local-storage-enabled
+     local-storage-get]]
    [app.editor.core :refer [active-file]]
    [app.components.snippets :refer [snippets]]
    [app.contribute-logic :refer [file-id]]
@@ -22,12 +23,14 @@
 
 (defn submit-form []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))
+        username (or @fas (local-storage-get "fas"))
+        username (if username (str "FAS:" username) nil)
         ;; Clojure typically uses dashes instead of underscores in keyword
         ;; names. However, this is going to be dumped as JSON and we expect
         ;; underscores there
         body {:fail_reason @fail-reason
               :how_to_fix @how-to-fix
-              :username (if @fas (str "FAS:" @fas) nil)
+              :username username
               :logs
               (map (fn [file]
                      {:name (:name file)
