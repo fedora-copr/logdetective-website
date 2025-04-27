@@ -2,8 +2,7 @@
   (:require
    [reagent.core :as r]
    [clojure.string :as str]
-   [reagent.dom.server :refer [render-to-string]]
-   [app.helpers :refer [previous-siblings]]))
+   [reagent.dom.server :refer [render-to-string]]))
 
 (def snippets (r/atom []))
 
@@ -85,20 +84,10 @@
       (let [selection (.getSelection js/window)
             content (.toString selection)
 
-            ;; The position is calculated from the end of the last node
-            ;; This can be be either a previous snippet span or if the text
-            ;; longer than 65536 characters than it is implictily split into
-            ;; multiple sibling text nodes
-            start (.-anchorOffset selection)
-
-            ;; Calculate the real starting index from the beginning of the log
-            offset (->> selection
-                        .-anchorNode
-                        previous-siblings
-                        (map #(.-textContent %))
-                        (map #(count %))
-                        (reduce +))
-            start (+ start offset)
+            ;; Index of the first snippet character. It is much harder to get
+            ;; the correct value than expected because of number of browser
+            ;; inconsistencies. See `offset.js` for more information.
+            start (js/getAbsoluteOffsetInContainer "log")
 
             ;; Index of the last snippet character. When parsing in python, don't
             ;; forget to do text[start:end+1]
