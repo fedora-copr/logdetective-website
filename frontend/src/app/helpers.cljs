@@ -12,12 +12,6 @@
 (defn remove-trailing-slash [text]
   (clojure.string/replace text #"/$" ""))
 
-(defn previous-siblings [node]
-  (let [sibling (.-previousSibling node)]
-    (if-not sibling
-      []
-      (conj (previous-siblings sibling) sibling))))
-
 (defn local-storage-enabled []
   (try
     (.getItem js/localStorage "isenabled") true
