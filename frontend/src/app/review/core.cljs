@@ -72,12 +72,18 @@
 
         content
         (->>
-         [(safe (subs (:content log) 0 (:start_index (first snippets))))
-          (for [[a b] (partition-all 2 snippets)]
-            [(:text a)
-             (when b
-               (safe (subs (:content log) (:end_index a) (:start_index b)))
-               (:text b))])
+         [(loop [snippets snippets
+                 result []
+                 end 0]
+            (if (empty? snippets)
+              result
+              (let [snippet (first snippets)]
+                (recur
+                 (rest snippets)
+                 (conj result
+                       (safe (subs (:content log) end (:start_index snippet)))
+                       (:text snippet))
+                 (:end_index snippet)))))
           (safe (subs (:content log) (:end_index (last snippets))))]
          (flatten)
          (apply str))]
