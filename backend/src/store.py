@@ -22,7 +22,17 @@ class Storator3000:
 
     @property
     def build_dir(self) -> Path:
-        return self.target_dir / str(self.id_)
+        max_filename_length = os.pathconf("/", "PC_NAME_MAX")
+
+        # When log is submitted from a long URL (but theoretically from other
+        # source as well), the ID can be longer than 255 characters, which
+        # would be over the limit for Linux filenames. In such case, let's
+        # shorten it. We will lose the original URL be we won't fail.
+        id_ = self.id_
+        if isinstance(id_, str) and len(self.id_) >= max_filename_length:
+            id_ = self.id_[:7]
+
+        return self.target_dir / str(id_)
 
     def store(self, feedback_result: FeedbackSchema) -> None:
         self.build_dir.mkdir(parents=True, exist_ok=True)
