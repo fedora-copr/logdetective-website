@@ -236,7 +236,7 @@ class OkResponse(BaseModel):
 def _store_data_for_providers(
     feedback_input: FeedbackInputSchema, provider: str, id_: int | str, *args
 ) -> OkResponse:
-    storator = Storator3000(ProvidersEnum[provider], id_)
+    storator = Storator3000(ProvidersEnum[provider], str(id_))
 
     if provider == ProvidersEnum.container:
         result_to_store = schema_inp_to_out(feedback_input, is_with_spec=False)

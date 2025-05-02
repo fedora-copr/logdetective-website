@@ -106,7 +106,7 @@ def koji_chroot_logs_x86_64():
 
 @pytest.fixture
 def storator():
-    return Storator3000(ProvidersEnum.copr, 123)
+    return Storator3000(ProvidersEnum.copr, str(123))
 
 
 @pytest.fixture
