@@ -3,8 +3,7 @@ This is a temporary file with hardcoded build log and other data before we
 implement an actual code for fetching logs from Copr/Koji/Packit/etc.
 """
 
-
-LOG_OUTPUT="""INFO: chroot_scan: 3 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
+LOG_OUTPUT = """INFO: chroot_scan: 3 files copied to /var/lib/copr-rpmbuild/results/chroot_scan
 INFO: /var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.rpm.log
 /var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.librepo.log
 /var/lib/mock/fedora-37-x86_64-1692181166.067366/root/var/log/dnf.log

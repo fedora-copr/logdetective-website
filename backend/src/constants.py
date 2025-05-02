@@ -10,10 +10,13 @@ REVIEWS_DIR = os.environ.get("REVIEWS_DIR", "/persistent/reviews")
 LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", 1800))
 # Set to slightly more than retransmission window of 3s from RFC2988
 # https://datatracker.ietf.org/doc/html/rfc2988
-LOGDETECTIVE_CONNECT_TIMEOUT = float(os.environ.get("LOGDETECTIVE_CONNECT_TIMEOUT", 3.07))
+LOGDETECTIVE_CONNECT_TIMEOUT = float(
+    os.environ.get("LOGDETECTIVE_CONNECT_TIMEOUT", 3.07)
+)
 
-COPR_RESULT_TEMPLATE = "https://download.copr.fedorainfracloud.org" + \
-                       "/results/{0}/{1}/srpm-builds/{2:08}"
+COPR_RESULT_TEMPLATE = (
+    "https://download.copr.fedorainfracloud.org" + "/results/{0}/{1}/srpm-builds/{2:08}"
+)
 # logdetective server URL
 SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:8000")
 
