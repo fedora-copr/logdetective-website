@@ -11,7 +11,7 @@ from src.schema import FeedbackSchema
 
 
 class Storator3000:
-    def __init__(self, provider: ProvidersEnum, id_: int | str) -> None:
+    def __init__(self, provider: ProvidersEnum, id_: str) -> None:
         self.provider = provider
         self.id_ = id_
         self.store_to = Path(FEEDBACK_DIR) / str(datetime.now().date())
@@ -29,10 +29,10 @@ class Storator3000:
         # would be over the limit for Linux filenames. In such case, let's
         # shorten it. We will lose the original URL be we won't fail.
         id_ = self.id_
-        if isinstance(id_, str) and len(self.id_) >= max_filename_length:
+        if len(self.id_) >= max_filename_length:
             id_ = self.id_[:7]
 
-        return self.target_dir / str(id_)
+        return self.target_dir / id_
 
     def store(self, feedback_result: FeedbackSchema) -> None:
         self.build_dir.mkdir(parents=True, exist_ok=True)
