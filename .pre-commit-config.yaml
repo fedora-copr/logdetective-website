@@ -56,3 +56,12 @@ repos:
     hooks:
       - id: cljfmt-docker
         args: [ check ]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.11.8
+    hooks:
+      # Run the linter.
+      - id: ruff
+      # Run the formatter.
+      - id: ruff-format

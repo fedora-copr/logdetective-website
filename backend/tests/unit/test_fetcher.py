@@ -179,9 +179,7 @@ class TestKojiProviderLogs:
         mock_get_task_request_url.return_value = (
             "git+https://src.fedoraproject.org/rpms/copr-frontend.git#dbcd207"
         )
-        spec_url = (
-            "https://src.fedoraproject.org/rpms/copr-frontend/raw/dbcd207/f/copr-frontend.spec"
-        )
+        spec_url = "https://src.fedoraproject.org/rpms/copr-frontend/raw/dbcd207/f/copr-frontend.spec"
         responses.add(responses.GET, url=spec_url, body=fake_spec_file, status=200)
         expected = {"name": "copr-frontend.spec", "content": fake_spec_file}
         assert expected == KojiProvider(123, "noarch").fetch_spec_file()
