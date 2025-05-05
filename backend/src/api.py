@@ -540,14 +540,18 @@ def get_contributions(request: Request, username: str):
     # This is brutal ... but we don't have a database so there is no other way
     contributions = []
     for path in logs:
-        with open(path, "r", encoding="utf-8") as fp:
-            data = json.load(fp)
-            if data["username"] != "FAS:" + username:
-                continue
-            contribution_id = os.path.basename(path).removesuffix(".json")
-            url = f"/review/{contribution_id}"
-            name = path.removeprefix(FEEDBACK_DIR).removesuffix(".json")
-            contributions.append((name, url))
+        try:
+            with open(path, "r", encoding="utf-8") as fp:
+                data = json.load(fp)
+        except UnicodeDecodeError:
+            logger.error("Cannot parse %s, skipping.", path)
+
+        if data["username"] != "FAS:" + username:
+            continue
+        contribution_id = os.path.basename(path).removesuffix(".json")
+        url = f"/review/{contribution_id}"
+        name = path.removeprefix(FEEDBACK_DIR).removesuffix(".json")
+        contributions.append((name, url))
 
     data = {
         "request": request,
