@@ -43,14 +43,18 @@ def srpm_task_dict():
 # task_id: 114656851
 @pytest.fixture
 def rpm_build_noarch_task_dict():
-    with open(PARENT_DIR_PATH / "unit/test_data/task/rpm_build_noarch_task_dict.json") as f:
+    with open(
+        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_noarch_task_dict.json"
+    ) as f:
         yield json.load(f)
 
 
 # task_id: 114657791
 @pytest.fixture
 def rpm_build_arch_task_dict():
-    with open(PARENT_DIR_PATH / "unit/test_data/task/rpm_build_arch_task_dict.json") as f:
+    with open(
+        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_arch_task_dict.json"
+    ) as f:
         yield json.load(f)
 
 
@@ -111,91 +115,97 @@ def storator():
 
 @pytest.fixture
 def spec_feedback_input_output_schema_tuple():
-    yield FeedbackInputSchema(
-        username="john_doe",
-        logs=[
-            {
-                "name": "log1",
-                "content": "log content 1",
-                "snippets": [
-                    {
-                        "start_index": 1,
-                        "end_index": 2,
-                        "user_comment": "comment1",
-                        "text": "log content 1",
-                    }
-                ],
+    yield (
+        FeedbackInputSchema(
+            username="john_doe",
+            logs=[
+                {
+                    "name": "log1",
+                    "content": "log content 1",
+                    "snippets": [
+                        {
+                            "start_index": 1,
+                            "end_index": 2,
+                            "user_comment": "comment1",
+                            "text": "log content 1",
+                        }
+                    ],
+                },
+            ],
+            fail_reason="Some reason",
+            how_to_fix="Some instructions",
+            spec_file={"name": "spec", "content": "spec content"},
+        ),
+        FeedbackSchema(
+            username="john_doe",
+            logs={
+                "log1": {
+                    "name": "log1",
+                    "content": "log content 1",
+                    "snippets": [
+                        {
+                            "start_index": 1,
+                            "end_index": 2,
+                            "user_comment": "comment1",
+                            "text": "log content 1",
+                        }
+                    ],
+                }
             },
-        ],
-        fail_reason="Some reason",
-        how_to_fix="Some instructions",
-        spec_file={"name": "spec", "content": "spec content"},
-    ), FeedbackSchema(
-        username="john_doe",
-        logs={
-            "log1": {
-                "name": "log1",
-                "content": "log content 1",
-                "snippets": [
-                    {
-                        "start_index": 1,
-                        "end_index": 2,
-                        "user_comment": "comment1",
-                        "text": "log content 1",
-                    }
-                ],
-            }
-        },
-        fail_reason="Some reason",
-        how_to_fix="Some instructions",
-        spec_file={"name": "spec", "content": "spec content"},
+            fail_reason="Some reason",
+            how_to_fix="Some instructions",
+            spec_file={"name": "spec", "content": "spec content"},
+        ),
     )
 
 
 @pytest.fixture
 def container_feedback_input_output_schema_tuple():
-    yield FeedbackInputSchema(
-        username="john_doe",
-        logs=[
-            {
-                "name": "log1",
-                "content": "log content 1",
-                "snippets": [
-                    {
-                        "start_index": 1,
-                        "end_index": 2,
-                        "user_comment": "comment1",
-                        "text": "log content 1",
-                    }
-                ],
+    yield (
+        FeedbackInputSchema(
+            username="john_doe",
+            logs=[
+                {
+                    "name": "log1",
+                    "content": "log content 1",
+                    "snippets": [
+                        {
+                            "start_index": 1,
+                            "end_index": 2,
+                            "user_comment": "comment1",
+                            "text": "log content 1",
+                        }
+                    ],
+                },
+            ],
+            fail_reason="Some reason",
+            how_to_fix="Some instructions",
+            container_file={
+                "name": "container_file",
+                "content": "container_file content",
             },
-        ],
-        fail_reason="Some reason",
-        how_to_fix="Some instructions",
-        container_file={
-            "name": "container_file",
-            "content": "container_file content",
-        },
-    ), FeedbackSchema(
-        username="john_doe",
-        logs={
-            "log1": {
-                "name": "log1",
-                "content": "log content 1",
-                "snippets": [
-                    {
-                        "start_index": 1,
-                        "end_index": 2,
-                        "user_comment": "comment1",
-                        "text": "log content 1",
-                    }
-                ],
-            }
-        },
-        fail_reason="Some reason",
-        how_to_fix="Some instructions",
-        container_file={
-            "name": "container_file",
-            "content": "container_file content",
-        },
+        ),
+        FeedbackSchema(
+            username="john_doe",
+            logs={
+                "log1": {
+                    "name": "log1",
+                    "content": "log content 1",
+                    "snippets": [
+                        {
+                            "start_index": 1,
+                            "end_index": 2,
+                            "user_comment": "comment1",
+                            "text": "log content 1",
+                        }
+                    ],
+                }
+            },
+            fail_reason="Some reason",
+            how_to_fix="Some instructions",
+            container_file={
+                "name": "container_file",
+                "content": "container_file content",
+            },
+        ),
     )

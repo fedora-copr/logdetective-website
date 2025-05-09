@@ -306,8 +306,9 @@ def frontend_review_random(result_id):
 
     with open(feedback_file) as fp:
         content = json.loads(fp.read())
-        return FeedbackSchema(**content).dict() \
-            | {"id": feedback_file.name.rstrip(".json")}
+        return FeedbackSchema(**content).dict() | {
+            "id": feedback_file.name.rstrip(".json")
+        }
 
 
 @app.post("/frontend/explain/")
@@ -322,7 +323,7 @@ async def frontend_explain_post(request: Request):
     }
     """
     data = await request.json()
-    log_url = data['prompt']
+    log_url = data["prompt"]
 
     logger.info("Asking server to analyze log '%s'", log_url)
     data = {"url": log_url}
@@ -338,29 +339,23 @@ async def frontend_explain_post(request: Request):
             server_url,
             headers=headers,
             data=json.dumps(data),
-            timeout=(LOGDETECTIVE_CONNECT_TIMEOUT, LOGDETECTIVE_READ_TIMEOUT))
+            timeout=(LOGDETECTIVE_CONNECT_TIMEOUT, LOGDETECTIVE_READ_TIMEOUT),
+        )
     except (requests.ConnectionError, requests.Timeout) as ex:
-        raise HTTPException(
-            status_code=408, detail=str(ex)
-        ) from ex
+        raise HTTPException(status_code=408, detail=str(ex)) from ex
 
     try:
-        logger.debug("headers: %s data: %s", response.request.headers, response.request.body)
+        logger.debug(
+            "headers: %s data: %s", response.request.headers, response.request.body
+        )
         response.raise_for_status()
     except requests.HTTPError as ex:
-        detail = (
-            f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
-        )
-        raise HTTPException(
-            status_code=ex.response.status_code, detail=detail
-        ) from ex
+        detail = f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
+        raise HTTPException(status_code=ex.response.status_code, detail=detail) from ex
 
     result = _process_server_data(response.content)
 
-    log = {
-        "name": f"{log_url}",
-        "content": await download_log_task
-    }
+    log = {"name": f"{log_url}", "content": await download_log_task}
 
     # add missing data from the original log
     result["log"] = log
@@ -390,10 +385,12 @@ def _process_server_data(data):
     reasoning = []
 
     for snippet in r_data["snippets"]:
-        reasoning.append({
-            "snippet": snippet["text"],
-            "comment": snippet["explanation"]["text"],
-        })
+        reasoning.append(
+            {
+                "snippet": snippet["text"],
+                "comment": snippet["explanation"]["text"],
+            }
+        )
 
     try:
         certainty = int(r_data["response_certainty"])
@@ -414,19 +411,17 @@ async def _download_log_content(url):
 
     try:
         response = requests.get(url, timeout=600)
-    except (requests.ConnectionError, requests.Timeout, requests.RequestException) as ex:
-        raise HTTPException(
-            status_code=408, detail=str(ex)
-        ) from ex
+    except (
+        requests.ConnectionError,
+        requests.Timeout,
+        requests.RequestException,
+    ) as ex:
+        raise HTTPException(status_code=408, detail=str(ex)) from ex
     try:
         response.raise_for_status()
     except requests.HTTPError as ex:
-        detail = (
-            f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
-        )
-        raise HTTPException(
-            status_code=ex.response.status_code, detail=detail
-        ) from ex
+        detail = f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
+        raise HTTPException(status_code=ex.response.status_code, detail=detail) from ex
 
     return response.text
 
@@ -438,7 +433,9 @@ def _get_text_from_feedback(item: dict) -> str:
     return item["text"]
 
 
-def _parse_logs(logs_orig: dict[str, FeedbackLogSchema], review_snippets: list[dict]) -> None:
+def _parse_logs(
+    logs_orig: dict[str, FeedbackLogSchema], review_snippets: list[dict]
+) -> None:
     for name, item in logs_orig.items():
         item.snippets = []
         for snippet in review_snippets:
@@ -487,7 +484,7 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
         json.dump(
             _parse_feedback(content, original_file_id) | {"id": original_file_id},
             fp,
-            indent=4
+            indent=4,
         )
 
     return OkResponse()
@@ -516,13 +513,15 @@ def download_results():
     def cleanup():
         os.unlink(tar_path)
         os.rmdir(tmp_dir)
+
     # https://fastapi.tiangolo.com/advanced/custom-response/?h=fileresponse#fileresponse
     # https://fastapi.tiangolo.com/reference/background/?h=background
     return FileResponse(
         tar_path,
         filename=tar_name,
         media_type="application/x-tar",
-        background=BackgroundTask(cleanup))
+        background=BackgroundTask(cleanup),
+    )
 
 
 @app.get("/stats")

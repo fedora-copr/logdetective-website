@@ -47,15 +47,14 @@ class Storator3000:
         if not os.path.exists(FEEDBACK_DIR):
             raise NoDataFound(f"No directory {FEEDBACK_DIR} found to get results.")
 
-        all_files = [[
-                        os.path.join(subdir[0], file)
-                        for file in subdir[2]
-                    ]
-                for subdir in os.walk(FEEDBACK_DIR)]
+        all_files = [
+            [os.path.join(subdir[0], file) for file in subdir[2]]
+            for subdir in os.walk(FEEDBACK_DIR)
+        ]
         # MyPy has an issue with this usage of chain.
         all_files = list(chain.from_iterable(all_files))  # type: ignore
 
-        all_files = [x for x in all_files if x.endswith(".json")]
+        all_files = [x for x in all_files if x.endswith(".json")]  # type: ignore
 
         if not all_files:
             raise NoDataFound(f"Results directory {FEEDBACK_DIR} is empty")
@@ -82,10 +81,9 @@ class Storator3000:
 
     @classmethod
     def get_stats(cls) -> dict:
-        """Retrieve basic statistics about submitted reports.
-        """
+        """Retrieve basic statistics about submitted reports."""
         files = cls.get_logs()
         stats = {
-            "total_reports" : len(files),
+            "total_reports": len(files),
         }
         return stats

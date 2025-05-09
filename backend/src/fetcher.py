@@ -55,19 +55,18 @@ def handle_errors(func):
             # When koji can't find the task.
             if "No such task" in str(ex.stderr):
                 raise HTTPException(
-                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=ex.stderr.decode()
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                    detail=ex.stderr.decode(),
                 ) from ex
 
             # Everything else
             if os.environ.get("ENV") != "production":
                 raise HTTPException(
                     status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                    detail=f"stdout: {ex.stdout} stderr: {ex.stderr}"
+                    detail=f"stdout: {ex.stdout} stderr: {ex.stderr}",
                 ) from ex
 
-            raise HTTPException(
-                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-                ) from ex
+            raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR) from ex
 
     return inner
 
@@ -114,7 +113,9 @@ class CoprProvider(RPMProvider):
 
         if self.chroot == "srpm-builds":
             build = self.client.build_proxy.get(self.build_id)
-            baseurl = COPR_RESULT_TEMPLATE.format(build.ownername, build.project_dirname, build.id)
+            baseurl = COPR_RESULT_TEMPLATE.format(
+                build.ownername, build.project_dirname, build.id
+            )
         else:
             build_chroot = self.client.build_chroot_proxy.get(
                 self.build_id, self.chroot
@@ -145,7 +146,9 @@ class CoprProvider(RPMProvider):
         build = self.client.build_proxy.get(self.build_id)
         name = build.source_package["name"]
         if self.chroot == "srpm-builds":
-            baseurl = COPR_RESULT_TEMPLATE.format(build.ownername, build.project_dirname, build.id)
+            baseurl = COPR_RESULT_TEMPLATE.format(
+                build.ownername, build.project_dirname, build.id
+            )
         else:
             build_chroot = self.client.build_chroot_proxy.get(
                 self.build_id, self.chroot
@@ -163,8 +166,7 @@ class CoprProvider(RPMProvider):
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     # checkout.log - for dist-git repo cloning problems
-    logs_to_look_for = ["build.log", "root.log", "mock_output.log",
-                        "checkout.log"]
+    logs_to_look_for = ["build.log", "root.log", "mock_output.log", "checkout.log"]
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
     def __init__(self, build_or_task_id: int, arch: str) -> None:
@@ -185,16 +187,20 @@ class KojiProvider(RPMProvider):
         if self.build:
             self.build_id = build_or_task_id
             # it's a build, we need to find the right task now
-            root_task_id = self.build['task_id']
+            root_task_id = self.build["task_id"]
             # the response of getTaskDescendents:
             #   {'112162296': [{'arch': 'noarch', 'awaited': False...
-            task_descendants = self.client.getTaskDescendents(root_task_id)[str(root_task_id)]
+            task_descendants = self.client.getTaskDescendents(root_task_id)[
+                str(root_task_id)
+            ]
             for task_info in task_descendants:
-                if task_info['arch'] == arch \
-                        and task_info['method'] in ("buildArch", "buildSRPMFromSCM") \
-                        and task_info['state'] == 5:
+                if (
+                    task_info["arch"] == arch
+                    and task_info["method"] in ("buildArch", "buildSRPMFromSCM")
+                    and task_info["state"] == 5
+                ):
                     # this is the one and only ring!
-                    self.task_id = task_info['id']
+                    self.task_id = task_info["id"]
                     break
             else:
                 raise HTTPException(
@@ -232,9 +238,11 @@ class KojiProvider(RPMProvider):
         task_request_url = self.task_request[0]
         if task_request_url.startswith("git+https"):
             return task_request_url
-        parent_task = self.task_info['parent']
+        parent_task = self.task_info["parent"]
         if parent_task:
-            task_request_url = self.client.getTaskInfo(parent_task, request=True)["request"][0]
+            task_request_url = self.client.getTaskInfo(parent_task, request=True)[
+                "request"
+            ][0]
         if task_request_url.startswith("git+https"):
             return task_request_url
         return None
@@ -252,7 +260,8 @@ class KojiProvider(RPMProvider):
                 detail=(
                     f"Task {self.task_id} method is "
                     f"{self.task_info['method']}. "
-                    "Please select task with method buildArch."),
+                    "Please select task with method buildArch."
+                ),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
@@ -263,12 +272,7 @@ class KojiProvider(RPMProvider):
             except koji.GenericError:
                 # checkout.log not available for buildArch
                 continue
-            logs.append(
-                {
-                    "name": log_name,
-                    "content": log_content
-                }
-            )
+            logs.append({"name": log_name, "content": log_content})
 
         return logs
 
@@ -313,11 +317,13 @@ class KojiProvider(RPMProvider):
                 return None
             resp = requests.get(srpm_url)
             if not resp.ok:
-                logging.error(f"SRPM {srpm_url} for task {self.task_id} not "
-                              f"accessible: {resp.status_code} ({resp.reason})")
+                logging.error(
+                    f"SRPM {srpm_url} for task {self.task_id} not "
+                    f"accessible: {resp.status_code} ({resp.reason})"
+                )
                 return None
 
-            destination = Path(f'{temp_dir}/{srpm_url.split("/")[-1]}')
+            destination = Path(f"{temp_dir}/{srpm_url.split('/')[-1]}")
             with open(destination, "wb") as srpm_f:
                 srpm_f.write(resp.content)
 
@@ -336,8 +342,10 @@ class KojiProvider(RPMProvider):
             return self._fetch_spec_file_from_task_id()
         package_name = re.findall(r"/rpms/(.+)\.git", request_url)[0]
         commit_hash = re.findall(r"\.git#(.+)$", request_url)[0]
-        spec_url = "https://src.fedoraproject.org/rpms/" \
-                   f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
+        spec_url = (
+            "https://src.fedoraproject.org/rpms/"
+            f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
+        )
         response = requests.get(spec_url)
         try:
             response.raise_for_status()
@@ -431,7 +439,7 @@ class URLProvider(RPMProvider):
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
-                "The URL must point to a raw text file. " f"This URL isn't: {self.url}"
+                f"The URL must point to a raw text file. This URL isn't: {self.url}"
             )
         return [
             {
@@ -462,7 +470,7 @@ class ContainerProvider(Provider):
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
-                "The URL must point to a raw text file. " f"This URL isn't: {self.url}"
+                f"The URL must point to a raw text file. This URL isn't: {self.url}"
             )
         return [
             {
