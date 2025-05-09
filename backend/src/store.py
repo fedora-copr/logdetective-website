@@ -54,7 +54,7 @@ class Storator3000:
         # MyPy has an issue with this usage of chain.
         all_files = list(chain.from_iterable(all_files))  # type: ignore
 
-        all_files = [x for x in all_files if x.endswith(".json")]
+        all_files = [x for x in all_files if x.endswith(".json")]  # type: ignore
 
         if not all_files:
             raise NoDataFound(f"Results directory {FEEDBACK_DIR} is empty")
