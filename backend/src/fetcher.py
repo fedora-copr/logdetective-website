@@ -166,7 +166,13 @@ class CoprProvider(RPMProvider):
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     # checkout.log - for dist-git repo cloning problems
-    logs_to_look_for = ["build.log", "root.log", "mock_output.log", "checkout.log"]
+    logs_to_look_for = [
+        "build.log",
+        "root.log",
+        "mock_output.log",
+        "checkout.log",
+        "flatpak.log",
+    ]
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
     def __init__(self, build_or_task_id: int, arch: str) -> None:
@@ -253,7 +259,11 @@ class KojiProvider(RPMProvider):
         # if someone complains about, just reintroduce the if below
         # if self.task_info["arch"] != self.arch:
 
-        if self.task_info["method"] not in ("buildArch", "buildSRPMFromSCM"):
+        if self.task_info["method"] not in (
+            "buildArch",
+            "buildSRPMFromSCM",
+            "flatpakBuildArch",
+        ):
             # we could navigate to the right task, but let's be explicit in the meantime
             # let user input the proper task instead of us guessing
             raise HTTPException(

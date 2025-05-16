@@ -132,7 +132,7 @@ class TestKojiProviderLogs:
         mock_task_info.return_value = request.getfixturevalue(f_task_dict)
         koji_provider = KojiProvider(123, "noarch")
         logs = koji_provider.fetch_logs()
-        assert len(logs) == 4
+        assert len(logs) == 5
         for log in logs:
             assert log["content"] == "LOG_CONTENT"
 
