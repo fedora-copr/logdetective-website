@@ -28,10 +28,10 @@ spec:
               mountPath: /persistent
           resources:
             requests:
-              memory: "800Mi"
+              memory: "1600Mi"
               cpu: "50m"
             limits:
-              memory: "1600Mi"
+              memory: "3200Mi"
               cpu: "500m"
           env:
             - name: SERVER_URL
