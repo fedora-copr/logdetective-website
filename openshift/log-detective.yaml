@@ -37,7 +37,18 @@ spec:
             - name: SERVER_URL
               value: https://logdetective01.fedorainfracloud.org
           command: ["gunicorn"]
-          args: ["-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080", "--timeout", "1800", "--workers", "2"]
+          args: [
+            "-k",
+            "uvicorn.workers.UvicornWorker",
+            "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem",
+            "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem",
+            "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem",
+            "api:app",
+            "-b", "0.0.0.0:8080",
+            "--timeout", "1800",
+            "--workers", "2",
+            "--max-requests", "50",
+            "--max-requests-jitter", "5"]
   replicas: 1
   strategy:
     type: Recreate
