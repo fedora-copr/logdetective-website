@@ -542,7 +542,7 @@ def get_contributions(request: Request, username: str):
         try:
             with open(path, "r", encoding="utf-8") as fp:
                 data = json.load(fp)
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, json.decoder.JSONDecodeError):
             logger.error("Cannot parse %s, skipping.", path)
 
         if data["username"] != "FAS:" + username:
