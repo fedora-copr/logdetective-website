@@ -129,7 +129,7 @@
      "Create snippets by selecting them and clicking 'Add', then writing annotations")
 
     (instructions-item
-     (not-empty (:comment (first @snippets)))
+     (some not-empty (map :comment @snippets))
      "Describe what makes the snippets interesting")
 
     (instructions-item
