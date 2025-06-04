@@ -4,6 +4,7 @@ import random
 from datetime import datetime
 from pathlib import Path
 from itertools import chain
+import uuid
 
 from src.constants import FEEDBACK_DIR, ProvidersEnum
 from src.exceptions import NoDataFound
@@ -34,13 +35,14 @@ class Storator3000:
 
         return self.target_dir / id_
 
-    def store(self, feedback_result: FeedbackSchema) -> None:
+    def store(self, feedback_result: FeedbackSchema) -> uuid.UUID:
         self.build_dir.mkdir(parents=True, exist_ok=True)
 
-        timestamp_seconds = int(datetime.now().timestamp())
-        file_name = self.build_dir / f"{timestamp_seconds}.json"
+        submission_id = uuid.uuid4()
+        file_name = f"{self.build_dir}/{submission_id}.json"
         with open(file_name, "w") as fp:
             json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
+        return submission_id
 
     @classmethod
     def get_logs(cls) -> list:
