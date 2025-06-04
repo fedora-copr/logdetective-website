@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+import uuid
 from asyncio import create_task
 from base64 import b64decode
 from datetime import datetime
@@ -231,6 +232,9 @@ def frontend_debug_contribute():
 # TODO: some reasonable ok response would be better
 class OkResponse(BaseModel):
     status: str = "ok"
+    review_id: uuid.UUID
+    review_url_website: str
+    review_url_json: str
 
 
 def _store_data_for_providers(
@@ -243,14 +247,16 @@ def _store_data_for_providers(
     else:
         result_to_store = schema_inp_to_out(feedback_input)
 
-    storator.store(result_to_store)
+    submission_id = storator.store(result_to_store)
     if len(args) > 0:
         rest = f"/{args[0]}"
     else:
         rest = ""
 
-    logger.info("Submitted data for {%s}: #{%s}{%s}", provider, id_, rest)
-    return OkResponse()
+    logger.info("Submitted data for {%s}: #{%s}{%s} (submission ID: %s)", provider, id_, rest, submission_id)
+    review_url_website=f"{SERVER_URL}/review/{submission_id}"
+    review_url_json=f"{SERVER_URL}/frontend/review/{submission_id}"
+    return OkResponse(review_id=submission_id, review_url_json=review_url_json, review_url_website=review_url_website)
 
 
 @app.post("/frontend/contribute/copr/{build_id}/{chroot}")
