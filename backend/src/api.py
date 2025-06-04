@@ -247,16 +247,26 @@ def _store_data_for_providers(
     else:
         result_to_store = schema_inp_to_out(feedback_input)
 
-    submission_id = storator.store(result_to_store)
+    contribution_id = storator.store(result_to_store)
     if len(args) > 0:
         rest = f"/{args[0]}"
     else:
         rest = ""
 
-    logger.info("Submitted data for {%s}: #{%s}{%s} (submission ID: %s)", provider, id_, rest, submission_id)
-    review_url_website=f"{SERVER_URL}/review/{submission_id}"
-    review_url_json=f"{SERVER_URL}/frontend/review/{submission_id}"
-    return OkResponse(review_id=submission_id, review_url_json=review_url_json, review_url_website=review_url_website)
+    logger.info(
+        "Submitted data for {%s}: #{%s}{%s} (submission ID: %s)",
+        provider,
+        id_,
+        rest,
+        contribution_id,
+    )
+    review_url_website = f"{SERVER_URL}/review/{contribution_id}"
+    review_url_json = f"{SERVER_URL}/frontend/review/{contribution_id}"
+    return OkResponse(
+        review_id=contribution_id,
+        review_url_json=review_url_json,
+        review_url_website=review_url_website,
+    )
 
 
 @app.post("/frontend/contribute/copr/{build_id}/{chroot}")

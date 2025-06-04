@@ -38,11 +38,11 @@ class Storator3000:
     def store(self, feedback_result: FeedbackSchema) -> uuid.UUID:
         self.build_dir.mkdir(parents=True, exist_ok=True)
 
-        submission_id = uuid.uuid4()
-        file_name = f"{self.build_dir}/{submission_id}.json"
+        contribution_id = uuid.uuid4()
+        file_name = f"{self.build_dir}/{contribution_id}.json"
         with open(file_name, "w") as fp:
             json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
-        return submission_id
+        return contribution_id
 
     @classmethod
     def get_logs(cls) -> list:
