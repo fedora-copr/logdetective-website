@@ -60,8 +60,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# TODO: use absolute path perhaps?
-template_dir = "../../frontend/public"
+this_file = Path(__file__)
+git_repo_root = this_file.parent.parent.parent
+template_dir = git_repo_root / "frontend" / "public"
 app.mount("/static", StaticFiles(directory=template_dir), name="static")
 # blame scarlette for not being able to mount directories recursively
 for root, directories, _ in os.walk(template_dir):
