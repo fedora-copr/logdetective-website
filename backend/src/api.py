@@ -253,7 +253,7 @@ class OkResponse(BaseModel):
     review_url_json: str
 
     @staticmethod
-    def from_id(id_: str | uuid.UUID) -> "OkResponse":
+    def from_id(id_: str | uuid.UUID, our_server: str) -> "OkResponse":
         """Constructs an OkResponse object from a review/contribution ID.
 
         Args:
@@ -264,13 +264,17 @@ class OkResponse(BaseModel):
         """
         return OkResponse(
             review_id=id_,
-            review_url_json=f"/frontend/review/{id_}",
-            review_url_website=f"/review/{id_}",
+            review_url_json=f"{our_server}/frontend/review/{id_}",
+            review_url_website=f"{our_server}/review/{id_}",
         )
 
 
 def _store_data_for_providers(
-    feedback_input: FeedbackInputSchema, provider: str, id_: int | str, *args
+    feedback_input: FeedbackInputSchema,
+    provider: str,
+    id_: int | str,
+    *args,
+    our_server: str = "https://logdetective.com",
 ) -> OkResponse:
     storator = Storator3000(ProvidersEnum[provider], str(id_))
 
@@ -292,48 +296,88 @@ def _store_data_for_providers(
         contribution_id,
         rest,
     )
-    return OkResponse.from_id(contribution_id)
+    return OkResponse.from_id(contribution_id, our_server)
 
 
 @app.post("/frontend/contribute/copr/{build_id}/{chroot}")
 def contribute_review_copr(
-    feedback_input: FeedbackInputSchema, build_id: int, chroot: str
+    feedback_input: FeedbackInputSchema,
+    build_id: int,
+    chroot: str,
+    request: Request,
 ) -> OkResponse:
     return _store_data_for_providers(
-        feedback_input, ProvidersEnum.copr, build_id, chroot
+        feedback_input,
+        ProvidersEnum.copr,
+        build_id,
+        chroot,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
     )
 
 
 @app.post("/frontend/contribute/koji/{build_id}/{arch}")
 def contribute_review_koji(
-    feedback_input: FeedbackInputSchema, build_id: int, arch: str
+    feedback_input: FeedbackInputSchema,
+    build_id: int,
+    arch: str,
+    request: Request,
 ) -> OkResponse:
-    return _store_data_for_providers(feedback_input, ProvidersEnum.koji, build_id, arch)
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.koji,
+        build_id,
+        arch,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
 
 
 @app.post("/frontend/contribute/packit/{packit_id}")
 def contribute_review_packit(
-    feedback_input: FeedbackInputSchema, packit_id: int
+    feedback_input: FeedbackInputSchema, packit_id: int, request: Request
 ) -> OkResponse:
-    return _store_data_for_providers(feedback_input, ProvidersEnum.packit, packit_id)
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.packit,
+        packit_id,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
 
 
 @app.post("/frontend/contribute/upload")
-def contribute_upload_file(feedback_input: FeedbackInputSchema) -> OkResponse:
+def contribute_upload_file(
+    feedback_input: FeedbackInputSchema, request: Request
+) -> OkResponse:
     dirname = int(datetime.now().timestamp())
-    return _store_data_for_providers(feedback_input, ProvidersEnum.upload, dirname)
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.upload,
+        dirname,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
 
 
 @app.post("/frontend/contribute/url/{url}")
-def contribute_review_url(feedback_input: FeedbackInputSchema, url: str) -> OkResponse:
-    return _store_data_for_providers(feedback_input, ProvidersEnum.url, url)
+def contribute_review_url(
+    feedback_input: FeedbackInputSchema, url: str, request: Request
+) -> OkResponse:
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.url,
+        url,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
 
 
 @app.post("/frontend/contribute/container/{url}")
 def contribute_review_container_logs(
-    feedback_input: FeedbackInputSchema, url: str
+    feedback_input: FeedbackInputSchema, url: str, request: Request
 ) -> OkResponse:
-    return _store_data_for_providers(feedback_input, ProvidersEnum.container, url)
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.container,
+        url,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
 
 
 @app.get("/frontend/review/{result_id}")
@@ -546,7 +590,8 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
             indent=4,
         )
 
-    return OkResponse.from_id(file_name)
+    our_server = f"{feedback_input.url.scheme}://{feedback_input.url.netloc}"
+    return OkResponse.from_id(file_name, our_server)
 
 
 @app.get("/download")
