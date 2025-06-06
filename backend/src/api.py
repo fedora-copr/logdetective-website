@@ -232,9 +232,25 @@ def frontend_debug_contribute():
 # TODO: some reasonable ok response would be better
 class OkResponse(BaseModel):
     status: str = "ok"
-    review_id: uuid.UUID
+    review_id: str | uuid.UUID
     review_url_website: str
     review_url_json: str
+
+    @staticmethod
+    def from_id(id_: str | uuid.UUID) -> "OkResponse":
+        """Constructs an OkResponse object from a review/contribution ID.
+
+        Args:
+            id (str | uuid.UUID): the review/contribution ID
+
+        Returns:
+            OkResponse: The OkResponse object with all required fields filled out.
+        """
+        return OkResponse(
+            review_id=id_,
+            review_url_json=f"{SERVER_URL}/frontend/review/{id_}",
+            review_url_website=f"{SERVER_URL}/review/{id_}",
+        )
 
 
 def _store_data_for_providers(
@@ -260,13 +276,7 @@ def _store_data_for_providers(
         rest,
         contribution_id,
     )
-    review_url_website = f"{SERVER_URL}/review/{contribution_id}"
-    review_url_json = f"{SERVER_URL}/frontend/review/{contribution_id}"
-    return OkResponse(
-        review_id=contribution_id,
-        review_url_json=review_url_json,
-        review_url_website=review_url_website,
-    )
+    return OkResponse.from_id(contribution_id)
 
 
 @app.post("/frontend/contribute/copr/{build_id}/{chroot}")
@@ -503,7 +513,7 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
             indent=4,
         )
 
-    return OkResponse()
+    return OkResponse.from_id(file_name)
 
 
 @app.get("/download")
