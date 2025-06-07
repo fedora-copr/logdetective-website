@@ -17,7 +17,7 @@ LOGDETECTIVE_CONNECT_TIMEOUT = float(
 COPR_RESULT_TEMPLATE = (
     "https://download.copr.fedorainfracloud.org" + "/results/{0}/{1}/srpm-builds/{2:08}"
 )
-# logdetective server URL
+# logdetective inference server URL we will query
 SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:8000")
 
 
