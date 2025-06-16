@@ -14,6 +14,37 @@ def _check_spec_container_are_exclusively_mutual(values):
     return values
 
 
+def _check_required_fields(values):
+    """Check that `how_to_fix` and `fail_reason` fields have content of length > 0"""
+
+    how_to_fix = values.get("how_to_fix")
+    fail_reason = values.get("fail_reason")
+
+    if len(how_to_fix) == 0:
+        raise ValueError(
+            "`how_to_fix` field must be set for the annotation to be accepted"
+        )
+
+    if len(fail_reason) == 0:
+        raise ValueError(
+            "`fail_reason` field must be set for the annotation to be accepted"
+        )
+
+    return values
+
+
+def _check_snippet_presence(values):
+    """Check that we have at least one log with valid snippets"""
+    for log in values.get("logs"):
+        if len(log["snippets"]) > 0:
+            for snippet in log["snippets"]:
+                if snippet["start_index"] >= snippet["end_index"]:
+                    raise ValueError("snippet with invalid indices")
+            return values
+
+    raise ValueError("no snippets filled for any of the submitted logs")
+
+
 class NameContentSchema(BaseModel):
     # TODO: do we want to store spec_file and container_file separately
     #  in file or store content in one file? Or the path means just its name?
@@ -87,6 +118,11 @@ class _WithoutLogsSchema(BaseModel):
     def _verify_spec_and_container_file(cls, values):
         return _check_spec_container_are_exclusively_mutual(values)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _verify_required_fields(cls, values):
+        return _check_required_fields(values)
+
 
 class FeedbackInputSchema(_WithoutLogsSchema):
     """
@@ -95,6 +131,11 @@ class FeedbackInputSchema(_WithoutLogsSchema):
     """
 
     logs: list[FeedbackLogSchema]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _verify_snippets(cls, values):
+        return _check_snippet_presence(values)
 
 
 class FeedbackSchema(_WithoutLogsSchema):
