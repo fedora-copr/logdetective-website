@@ -182,6 +182,8 @@ a:hover {
   --bs-btn-hover-border-color: var(--newblue);
   --bs-btn-active-bg: var(--newblue);
   --bs-btn-active-border-color: var(--newblue);
+  --bs-btn-disabled-bg: var(--gray-6);
+  --bs-btn-disabled-border-color: var(--gray-4);
 }
 
 
