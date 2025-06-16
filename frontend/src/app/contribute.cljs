@@ -218,7 +218,8 @@
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"
-              :on-click #(submit-form)}
+              :on-click #(submit-form)
+              :disabled (or (empty? @how-to-fix) (some empty (map :comment @snippets)))}
      "Submit"]]])
 
 (defn render-succeeded []
