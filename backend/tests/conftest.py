@@ -126,14 +126,14 @@ def spec_feedback_input_output_schema_tuple():
                         {
                             "start_index": 1,
                             "end_index": 2,
-                            "user_comment": "comment1",
+                            "user_comment": "comment1 is long enough is long enough",
                             "text": "log content 1",
                         }
                     ],
                 },
             ],
-            fail_reason="Some reason",
-            how_to_fix="Some instructions",
+            fail_reason="Some reason for failure",
+            how_to_fix="Some instructions for resolution",
             spec_file={"name": "spec", "content": "spec content"},
         ),
         FeedbackSchema(
@@ -146,14 +146,14 @@ def spec_feedback_input_output_schema_tuple():
                         {
                             "start_index": 1,
                             "end_index": 2,
-                            "user_comment": "comment1",
+                            "user_comment": "comment1 is long enough is long enough",
                             "text": "log content 1",
                         }
                     ],
                 }
             },
-            fail_reason="Some reason",
-            how_to_fix="Some instructions",
+            fail_reason="Some reason for failure",
+            how_to_fix="Some instructions for resolution",
             spec_file={"name": "spec", "content": "spec content"},
         ),
     )
@@ -172,14 +172,14 @@ def container_feedback_input_output_schema_tuple():
                         {
                             "start_index": 1,
                             "end_index": 2,
-                            "user_comment": "comment1",
+                            "user_comment": "comment1 is long enough",
                             "text": "log content 1",
                         }
                     ],
                 },
             ],
             fail_reason="Some reason",
-            how_to_fix="Some instructions",
+            how_to_fix="Some instructions for resolution",
             container_file={
                 "name": "container_file",
                 "content": "container_file content",
@@ -195,14 +195,14 @@ def container_feedback_input_output_schema_tuple():
                         {
                             "start_index": 1,
                             "end_index": 2,
-                            "user_comment": "comment1",
+                            "user_comment": "comment1 is long enough",
                             "text": "log content 1",
                         }
                     ],
                 }
             },
             fail_reason="Some reason",
-            how_to_fix="Some instructions",
+            how_to_fix="Some instructions for resolution",
             container_file={
                 "name": "container_file",
                 "content": "container_file content",

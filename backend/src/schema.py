@@ -15,19 +15,19 @@ def _check_spec_container_are_exclusively_mutual(values):
 
 
 def _check_required_fields(values):
-    """Check that `how_to_fix` and `fail_reason` fields have content of length > 0"""
+    """Check that `how_to_fix` and `fail_reason` fields have content of length >= min_len"""
 
     how_to_fix = values.get("how_to_fix")
     fail_reason = values.get("fail_reason")
 
-    if len(how_to_fix) == 0:
+    if len(how_to_fix) < 10:
         raise ValueError(
-            "`how_to_fix` field must be set for the annotation to be accepted"
+            "`how_to_fix` must be at least 10 characters long for the annotation to be accepted"
         )
 
-    if len(fail_reason) == 0:
+    if len(fail_reason) < 10:
         raise ValueError(
-            "`fail_reason` field must be set for the annotation to be accepted"
+            "`fail_reason` must be at least 10 characters long for the annotation to be accepted"
         )
 
     return values
@@ -38,8 +38,10 @@ def _check_snippet_presence(values):
     for log in values.get("logs"):
         if len(log["snippets"]) > 0:
             for snippet in log["snippets"]:
-                if snippet["start_index"] >= snippet["end_index"]:
-                    raise ValueError("snippet with invalid indices")
+                if len(snippet["user_comment"]) < 10:
+                    raise ValueError(
+                        "snippet annotation must be at least 10 characters long"
+                    )
             return values
 
     raise ValueError("no snippets filled for any of the submitted logs")
