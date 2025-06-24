@@ -18,3 +18,5 @@
 (def build-url (r/atom nil))
 
 (def text-in-log-selected? (r/atom nil))
+
+(def ok-status (r/atom nil))

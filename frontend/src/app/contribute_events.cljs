@@ -19,7 +19,8 @@
      status
      fas
      spec
-     container]]))
+     container
+     ok-status]]))
 
 (defn submit-form []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))
@@ -69,9 +70,8 @@
                          ;; validation errors
                          (reset! status nil))
 
-                       (= (:status data) "ok")
-                       (reset! status "submitted")
-
+                       (= (:status data) "ok") ((reset! status "submitted")
+                                                (reset! ok-status data))
                        :else nil))))))
 
 (defn on-how-to-fix-textarea-change [target]
