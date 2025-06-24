@@ -41,7 +41,8 @@
      build-id
      build-id-title
      build-url
-     text-in-log-selected?]]
+     text-in-log-selected?
+     ok-status]]
    [app.contribute-events :refer
     [submit-form
      on-how-to-fix-textarea-change
@@ -67,7 +68,8 @@
              (:logs data))))
 
   (reset! error-title nil)
-  (reset! error-description nil))
+  (reset! error-description nil)
+  (reset! ok-status nil))
 
 (defn fetch-logs-backend []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))]
@@ -222,12 +224,17 @@
               :disabled (or (empty? @how-to-fix) (some empty (map :comment @snippets)))}
      "Submit"]]])
 
-(defn render-succeeded []
+(defn render-succeeded [ok-response]
   (render-jumbotron
    "succeeded"
    "Thank you!"
    "Successfully submitted, thank you for your contribution."
-   "..."
+   [:p
+    "You can review it here: "
+    [:a
+     {:href
+      (:review_url_website ok-response)}
+     (:review_url_website ok-response)]]
    [:a {:type "submit"
         :class "btn btn-primary btn-lg"
         :href "/"}
@@ -257,7 +264,7 @@
   ;;    The form data is being uploaded, but form stays in an editable state so
   ;;    we can recover (and e.g. fix the server-side validation errors).
   ;; "submitted" (status="submitted")
-  ;;    A separate "thank you" page.
+  ;;    A separate "thank you" page with URL to annotated log in review interface.
   ;; "error page" (status="error")
   ;;    A separate error page, e.g. for failed loading.
   (cond
@@ -265,7 +272,7 @@
     (render-error @error-title @error-description)
 
     (= @status "submitted")
-    (render-succeeded)
+    (render-succeeded @ok-status)
 
     @files
     (do
