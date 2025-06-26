@@ -231,6 +231,10 @@ def frontend_debug_contribute():
 
 # TODO: some reasonable ok response would be better
 class OkResponse(BaseModel):
+    """Response on successful annotation submission, containing sumbission id and relative URLs
+    pointing to posted annotation and review tooling.
+    """
+
     status: str = "ok"
     review_id: str | uuid.UUID
     review_url_website: str
@@ -248,8 +252,8 @@ class OkResponse(BaseModel):
         """
         return OkResponse(
             review_id=id_,
-            review_url_json=f"{SERVER_URL}/frontend/review/{id_}",
-            review_url_website=f"{SERVER_URL}/review/{id_}",
+            review_url_json=f"/frontend/review/{id_}",
+            review_url_website=f"/review/{id_}",
         )
 
 
