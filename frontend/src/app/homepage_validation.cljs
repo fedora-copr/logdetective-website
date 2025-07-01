@@ -6,7 +6,11 @@
 (defn numeric? [string]
   (not (js/isNaN (js/Number string))))
 
-(defn validate [current-hash-atom input-values input-errors]
+(defn validate
+  "Simple input validation for the submission form. The code doesn't
+  check if the data can be retrieved from remote service like koji,
+  insted it performs a simple sanity check."
+  [current-hash-atom input-values input-errors]
   ;; This function works but the implementationo is disgusting and not at all
   ;; how it is supposed to be done. We can refactor in the future.
   (reset! input-errors [])
