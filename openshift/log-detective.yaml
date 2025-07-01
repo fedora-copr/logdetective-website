@@ -40,7 +40,7 @@ spec:
           args: [
             "-k",
             "uvicorn.workers.UvicornWorker",
-            "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem",
+            "--certfile", "/persistent/letsencrypt/live/log-detective.com/cert.pem",
             "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem",
             "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem",
             "api:app",

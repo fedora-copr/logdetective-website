@@ -202,6 +202,8 @@ $ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ \
   --dns-porkbun-propagation-seconds 120
 ```
 
+**Note: certbot may generate files under either log-detective.com or logdetective.com paths.**
+
 Head over now to the section [Apply certificates](#apply-certificates).
 
 ### Manual
@@ -248,9 +250,9 @@ $ openssl x509 -inform pem -noout -text -in 'cert/live/logdetective.com/fullchai
       DNS:*.log-detective.com, DNS:*.logdetective.com, DNS:log-detective.com, DNS:logdetective.com
 ```
 
-Make sure these paths point to the correct certificates:
+Make sure that paths specified in the spec for Log Detective deployment in `log-detective.yaml` are in sync with actual files in volume:
 
-- "/persistent/letsencrypt/live/logdetective.com/cert.pem"
+- "/persistent/letsencrypt/live/log-detective.com/cert.pem"
 - "/persistent/letsencrypt/live/log-detective.com/privkey.pem"
 - "/persistent/letsencrypt/live/log-detective.com/fullchain.pem"
 
