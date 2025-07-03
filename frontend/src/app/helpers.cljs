@@ -44,3 +44,9 @@
   "Change URL without a full page reload or redirect"
   [url]
   (.pushState (.-history js/window) nil nil url))
+
+(defn upload-error [error-msg]
+  {:title "Upload error"
+   :description
+   (str "Your browser has encountered and error while attempting an upload."
+        error-msg)})

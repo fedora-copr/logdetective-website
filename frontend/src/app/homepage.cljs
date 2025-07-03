@@ -11,7 +11,8 @@
               redirect
               local-storage-enabled
               local-storage-error
-              remove-trailing-slash]]))
+              remove-trailing-slash
+              upload-error]]))
 
 (def current-hash (r/atom (. (. js/document -location) -hash)))
 
@@ -52,7 +53,10 @@
     (reset! error (local-storage-error))
     (do
       (.setItem js/localStorage "name" (get @input-values :name))
-      (.setItem js/localStorage "content" (get @input-values :file))
+      (try
+        (.setItem js/localStorage "content" (get @input-values :file))
+        (catch js/Error e
+          (reset! error (upload-error (str e)))))
       (validate current-hash-atom input-values input-errors)
       (when (empty? @input-errors)
         (set! (.-href (.-location js/window)) "/contribute/upload")))))
@@ -214,7 +218,9 @@
    nil
    "Upload RPM logs from your computer"
    "img/upload-icon.png"
-   "Upload a RPM log file from your computer. "
+   (str
+    "Upload a RPM log file from your computer. "
+    "Files larger than several MB are not supported.")
    [(input-file "file")]))
 
 (defn render-container-card []
