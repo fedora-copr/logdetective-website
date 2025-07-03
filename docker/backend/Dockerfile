@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:40
+FROM registry.fedoraproject.org/fedora:42
 LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 RUN dnf -y update && \
@@ -9,10 +9,9 @@ RUN dnf -y update && \
                    net-tools \
                    iputils \
                    vim \
-                   mlocate \
+                   plocate \
                    git-core git-lfs \
                    sudo \
-                   python3-ipdb \
                    findutils \
     # The dependencies for this project
     && dnf -y install \

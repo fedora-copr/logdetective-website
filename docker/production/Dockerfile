@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:40
+FROM registry.fedoraproject.org/fedora:42
 LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 ENV ENV=production
@@ -20,7 +20,7 @@ RUN npm install
 RUN npm install -g shadow-cljs@">=2.26.0 <3.0.0"
 RUN npx shadow-cljs release app
 
-FROM registry.fedoraproject.org/fedora:40
+FROM registry.fedoraproject.org/fedora:42
 LABEL maintainer="copr-devel@lists.fedorahosted.org"
 
 ENV ENV=production
@@ -39,17 +39,15 @@ RUN dnf -y install python3-fastapi \
                    python3-pip \
                    koji \
                    htop \
-                   btop \
                    make \
                    wget \
                    net-tools \
                    iputils \
                    vim \
-                   mlocate \
+                   plocate \
                    jq \
                    fpaste \
                    git \
-                   python3-ipdb \
                    findutils \
     && dnf clean all \
     && pip3 --no-cache-dir install datasets \
