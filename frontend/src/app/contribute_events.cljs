@@ -22,7 +22,9 @@
      container
      ok-status]]))
 
-(defn submit-form []
+(defn submit-form
+  "Render annotation submission form with retrieved logs"
+  []
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))
         username (or @fas (local-storage-get "fas"))
         username (if username (str "FAS:" username) nil)
