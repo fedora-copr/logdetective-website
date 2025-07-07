@@ -58,7 +58,7 @@
         (catch js/Error e
           (reset! error (upload-error (str e)))))
       (validate current-hash-atom input-values input-errors)
-      (when (empty? @input-errors)
+      (when (and (empty? @input-errors) (nil? @error))
         (set! (.-href (.-location js/window)) "/contribute/upload")))))
 
 (defn on-tab-click [href]
@@ -248,8 +248,4 @@
     [:div {:class "card text-center"}
      (render-stats)
      (render-navigation)
-     (render-cards)])
-  [:div {:class "card text-center"}
-   (render-stats)
-   (render-navigation)
-   (render-cards)])
+     (render-cards)]))
