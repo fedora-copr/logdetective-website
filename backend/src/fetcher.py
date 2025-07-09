@@ -1,5 +1,4 @@
 import binascii
-import logging
 import os
 import re
 import subprocess
@@ -15,10 +14,12 @@ import koji
 import requests
 from fastapi import HTTPException
 
-from src.constants import COPR_RESULT_TEMPLATE
+from src.constants import COPR_RESULT_TEMPLATE, LOGGER_NAME
 from src.data import LOG_OUTPUT
 from src.exceptions import FetchError
-from src.spells import get_temporary_dir
+from src.spells import get_temporary_dir, get_logger
+
+LOGGER = get_logger(LOGGER_NAME)
 
 
 def handle_errors(func):
@@ -302,7 +303,7 @@ class KojiProvider(RPMProvider):
         # example: 'cli-build/1705395313.3717997.mjCDejui/sqlite-3.45.0-1.fc40.src.rpm'
         request_endpoint = self.task_request[0]
         if not request_endpoint.endswith(".src.rpm"):
-            logging.error(f"Cannot find SRPM for task {self.task_id}.")
+            LOGGER.error(f"Cannot find SRPM for task {self.task_id}.")
             return None
         return f"{self.koji_pkgs_url}/{request_endpoint}"
 
@@ -327,9 +328,12 @@ class KojiProvider(RPMProvider):
                 return None
             resp = requests.get(srpm_url)
             if not resp.ok:
-                logging.error(
-                    f"SRPM {srpm_url} for task {self.task_id} not "
-                    f"accessible: {resp.status_code} ({resp.reason})"
+                LOGGER.error(
+                    "SRPM %s for task %s not accessible: %s (%s)",
+                    srpm_url,
+                    self.task_id,
+                    resp.status_code,
+                    resp.reason,
                 )
                 return None
 
@@ -360,10 +364,11 @@ class KojiProvider(RPMProvider):
         try:
             response.raise_for_status()
         except HTTPError as exc:
-            logging.error(
-                "No spec file found in koji for task "
-                f"#{self.task_id} and arch {self.arch}."
-                f"Reason: {exc}"
+            LOGGER.error(
+                "No spec file found in koji for task #%s and arch %s.Reason: %s",
+                self.task_id,
+                self.arch,
+                exc,
             )
             return None
         return {"name": f"{package_name}.spec", "content": response.text}
