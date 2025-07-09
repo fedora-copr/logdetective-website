@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import tempfile
 import uuid
@@ -36,6 +35,7 @@ from src.constants import (
     LOGDETECTIVE_CONNECT_TIMEOUT,
     BuildIdTitleEnum,
     ProvidersEnum,
+    LOGGER_NAME,
 )
 from src.fetcher import (
     ContainerProvider,
@@ -52,11 +52,11 @@ from src.schema import (
     FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, find_file_by_name
+from src.spells import make_tar, find_file_by_name, get_logger
 from src.store import Storator3000
 from src.exceptions import NoDataFound
 
-logger = logging.getLogger(__name__)
+LOGGER = get_logger(LOGGER_NAME)
 
 app = FastAPI()
 
@@ -94,6 +94,8 @@ def _custom_http_exception_handler(
     else:
         description = str(exc)
 
+    LOGGER.error("Exception %s encountered returing %s", exc, status_code)
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -127,6 +129,7 @@ def review_redirect():
     Redirect to a review URL that contains some result ID
     """
     result = Storator3000.get_random()
+    LOGGER.info("Opening %s for review", result)
     return f"/review/{result.stem}"
 
 
@@ -225,7 +228,7 @@ def get_debug_build_logs():
 # TODO: delete this once in production
 @app.post("/frontend/contribute/debug")
 def frontend_debug_contribute():
-    logger.info("Debug data were fakely stored.")
+    LOGGER.info("Debug data were fakely stored.")
     return {"status": "ok"}
 
 
@@ -273,12 +276,12 @@ def _store_data_for_providers(
     else:
         rest = ""
 
-    logger.info(
-        "Submitted data for {%s}: #{%s}{%s} (submission ID: %s)",
+    LOGGER.info(
+        "Submitted data for %s: #%s(submission ID: %s) Additional args: %s",
         provider,
         id_,
-        rest,
         contribution_id,
+        rest,
     )
     return OkResponse.from_id(contribution_id)
 
@@ -331,6 +334,8 @@ def frontend_review_random(result_id):
     else:
         feedback_file = Storator3000.get_by_id(result_id)
 
+    LOGGER.info("Opening annotation: %s for review", result_id)
+
     if not feedback_file:
         raise NoDataFound(f"No result with ID {result_id}")
 
@@ -355,7 +360,7 @@ async def frontend_explain_post(request: Request):
     data = await request.json()
     log_url = data["prompt"]
 
-    logger.info("Asking server to analyze log '%s'", log_url)
+    LOGGER.info("Asking server to analyze log '%s'", log_url)
     data = {"url": log_url}
     headers = {"Content-Type": "application/json"}
     server_url = f"{SERVER_URL}/analyze/staged"
@@ -375,7 +380,7 @@ async def frontend_explain_post(request: Request):
         raise HTTPException(status_code=408, detail=str(ex)) from ex
 
     try:
-        logger.debug(
+        LOGGER.debug(
             "headers: %s data: %s", response.request.headers, response.request.body
         )
         response.raise_for_status()
@@ -507,6 +512,9 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     original_file_id = content.pop("id")
     # avoid duplicates - same ID can be reviewed multiple times
     file_name = f"{original_file_id}-{int(datetime.now().timestamp())}"
+
+    LOGGER.info("Storing review for %s as %s", original_file_id, file_name)
+
     with open(reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
         json.dump(content | {"id": original_file_id}, fp, indent=4)
 
@@ -540,6 +548,8 @@ def download_results():
     tar_name = f"results-{int(datetime.now().timestamp())}.tar.gz"
     tar_path = make_tar(tar_name, [Path(FEEDBACK_DIR), Path(REVIEWS_DIR)], tmp_dir)
 
+    LOGGER.info("Starting download of the annotated dataset.")
+
     def cleanup():
         os.unlink(tar_path)
         os.rmdir(tmp_dir)
@@ -556,6 +566,9 @@ def download_results():
 
 @app.get("/stats")
 def get_report_stats() -> dict:
+    """Produce basic information about submitted annotations."""
+    LOGGER.info("Retrieving annotation statistics")
+
     return Storator3000.get_stats()
 
 
@@ -566,6 +579,8 @@ def get_contributions(request: Request, username: str):
     """
     logs = Storator3000.get_logs()
 
+    LOGGER.info("Retrieving annnotated logs for %s", username)
+
     # This is brutal ... but we don't have a database so there is no other way
     contributions = []
     for path in logs:
@@ -573,7 +588,7 @@ def get_contributions(request: Request, username: str):
             with open(path, "r", encoding="utf-8") as fp:
                 data = json.load(fp)
         except (UnicodeDecodeError, json.decoder.JSONDecodeError):
-            logger.error("Cannot parse %s, skipping.", path)
+            LOGGER.error("Cannot parse %s, skipping.", path)
 
         if data["username"] != "FAS:" + username:
             continue
@@ -581,6 +596,8 @@ def get_contributions(request: Request, username: str):
         url = f"/review/{contribution_id}"
         name = path.removeprefix(FEEDBACK_DIR).removesuffix(".json")
         contributions.append((name, url))
+
+    LOGGER.info("Total %d annotations retrieved for %s", len(contributions), username)
 
     data = {
         "request": request,

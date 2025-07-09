@@ -8,6 +8,7 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
+import logging
 
 
 @contextmanager
@@ -53,3 +54,24 @@ def find_file_by_name(name: str, path: Path) -> Optional[Path]:
             return file
 
     return None
+
+
+def get_logger(logger_name: str):
+    """Initialize a logger for this server"""
+    log = logging.getLogger(logger_name)
+    if getattr(log, "initialized", False):
+        return log
+
+    log.setLevel("DEBUG")
+
+    # Drop the default handler, we will create it ourselves
+    log.handlers = []
+
+    # STDOUT
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    stream_handler.setLevel("INFO")
+    log.addHandler(stream_handler)
+
+    log.initialized = True  # type: ignore
+    return log

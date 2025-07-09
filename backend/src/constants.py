@@ -38,3 +38,6 @@ class BuildIdTitleEnum(StrEnum):
     url = "URL"
     container = "Container log"
     debug = "Debug output"
+
+
+LOGGER_NAME = "logdetective_website"
