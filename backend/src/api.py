@@ -52,11 +52,17 @@ from src.schema import (
     FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, find_file_by_name, get_logger
+from src.spells import make_tar, find_file_by_name, get_logger, start_sentry
 from src.store import Storator3000
 from src.exceptions import NoDataFound
 
 LOGGER = get_logger(LOGGER_NAME)
+
+# Attempt to initialize sentry and log the result
+if start_sentry():
+    LOGGER.info("Sentry initialized.")
+else:
+    LOGGER.warning("Sentry was not configured for this deployment.")
 
 app = FastAPI()
 

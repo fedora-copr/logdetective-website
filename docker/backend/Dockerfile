@@ -21,4 +21,5 @@ RUN dnf -y update && \
                    python3-requests \
                    python3-koji \
                    python3-copr \
+                   python3-sentry-sdk+fastapi \
     && dnf clean all
