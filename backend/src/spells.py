@@ -9,6 +9,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
 import logging
+import os
+import sentry_sdk
 
 
 @contextmanager
@@ -75,3 +77,12 @@ def get_logger(logger_name: str):
 
     log.initialized = True  # type: ignore
     return log
+
+
+def start_sentry() -> bool:
+    """Initializes sentry if the `SENTRY_SDN` is defined.
+    Returns bool depending on service being initialized"""
+    if sentry_dsn := os.environ.get("SENTRY_SDN"):
+        sentry_sdk.init(dsn=sentry_dsn, traces_sample_rate=1.0)
+        return True
+    return False
