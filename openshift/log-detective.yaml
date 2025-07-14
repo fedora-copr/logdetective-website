@@ -36,6 +36,11 @@ spec:
           env:
             - name: SERVER_URL
               value: https://logdetective01.fedorainfracloud.org
+            - name: SENTRY_SDN
+              valueFrom:
+                secretKeyRef:
+                  name: sentry-secret
+                  key: sdn
           command: ["gunicorn"]
           args: [
             "-k",
