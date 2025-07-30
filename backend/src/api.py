@@ -396,12 +396,20 @@ async def frontend_explain_post(request: Request):
 
     result = _process_server_data(response.content)
 
-    log = {"name": f"{log_url}", "content": await download_log_task}
+    try:
+        log_data = await download_log_task
+    except HTTPException as ex:
+        exception_details = (
+            f"Attempt to retrieve log from '{log_url}' failed with '{ex.status_code}'"
+        )
+        LOGGER.error(exception_details)
+        raise HTTPException(status_code=500, detail=exception_details) from ex
+
+    log = {"name": f"{log_url}", "content": log_data}
 
     # add missing data from the original log
     result["log"] = log
 
-    print(result)
     return result
 
 
