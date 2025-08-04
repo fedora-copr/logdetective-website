@@ -267,3 +267,9 @@ button.btn-vote:hover {
   background-color: var(--bs-btn-bg) !important;
   color: var(--bs-btn-color) !important;
 }
+
+#dataset-banner {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
