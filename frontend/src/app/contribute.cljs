@@ -50,7 +50,12 @@
      on-change-fail-reason
      on-accordion-item-show]]))
 
-(defn set-atoms [data]
+(defn set-atoms
+  "Set atoms to contain fields from `data` map.
+  This map is either constructed from direct file upload or from the backend.
+  Backend provides `ContributeResponseSchema` structure."
+  [data]
+
   (reset! backend-data data)
   (reset! log (:content (:log data)))
   (reset! build-id (:build_id data))
@@ -71,7 +76,11 @@
   (reset! error-description nil)
   (reset! ok-status nil))
 
-(defn fetch-logs-backend []
+(defn fetch-logs-backend
+  "Fetch logs and other associated data from from backend.
+  Received map is defined in backend as `ContributeResponseSchema` object."
+  []
+
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))]
     (-> (fetch/get url {:accept :json :content-type :json})
         (.then (fn [resp]
@@ -84,7 +93,10 @@
                      (reset! error-description (:description data)))
                    (set-atoms data)))))))
 
-(defn fetch-logs-upload []
+(defn fetch-logs-upload
+  "Fetch logs and other associated data from direct upload to the website."
+  []
+
   (if (local-storage-enabled)
     (let [data {:build_id_title "Upload"
                 :logs [{:name (.getItem js/localStorage "name")
@@ -169,7 +181,10 @@
       :title title}
      "Add"]))
 
-(defn right-column []
+(defn right-column
+  "Render right column including username. The username can be
+  retrieved from a cookie if it exists."
+  []
   [:<>
    [:div {}
     [:label {:class "form-label"} "Your FAS username:"]
