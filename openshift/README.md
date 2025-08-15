@@ -145,6 +145,13 @@ Hugging Face token:
 $ oc create secret generic hf-secret --from-literal=token=$TOKEN
 ```
 
+Sentry token must be taken from sentry configuration, if it is setup.
+Otherwise the reporting won't work.
+
+```
+oc create secret generic sentry-secret --from-literal=token=$TOKEN
+```
+
 
 ## TLS certificates
 We use the `certbot` tool to get our Let's Encrypt certificates.
