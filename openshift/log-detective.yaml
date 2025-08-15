@@ -41,6 +41,11 @@ spec:
                 secretKeyRef:
                   name: sentry-secret
                   key: sdn
+            - name: LOG_DETECTIVE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: log-detective-secret
+                  key: token
           command: ["gunicorn"]
           args: [
             "-k",

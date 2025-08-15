@@ -152,6 +152,12 @@ Otherwise the reporting won't work.
 oc create secret generic sentry-secret --from-literal=token=$TOKEN
 ```
 
+Token for authentication with Log Detective must be set if the service demands it.
+
+```
+oc create secret generic log-detective-secret --from-literal=token=$TOKEN
+```
+
 
 ## TLS certificates
 We use the `certbot` tool to get our Let's Encrypt certificates.
