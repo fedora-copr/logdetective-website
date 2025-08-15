@@ -64,6 +64,8 @@ if start_sentry():
 else:
     LOGGER.warning("Sentry was not configured for this deployment.")
 
+LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
+
 app = FastAPI()
 
 # TODO: use absolute path perhaps?
@@ -369,6 +371,10 @@ async def frontend_explain_post(request: Request):
     LOGGER.info("Asking server to analyze log '%s'", log_url)
     data = {"url": log_url}
     headers = {"Content-Type": "application/json"}
+
+    if LOG_DETECTIVE_TOKEN:
+        headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
+
     server_url = f"{SERVER_URL}/analyze/staged"
 
     # download log_file when waiting for logdetective server processing
