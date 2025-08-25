@@ -50,6 +50,7 @@ RUN dnf -y install python3-fastapi \
                    git \
                    findutils \
                    python3-sentry-sdk+fastapi \
+                   rsync \
     && dnf clean all \
     && pip3 --no-cache-dir install datasets \
     && mkdir -p /src/{frontend,backend}
