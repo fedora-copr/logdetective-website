@@ -13,6 +13,7 @@ RUN dnf -y update && \
                    git-core git-lfs \
                    sudo \
                    findutils \
+                   rsync \
     # The dependencies for this project
     && dnf -y install \
                    python3-fastapi \
