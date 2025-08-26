@@ -48,17 +48,9 @@ spec:
                   key: token
           command: ["gunicorn"]
           args: [
-            "-k",
-            "uvicorn.workers.UvicornWorker",
-            "--certfile", "/persistent/letsencrypt/live/log-detective.com/cert.pem",
-            "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem",
-            "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem",
-            "api:app",
-            "-b", "0.0.0.0:8080",
-            "--timeout", "1800",
-            "--workers", "2",
-            "--max-requests", "50",
-            "--max-requests-jitter", "5"]
+            "-c",
+           "/src/gunicorn.conf.py",
+           "api:app"]
   replicas: 1
   strategy:
     type: Recreate
