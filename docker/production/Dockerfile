@@ -58,6 +58,7 @@ RUN dnf -y install python3-fastapi \
 COPY --from=0 /src/frontend/public /src/frontend/public
 COPY --from=0 /src/backend /src/backend
 COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extraction_dataset.py
+COPY --from=0 /src/files/gunicorn.conf.py /src/gunicorn.conf.py
 
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
@@ -65,4 +66,4 @@ WORKDIR /src/backend/src
 ENV PYTHONPATH="${PYTHONPATH}:/src/backend"
 
 # We should put this into a config file
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--certfile", "/persistent/letsencrypt/live/logdetective.com/cert.pem", "--keyfile", "/persistent/letsencrypt/live/log-detective.com/privkey.pem", "--ca-certs", "/persistent/letsencrypt/live/log-detective.com/fullchain.pem", "api:app", "-b", "0.0.0.0:8080", "--max-requests", "50", "--max-requests-jitter", "5"]
+CMD ["gunicorn", "-c", "/src/gunicorn.conf.py", "api:app"]
