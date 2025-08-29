@@ -68,12 +68,12 @@ LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
 
 app = FastAPI()
 
-this_file = Path(__file__)
-git_repo_root = this_file.parent.parent.parent
-template_dir = git_repo_root / "frontend" / "public"
-app.mount("/static", StaticFiles(directory=template_dir), name="static")
+THIS_FILE = Path(__file__)
+GIT_REPO_ROOT = THIS_FILE.parent.parent.parent
+TEMPLATE_DIR = GIT_REPO_ROOT / "frontend" / "public"
+app.mount("/static", StaticFiles(directory=TEMPLATE_DIR), name="static")
 # blame scarlette for not being able to mount directories recursively
-for root, directories, _ in os.walk(template_dir):
+for root, directories, _ in os.walk(TEMPLATE_DIR):
     for directory in directories:
         app.mount(
             f"/{directory}",
@@ -81,7 +81,7 @@ for root, directories, _ in os.walk(template_dir):
             name=directory,
         )
 
-templates = Jinja2Templates(directory=template_dir)
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
 template_response = templates.TemplateResponse
 
 
