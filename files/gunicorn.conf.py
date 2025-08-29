@@ -12,3 +12,4 @@ certfile = "/persistent/letsencrypt/live/log-detective.com/cert.pem"
 keyfile = "/persistent/letsencrypt/live/log-detective.com/privkey.pem"
 ca_certs = "/persistent/letsencrypt/live/log-detective.com/fullchain.pem"
 timeout = 1800
+accesslog = "-"
