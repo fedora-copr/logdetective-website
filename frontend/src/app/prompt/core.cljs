@@ -30,6 +30,7 @@
 
 (def form (r/atom nil))
 (def prompt-value (r/atom nil))
+(def ai-gen-disclaimer (r/atom "This explanation was provided by AI. Always review AI generated content prior to use."))
 
 (def InputSchema
   [:map {:closed true}
@@ -131,6 +132,7 @@
    [:h2 "Explanation"]
    (map (fn [x] [:p x])
         (-> @form :explanation (str/split #"\n")))
+   [:p @ai-gen-disclaimer]
    [:div
     {:class "container", :id "prompt"}
     (prompt-form)]])
@@ -210,7 +212,8 @@
    [:ol
     [:li (str "The inference is slow and serial. We can only process a single request in the background. It will take at least 30 seconds to give you a response. In case of multiple requests, it can ramp up to minutes.")]
     [:li (str "We use a general-purpose mistral model in the background. The collected data are not being used here just yet. We are still working on fine-tuning our own model.")]
-    [:li (str "Please report any issues you'll encounter. We don't have any alerting in place, the deployment is highly experimental.")]]])
+    [:li (str "Please report any issues you'll encounter. We don't have any alerting in place, the deployment is highly experimental.")]]
+   [:p @ai-gen-disclaimer]])
 
 (defn prompt-only []
   [:div {:id "content-narrow" :class "container"}
