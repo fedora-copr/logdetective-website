@@ -27,6 +27,154 @@ Log Detective can download the build directly from Koji, Copr or Packit. If you 
 
     <div class="card">
       <div class="card-body">
+        <h5 class="card-title">A few log snippet examples with explanations for reference</h5>
+
+<details>
+<summary>Example 1</summary>
+        <div class="example-container">
+          <div class="log-column">
+            <h6>Log Snippet</h6>
+            <pre class="log-snippet">
+Problem: package python3-pydantic-2.5.3-1.fc40.noarch requires python(abi) = 3.12, but none of the providers can be installed
+  - package python3-devel-3.13.0~a3-1.fc40.x86_64 conflicts with python3 < 3.13.0~a3-1.fc40 provided by python3-3.12.1-2.fc40.i686
+  - package python3-devel-3.13.0~a3-1.fc40.x86_64 conflicts with python3 < 3.13.0~a3-1.fc40 provided by python3-3.12.1-2.fc40.x86_64
+  - cannot install the best candidate for the job
+            </pre>
+          </div>
+          <div class="explanation-column">
+            <h6>Explanation</h6>
+            <pre class="explanation-text">
+DNF5 couldn't install `python3-pydantic-2.5.3-1.fc40.noarch` as the best find the best candidate for dependency `python(abi) = 3.12` had conflicts with `python3 < 3.13.0~a3-1.fc40`.
+            </pre>
+          </div>
+        </div>
+</details>
+
+<details>
+<summary>Example 2</summary>
+        <div class="example-container">
+          <div class="log-column">
+            <h6>Log Snippet</h6>
+            <pre class="log-snippet">
+Problem 1: conflicting requests
+  - nothing provides python3.10dist(decorator) needed by python3-autodoc-0.5.0-1.fc36.noarch from copr_base
+  - nothing provides python3.10dist(webtest) needed by python3-autodoc-0.5.0-1.fc36.noarch from copr_base
+  - nothing provides python(abi) = 3.10 needed by python3-autodoc-0.5.0-1.fc36.noarch from copr_base
+ Problem 2: cannot install the best candidate for the job
+  - nothing provides python(abi) = 3.12 needed by python3-sphinx-autodoc-typehints-1.25.2-1.fc40.noarch from copr_base
+  - nothing provides python3.12dist(sphinx) >= 7.1.2 needed by python3-sphinx-autodoc-typehints-1.25.2-1.fc40.noarch from copr_base
+ Problem 3: cannot install the best candidate for the job
+  - nothing provides python(abi) = 3.12 needed by python3-xarray-2023.11.0-1.fc40.noarch from copr_base
+  - nothing provides python3.12dist(numpy) >= 1.22 needed by python3-xarray-2023.11.0-1.fc40.noarch from copr_base
+  - nothing provides python3.12dist(pandas) >= 1.4 needed by python3-xarray-2023.11.0-1.fc40.noarch from copr_base
+  - nothing provides python3.12dist(packaging) >= 21.3 needed by python3-xarray-2023.11.0-1.fc40.noarch from copr_base
+            </pre>
+          </div>
+          <div class="explanation-column">
+            <h6>Explanation</h6>
+            <pre class="explanation-text">
+There are conflicting packages. It seems that some packages requires python 3.10 while other requires python3.12.
+            </pre>
+          </div>
+        </div>
+</details>
+
+<details>
+<summary>Example 3</summary>
+        <div class="example-container">
+          <div class="log-column">
+            <h6>Log Snippet</h6>
+            <pre class="log-snippet">
+[error: Bad exit status from /var/tmp/rpm-tmp.yAXiQF (%build)
+Bad exit status from /var/tmp/rpm-tmp.yAXiQF (%build)
+RPM build errors:
+Child return code was: 1]: [The build failed in `%build` phase.]
+=============
+[CMake Generate step failed.  Build files cannot be regenerated correctly.]: [CMake cannot prepare the build environment.]
+=============
+[CMake Error in CMakeLists.txt:
+Imported target "Qt6::QmlPrivate" includes non-existent path
+"/usr/include/qt6/QtCore/6.8.0"
+in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+* The path was deleted, renamed, or moved to another location.
+* An install or uninstall procedure did not complete successfully.
+* The installation package was faulty and references files it does not
+provide.
+CMake Error in CMakeLists.txt:
+Imported target "Qt6::QmlPrivate" includes non-existent path
+"/usr/include/qt6/QtCore/6.8.0"
+in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+* The path was deleted, renamed, or moved to another location.
+* An install or uninstall procedure did not complete successfully.
+* The installation package was faulty and references files it does not
+provide.]: [You are missing devel files for qt6-qtbase-private.]
+            </pre>
+          </div>
+          <div class="explanation-column">
+            <h6>Explanation</h6>
+            <pre class="explanation-text">
+Issue: The build failed in `%build` phase becase CMake was missing devel files for qt6-qtbase-private.
+Resolution: You should add build dependency to your spec file:
+
+BuildRequires: qt6-qtbase-private-devel
+            </pre>
+          </div>
+        </div>
+</details>
+
+<details>
+<summary>Example 4</summary>
+        <div class="example-container">
+          <div class="log-column">
+            <h6>Log Snippet</h6>
+            <pre class="log-snippet">
+=========================== short test summary info ============================
+ERROR tests/test_packager_dashboard_bodhi.py - ValueError: The 'OIDC_REQUIRE_...
+ERROR tests/test_packager_dashboard_bugzilla.py - ValueError: The 'OIDC_REQUI...
+ERROR tests/test_packager_dashboard_health_check.py - ValueError: The 'OIDC_R...
+ERROR tests/test_packager_dashboard_helpers.py - ValueError: The 'OIDC_REQUIR...
+ERROR tests/test_packager_dashboard_koschei.py - ValueError: The 'OIDC_REQUIR...
+ERROR tests/test_packager_dashboard_orphans.py - ValueError: The 'OIDC_REQUIR...
+ERROR tests/test_packager_dashboard_pagure.py - ValueError: The 'OIDC_REQUIRE...
+!!!!!!!!!!!!!!!!!!! Interrupted: 7 errors during collection !!!!!!!!!!!!!!!!!!!!
+======================== 2 warnings, 7 errors in 1.97s =========================
+py312: exit 2 (2.40 seconds) /builddir/build/BUILD/oraculum-0.2.4> pytest pid=749
+  py312: FAIL code 2 (2.40 seconds)
+  evaluation failed :( (2.46 seconds
+            </pre>
+          </div>
+          <div class="explanation-column">
+            <h6>Explanation</h6>
+            <pre class="explanation-text">
+Pytest test cases that failed.
+            </pre>
+          </div>
+        </div>
+</details>
+
+<details>
+<summary>Example 5</summary>
+        <div class="example-container">
+          <div class="log-column">
+            <h6>Log Snippet</h6>
+            <pre class="log-snippet">
+rm: cannot remove '/builddir/build/BUILD/mariadb11.4-11.4.5-build/BUILDROOT/usr/share/man/man1/myrocks_hotbackup.1*': No such file or directory
+            </pre>
+          </div>
+          <div class="explanation-column">
+            <h6>Explanation</h6>
+            <pre class="explanation-text">
+'rm' command failed. File does not exist. This can happen e.g. after package rebase, when the content of the sources changes. Usually happens in %prep or %install sections.
+            </pre>
+          </div>
+        </div>
+</details>
+
+      </div>
+    </div>
+
+      <div class="card">
+      <div class="card-body">
         <h5 class="card-title">Demo with comments</h5>
         <a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=_-O7ryKCnlQ"><img src="/img/youtube-preview.jpg" alt="Demo video" style="max-width: 100%; display: inline-block;" /></a>
       </div>
@@ -35,22 +183,34 @@ Log Detective can download the build directly from Koji, Copr or Packit. If you 
     <h2 class="text-center">Documentation</h2>
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Why?</h5>
+        <h5 class="card-title">Why? (The motivation)</h5>
 The build logs can have thousands of lines. When the build fails, it is very hard to spot the problem, even for seasoned engineers. The string “ERROR” is not always an error. The error is not always at the end of a log. And you have to be fluent in packaging to recognize how to fix the problem. We gathered data from Copr, and it takes developers days and even weeks to fix the failed build.
       </div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">How?</h5>
+        <h5 class="card-title">How? (The overview)</h5>
 We decided to build an AI tool that will read the log and use LLM to give you a human-like answer. We <a href="https://github.com/TomasTomecek/my-rpm-build-broke">know</a> that the goal is achievable, but we do not have enough data. We have millions of failed jobs from Koji, and Copr. But it is not paired with a description of what needs to be fixed and how. Therefore, we started with Phase 1 and we have created this website where you can upload the failed build log and annotate it. During our experiments, we learned that we will require around one thousand annotated logs to be able to build the AI tool.
       </div>
     </div>
 
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">What?</h5>
-The final tool will be an AI model and our artifact will be a binary blob of trained data. This model together with the command line tool will be able to read the build log and give you guidance on why the build failed. Later we plan to incorporate this tool to build systems (Copr, Koji,...) to give you a nice UI.
+        <h5 class="card-title">What? (The goal)</h5>
+<p>The final tool will be an AI model and our artifact will be a binary blob of trained data. This model together with the command line tool will be able to read the build log and give you guidance on why the build failed. Later we plan to incorporate this tool to build systems (Copr, Koji, ...) to give you a nice UI.</p>
+
+We also use Log Detective in merge requests on Gitlab as a <a href="https://gitlab.com/group_8794173_bot_029d2e92d461920a3695e55137a87774">bot</a>. The bot analyses the failed CI builds and posts its full analysis as a comment inside the merge request.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">The limitations</h5>
+<p>The tool is only limited to describing/explaining the failures. The explanations may be incorrect or "hallucinated" (as is the case with all state-of-the-art LLMs). Log Detective cannot perform actions (like fixing the build). Additionally, to save time and computational costs, it analyzes log snippets, and not the entire log (since most of the log is usually irrelevant to the build failure). The snippet extraction is an additional preprocessing step which adds a layer of potential inaccuracy, since the extraction may remove possibly relevant parts of the log (even if on the first glance they seem unimportant).
+</p>
+
+When using the tool, you should always review the AI-generated explanations and possible fixes for accuracy before using them. The response is merely a suggestion, and by no means is it a replacement for a review by an experienced developer.
       </div>
     </div>
 
@@ -88,8 +248,9 @@ We do not know yet. <a href="https://github.com/TomasTomecek">Tomáš</a> experi
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">What about privacy?</h5>
-        We do not track any sensitive data. When you upload a build log, make sure you have the rights to do that. All data is available under
-        <a href="https://cdla.dev/permissive-2-0/">CDLA-Permissive-2.0</a> license.
+        <p>We do not track any sensitive data. When you upload a build log, make sure you have the rights to do that. All data is available under <a href="https://cdla.dev/permissive-2-0/">CDLA-Permissive-2.0</a> license. The tool is designed to only analyze build logs. A sanitization layer automatically redacts any personal information and sensitive data (like API keys or internal server names) from the logs before they are sent to the AI for analysis.</p>
+
+        <b>Data retention notice:</b> Log Detective does not store any data sent for analysis, nor does it store resulting explanations and solutions. The logs and responses are available to the user only for the duration of the interaction with Log Detective (on the client side).
       </div>
     </div>
 
@@ -113,6 +274,19 @@ Uploading the log is 5 seconds work. But you have to annotate it. Describe what 
 Pick anything from <a href="https://koji.fedoraproject.org/koji/builds?type=rpm&order=-completion_time&state=3">Koji's Failed Builds</a>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Contact us / Provide feedback</h5>
+<p>We encourage you to reach out to us in case you have any questions or suggestions. You can also help us by providing feedback on any incorrect, unhelpful, or problematic explanations. Use the following contact methods:</p>
+<ul>
+  <li>Send us an email: <a href="mailto:logdetective@redhat.com">logdetective@redhat.com</a> (preferrably), or <a href="mailto:copr-team@redhat.com">copr-team@redhat.com</a></li>
+  <li>Submit an issue on our <a href="https://github.com/fedora-copr/logdetective/issues">GitHub</a></li>
+  <li>Submit an issue on our <a href="https://issues.redhat.com/projects/LD/issues">Jira</a></li>
+</ul>
+      </div>
+    </div>
+
   </div>
 </div>
 
