@@ -3,11 +3,13 @@
 <div class="container" id="content">
 
   <div id="about" class="container">
-    <h2 class="text-center">HOWTO</h2>
+    <h2 class="text-center">User guide for the annotation interface</h2>
+
+<p> The main purpose of the website is collecting log annotations for the training dataset. On the homepage, or under <a href="/review">Review Logs</a> tab, we provide a GUI for annotating failed build logs. This section is meant for people (package developers, maintainers, etc.) who want to help improve Log Detective. They can do that by submitting log annotations here, thus growing our training dataset.</p>
 
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">How to upload log</h5>
+        <h5 class="card-title">How to upload a log</h5>
 Log Detective can download the build directly from Koji, Copr or Packit. If you have the log somewhere else (different Koji instance, local Mock build), you can point Log Detective to URL where it can be downloaded. The URL can be shortlived, e.g., Pastebin, etc. If you have more logs for one build, you can concat them. E.g., <code>cat build.log root.log | fpaste</code>. Open the paste in a web browser to find its RAW URL, and provide it to Log Detective.
       </div>
     </div>
@@ -180,7 +182,11 @@ rm: cannot remove '/builddir/build/BUILD/mariadb11.4-11.4.5-build/BUILDROOT/usr/
       </div>
     </div>
 
-    <h2 class="text-center">Documentation</h2>
+    <h2 class="text-center">Documentation of the Log Detective tool</h2>
+
+<p>
+Here, we describe Log Detective itself, its main features, and plans for the future. You can also use this website to try out Log Detective for yourself (under <a href="/explain">Explain logs</a>). For further testing and experimentation, we encourage you to visit our <a href="https://github.com/fedora-copr/logdetective">GitHub repository</a> and learn more there.
+</p>
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">Why? (The motivation)</h5>
@@ -198,9 +204,9 @@ We decided to build an AI tool that will read the log and use LLM to give you a 
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">What? (The goal)</h5>
-<p>The final tool will be an AI model and our artifact will be a binary blob of trained data. This model together with the command line tool will be able to read the build log and give you guidance on why the build failed. Later we plan to incorporate this tool to build systems (Copr, Koji, ...) to give you a nice UI.</p>
+<p>The final tool will be an AI model and our artifact will be a binary blob of trained data. This model together with the command line tool will be able to read the build log and give you guidance on why the build failed. Log Detective is already successfully integrated with Copr, and we plan to also incorporate this tool to other build systems (Packit, Koji, ...) to give you a nice UI.</p>
 
-We also use Log Detective in merge requests on Gitlab as a <a href="https://gitlab.com/group_8794173_bot_029d2e92d461920a3695e55137a87774">bot</a>. The bot analyses the failed CI builds and posts its full analysis as a comment inside the merge request.
+We also use Log Detective in merge requests on Gitlab as a bot. The bot analyses the failed CI builds and posts its full analysis as a comment inside the merge request. See the GitLab webhook <a href="https://github.com/fedora-copr/logdetective/blob/main/logdetective/server/gitlab.py">source code</a>.
       </div>
     </div>
 
@@ -210,7 +216,7 @@ We also use Log Detective in merge requests on Gitlab as a <a href="https://gitl
 <p>The tool is only limited to describing/explaining the failures. The explanations may be incorrect or "hallucinated" (as is the case with all state-of-the-art LLMs). Log Detective cannot perform actions (like fixing the build). Additionally, to save time and computational costs, it analyzes log snippets, and not the entire log (since most of the log is usually irrelevant to the build failure). The snippet extraction is an additional preprocessing step which adds a layer of potential inaccuracy, since the extraction may remove possibly relevant parts of the log (even if on the first glance they seem unimportant).
 </p>
 
-When using the tool, you should always review the AI-generated explanations and possible fixes for accuracy before using them. The response is merely a suggestion, and by no means is it a replacement for a review by an experienced developer.
+<b>Disclaimer:</b> When using the tool, you should always review the AI-generated explanations and possible fixes for accuracy before using them. The response is merely a suggestion, and by no means is it a replacement for a review by an experienced developer.
       </div>
     </div>
 
@@ -248,7 +254,7 @@ We do not know yet. <a href="https://github.com/TomasTomecek">Tomáš</a> experi
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">What about privacy?</h5>
-        <p>We do not track any sensitive data. When you upload a build log, make sure you have the rights to do that. All data is available under <a href="https://cdla.dev/permissive-2-0/">CDLA-Permissive-2.0</a> license. The tool is designed to only analyze build logs. A sanitization layer automatically redacts any personal information and sensitive data (like API keys or internal server names) from the logs before they are sent to the AI for analysis.</p>
+        <p>We do not track any sensitive data. When you upload a build log, make sure you have the rights to do that. All data is available under <a href="https://cdla.dev/permissive-2-0/">CDLA-Permissive-2.0</a> license. The tool is designed to only analyze build logs.</p>
 
         <b>Data retention notice:</b> Log Detective does not store any data sent for analysis, nor does it store resulting explanations and solutions. The logs and responses are available to the user only for the duration of the interaction with Log Detective (on the client side).
       </div>
@@ -275,17 +281,14 @@ Pick anything from <a href="https://koji.fedoraproject.org/koji/builds?type=rpm&
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Contact us / Provide feedback</h5>
-<p>We encourage you to reach out to us in case you have any questions or suggestions. You can also help us by providing feedback on any incorrect, unhelpful, or problematic explanations. Use the following contact methods:</p>
+        <h2 class="text-center">Contact us / Provide feedback</h2>
+<p>We encourage you to reach out to us in case you have any questions or suggestions. You can also help us by providing feedback on any incorrect, unhelpful, or problematic explanations. Use the following feedback methods:</p>
 <ul>
+  <li>Submit an issue on Log Detective <a href="https://github.com/fedora-copr/logdetective/issues">GitHub</a></li>
+  <li>Submit an issue on Log Detective <a href="https://issues.redhat.com/projects/LD/issues">Jira</a></li>
+  <li>Submit an issue on this website's <a href="https://github.com/fedora-copr/logdetective-website/issues">GitHub</a> (problems/questions about this website or log annotation process)</li>
   <li>Send us an email: <a href="mailto:logdetective@redhat.com">logdetective@redhat.com</a> (preferrably), or <a href="mailto:copr-team@redhat.com">copr-team@redhat.com</a></li>
-  <li>Submit an issue on our <a href="https://github.com/fedora-copr/logdetective/issues">GitHub</a></li>
-  <li>Submit an issue on our <a href="https://issues.redhat.com/projects/LD/issues">Jira</a></li>
 </ul>
-      </div>
-    </div>
 
   </div>
 </div>
