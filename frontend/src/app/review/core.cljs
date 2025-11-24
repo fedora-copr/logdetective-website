@@ -157,7 +157,7 @@
 
 (defn submit-form []
   (let [body {:id (:id @form)
-              :username (if (:fas @form) (str "FAS:" (:fas @form)) nil)
+              :username ""
               :fail_reason {:text (:fail-reason @form)
                             :vote (:fail-reason @votes)}
               :how_to_fix  {:text (:how-to-fix @form)
@@ -173,11 +173,6 @@
                           :end-index :end_index
                           :user-comment :comment})))
                     (remove nil? @snippets)))}]
-
-    ;; Remember the username, so we can prefill it the next time
-    ;; TODO See PR #130
-    (when (:fas @form)
-      (.setItem js/localStorage "fas" (:fas @form)))
 
     (reset! status "submitting")
 
@@ -276,15 +271,6 @@
 
 (defn right-column []
   [:<>
-   [:label {:class "form-label"} "Your FAS username:"]
-   [:input {:type "text"
-            :class "form-control"
-            :placeholder "Optional - Your FAS username"
-            ;; TODO See PR #130
-            :value (or (:fas @form) (.getItem js/localStorage "fas"))
-            :name "fas"
-            :on-change #(on-change-form-input %)}]
-
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
      [:div {}
