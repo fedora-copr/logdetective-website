@@ -1,10 +1,5 @@
 ci:
   autofix_prs: false
-  # docker won't run on pre-commit CI, skip this to keep auto-updates of
-  # pre-commit hooks versions in this file
-  skip:
-    - clj-kondo-docker
-    - cljfmt-docker
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -37,16 +32,16 @@ repos:
           - types-PyYAML
           - types-requests
 
-  - repo: https://github.com/clj-kondo/clj-kondo
-    rev: v2025.10.23
+  - repo: local
     hooks:
-      - id: clj-kondo-docker
-
-  - repo: https://github.com/nikromen/cljfmt-docker
-    rev: v0.9.1
-    hooks:
-      - id: cljfmt-docker
-        args: [ check ]
+      - id: clj-kondo
+        name: clj-kondo
+        language: node
+        additional_dependencies: [ "clj-kondo@2025.10.23" ]
+        entry: clj-kondo
+        args: [ "--lint", "frontend/src" ]
+        types: [ clojure ]
+        pass_filenames: false
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
