@@ -56,10 +56,6 @@
               :spec_file @spec
               :container_file @container}]
 
-    ;; Remember the username, so we can prefill it the next time
-    (when (and @fas (local-storage-enabled))
-      (.setItem js/localStorage "fas" @fas))
-
     (reset! status "submitting")
     (-> (fetch/post url {:accept :json :content-type :json :body body})
         (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
@@ -78,11 +74,6 @@
 
 (defn on-how-to-fix-textarea-change [target]
   (reset! how-to-fix (.-value target)))
-
-(defn on-change-fas [event]
-  (let [target (.-target event)
-        value (.-value target)]
-    (reset! fas value)))
 
 (defn on-change-fail-reason [event]
   (let [target (.-target event)

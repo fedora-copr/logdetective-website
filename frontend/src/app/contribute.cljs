@@ -37,7 +37,6 @@
      error-title
      backend-data
      log
-     fas
      build-id
      build-id-title
      build-url
@@ -46,7 +45,6 @@
    [app.contribute-events :refer
     [submit-form
      on-how-to-fix-textarea-change
-     on-change-fas
      on-change-fail-reason
      on-accordion-item-show]]))
 
@@ -186,13 +184,6 @@
   retrieved from a cookie if it exists."
   []
   [:<>
-   [:div {}
-    [:label {:class "form-label"} "Your FAS username:"]
-    [:input {:type "text"
-             :class "form-control"
-             :placeholder "Optional - Your FAS username"
-             :value (or @fas (local-storage-get "fas"))
-             :on-change #(on-change-fas %)}]]
 
    [:label {:class "form-label"} "Interesting snippets:"]
    (when (not-empty @snippets)
