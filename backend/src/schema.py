@@ -109,7 +109,6 @@ class FeedbackLogSchema(NameContentSchema):
 
 
 class _WithoutLogsSchema(BaseModel):
-    username: Optional[str]
     fail_reason: str
     how_to_fix: str
     spec_file: Optional[NameContentSchema] = None
@@ -162,7 +161,6 @@ def schema_inp_to_out(
         spec_or_container = {"container_file": inp.container_file}
 
     return FeedbackSchema(
-        username=inp.username,
         logs=parsed_log_schema,
         fail_reason=inp.fail_reason,
         how_to_fix=inp.how_to_fix,

@@ -45,7 +45,6 @@
 (def InputSchema
   (let [File [:map [:name :string] [:content :string]]]
     [:map {:closed true}
-     [:username [:maybe :string]] ;; TODO We don't want username from backend
      [:id :string]
      [:fail_reason :string]
      [:how_to_fix :string]
@@ -157,7 +156,6 @@
 
 (defn submit-form []
   (let [body {:id (:id @form)
-              :username ""
               :fail_reason {:text (:fail-reason @form)
                             :vote (:fail-reason @votes)}
               :how_to_fix  {:text (:how-to-fix @form)

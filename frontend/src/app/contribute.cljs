@@ -6,7 +6,6 @@
     [current-path
      remove-trailing-slash
      local-storage-enabled
-     local-storage-get
      local-storage-error
      fontawesome-icon]]
    [app.three-column-layout.core :refer
@@ -180,8 +179,7 @@
      "Add"]))
 
 (defn right-column
-  "Render right column including username. The username can be
-  retrieved from a cookie if it exists."
+  "Render right column."
   []
   [:<>
 
