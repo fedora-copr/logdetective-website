@@ -40,8 +40,9 @@ class Storator3000:
 
         contribution_id = uuid.uuid4()
         file_name = f"{self.build_dir}/{contribution_id}.json"
+        feedback_result_dict = feedback_result.model_dump(exclude_unset=True)
         with open(file_name, "w") as fp:
-            json.dump(feedback_result.dict(exclude_unset=True), fp, indent=4)
+            json.dump(feedback_result_dict, fp, indent=4)
         return contribution_id
 
     @classmethod

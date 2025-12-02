@@ -544,7 +544,7 @@ def _parse_logs(
                 item.snippets.append(snippet)  # type: ignore[arg-type]
 
 
-def _parse_feedback(review_d: dict, origin_id: int) -> FeedbackSchema:
+def _parse_feedback(review_d: dict, origin_id: int) -> dict:
     original_file_path = find_file_by_name(f"{origin_id}.json", Path(FEEDBACK_DIR))
     if original_file_path is None:
         raise HTTPException(
@@ -560,7 +560,7 @@ def _parse_feedback(review_d: dict, origin_id: int) -> FeedbackSchema:
         schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
         schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
         _parse_logs(schema.logs, review_d["snippets"])
-        return schema.dict(exclude_unset=True)
+        return schema.model_dump(exclude_unset=True)
 
 
 @app.post("/frontend/review")
@@ -583,9 +583,12 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     with open(reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
         json.dump(content | {"id": original_file_id}, fp, indent=4)
 
+    parsed_feedback = (
+        _parse_feedback(content, original_file_id) | {"id": original_file_id},
+    )
     with open(parsed_reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
         json.dump(
-            _parse_feedback(content, original_file_id) | {"id": original_file_id},
+            parsed_feedback,
             fp,
             indent=4,
         )
