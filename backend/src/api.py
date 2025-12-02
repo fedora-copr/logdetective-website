@@ -555,8 +555,6 @@ def _parse_feedback(review_d: dict, origin_id: int) -> dict:
     with open(original_file_path, encoding="utf-8") as fp:
         original_content = json.load(fp)
         schema = FeedbackSchema(**original_content)
-        # no reason to store username
-        schema.username = None
         schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
         schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
         _parse_logs(schema.logs, review_d["snippets"])
