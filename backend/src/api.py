@@ -66,7 +66,18 @@ else:
 
 LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
 
-app = FastAPI()
+app = FastAPI(
+    title="Log Detective Website",
+    contact={
+        "name": "Log Detective developers",
+        "url": "https://github.com/fedora-copr/logdetective-website",
+        "email": "copr-devel@lists.fedorahosted.org",
+    },
+    license_info={
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+)
 
 THIS_FILE = Path(__file__)
 GIT_REPO_ROOT = THIS_FILE.parent.parent.parent
