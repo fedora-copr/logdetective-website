@@ -17,7 +17,7 @@ RUN git clone https://github.com/fedora-copr/logdetective-website.git /src
 
 WORKDIR /src/frontend
 RUN npm install
-RUN npm install -g shadow-cljs@">=2.26.0 <3.0.0"
+RUN npm install -g shadow-cljs@">=3.3.4 <4.0.0"
 RUN npx shadow-cljs release app
 
 FROM registry.fedoraproject.org/fedora:42
