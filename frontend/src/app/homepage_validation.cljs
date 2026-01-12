@@ -11,7 +11,7 @@
   check if the data can be retrieved from remote service like koji,
   insted it performs a simple sanity check."
   [current-hash-atom input-values input-errors]
-  ;; This function works but the implementationo is disgusting and not at all
+  ;; This function works but the implementation is disgusting and not at all
   ;; how it is supposed to be done. We can refactor in the future.
   (reset! input-errors [])
   (match @current-hash-atom
