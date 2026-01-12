@@ -2,7 +2,7 @@
   "This namespace contains your application and is the entrypoint for 'yarn start'."
   (:require [reagent.core :as r]
             [app.homepage :refer [homepage fetch-stats-backend]]
-            [app.contribute :refer [contribute init-data]]
+            [app.contribute.core :refer [contribute init-data]]
             [app.review.core :refer [review init-data-review]]
             [app.prompt.core :refer [prompt]]))
 

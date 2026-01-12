@@ -1,4 +1,4 @@
-(ns app.contribute-events
+(ns app.contribute.events
   (:require
    [clojure.set :refer [rename-keys]]
    [lambdaisland.fetch :as fetch]
@@ -7,8 +7,8 @@
      remove-trailing-slash]]
    [app.editor.core :refer [active-file]]
    [app.components.snippets :refer [snippets]]
-   [app.contribute-logic :refer [file-id]]
-   [app.contribute-atoms :refer
+   [app.contribute.logic :refer [file-id]]
+   [app.contribute.atoms :refer
     [backend-data
      spec
      container
