@@ -103,13 +103,13 @@
   (reset! raw-files (vec (vals (:logs data))))
 
   ;; Parse snippets from backend and store them to @snippets
-  (doall (for [file (vals (:logs data))
+  (doseq [file (vals (:logs data))
                :let [file-index (get-file-index files (:name file))]]
-           (doall (for [snippet (:snippets file)]
+           (doseq [snippet (:snippets file)]
                     (add-snippet-from-backend-map
                      @files
                      file-index
-                     snippet)))))
+                     snippet)))
 
   (reset! snippets
           (vec (map-indexed
