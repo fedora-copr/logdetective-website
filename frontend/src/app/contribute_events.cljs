@@ -9,15 +9,16 @@
    [app.components.snippets :refer [snippets]]
    [app.contribute-logic :refer [file-id]]
    [app.contribute-atoms :refer
-    [how-to-fix
-     error-title
-     backend-data
-     error-description
-     fail-reason
-     status
+    [backend-data
      spec
      container
-     ok-status]]))
+     ok-status]]
+   [app.common.state :refer
+    [status
+     error-title
+     error-description
+     fail-reason
+     how-to-fix]]))
 
 (defn submit-form
   "Render annotation submission form with retrieved logs"
