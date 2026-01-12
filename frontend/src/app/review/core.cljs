@@ -34,13 +34,16 @@
      vote on-vote-button-click
      on-change-form-input]]
    [app.review.atoms :refer
-    [files
-     raw-files
-     error-description
-     error-title
-     status
+    [raw-files
      form
-     votes]]))
+     votes]]
+   [app.common.state :refer
+    [error-title
+     error-description
+     status
+     files
+     handle-backend-error
+     handle-validation-error]]))
 
 (def InputSchema
   (let [File [:map [:name :string] [:content :string]]]
@@ -117,18 +120,6 @@
 
   (when @snippets
     (reset! active-file (index-of-file (:file (last @snippets))))))
-
-(defn handle-backend-error [title description]
-  (reset! status "error")
-  (reset! error-title title)
-  (reset! error-description description))
-
-(defn handle-validation-error [title description]
-  ;; Go back to "has files" state, let users fix
-  ;; validation errors
-  (reset! status nil)
-  (reset! error-title title)
-  (reset! error-description description))
 
 (defn result-id-from-url []
   (let [split (-> js/window .-location .-href (str/split "/review/"))]

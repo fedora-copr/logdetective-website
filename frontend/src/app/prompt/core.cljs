@@ -7,26 +7,13 @@
    [app.helpers :refer [query-params-get change-url]]
    [app.components.jumbotron :refer
     [render-error
-     loading-screen]]))
-
-;; Copy-pasted from review
-(def error-description (r/atom nil))
-(def error-title (r/atom nil))
-(def status (r/atom nil))
-
-;; Copy-pasted from review
-(defn handle-backend-error [title description]
-  (reset! status "error")
-  (reset! error-title title)
-  (reset! error-description description))
-
-;; Copy-pasted from review
-(defn handle-validation-error [title description]
-  ;; Go back to "has files" state, let users fix
-  ;; validation errors
-  (reset! status nil)
-  (reset! error-title title)
-  (reset! error-description description))
+     loading-screen]]
+   [app.common.state :refer
+    [status
+     error-description
+     error-title
+     handle-backend-error]]
+    ))
 
 (def form (r/atom nil))
 (def prompt-value (r/atom nil))

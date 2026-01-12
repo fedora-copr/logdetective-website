@@ -27,13 +27,8 @@
      on-click-delete-snippet
      on-snippet-textarea-change]]
    [app.contribute-atoms :refer
-    [how-to-fix
-     status
-     files
-     spec
+    [spec
      container
-     error-description
-     error-title
      backend-data
      log
      build-id
@@ -45,7 +40,13 @@
     [submit-form
      on-how-to-fix-textarea-change
      on-change-fail-reason
-     on-accordion-item-show]]))
+     on-accordion-item-show]]
+   [app.common.state :refer
+    [status
+     files
+     error-description
+     error-title
+     how-to-fix]]))
 
 (defn set-atoms
   "Set atoms to contain fields from `data` map.

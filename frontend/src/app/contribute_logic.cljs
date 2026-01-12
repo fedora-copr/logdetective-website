@@ -1,6 +1,6 @@
 (ns app.contribute-logic
   (:require
-   [app.contribute-atoms :refer [files]]))
+   [app.common.state :refer [files]]))
 
 (defn file-id [name]
   ;; TODO Replace implementation with index-of-file and move to editor
