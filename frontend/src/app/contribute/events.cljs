@@ -4,10 +4,10 @@
    [lambdaisland.fetch :as fetch]
    [app.helpers :refer
     [current-path
-     remove-trailing-slash]]
+     remove-trailing-slash
+     get-file-index]]
    [app.editor.core :refer [active-file]]
    [app.components.snippets :refer [snippets]]
-   [app.contribute.logic :refer [file-id]]
    [app.contribute.atoms :refer
     [backend-data
      spec
@@ -18,7 +18,8 @@
      error-title
      error-description
      fail-reason
-     how-to-fix]]))
+     how-to-fix
+     files]]))
 
 (defn submit-form
   "Render annotation submission form with retrieved logs"
@@ -81,7 +82,7 @@
   (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
         snippet (nth @snippets snippet-id)
         file-name (:file snippet)]
-    (reset! active-file (file-id file-name))))
+    (reset! active-file (get-file-index files file-name))))
 
 ;; We might need this function for enabling/disabling the "new snippet" button
 ;; based on whether user selected something (within the <pre>log</pre> area)
