@@ -1,4 +1,4 @@
-(ns app.contribute-logic
+(ns app.contribute.logic
   (:require
    [app.common.state :refer [files]]))
 

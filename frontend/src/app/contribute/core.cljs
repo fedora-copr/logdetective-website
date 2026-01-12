@@ -1,4 +1,4 @@
-(ns app.contribute
+(ns app.contribute.core
   (:require
    [lambdaisland.fetch :as fetch]
    ["html-entities" :as html-entities]
@@ -26,7 +26,7 @@
      selection-node-id
      on-click-delete-snippet
      on-snippet-textarea-change]]
-   [app.contribute-atoms :refer
+   [app.contribute.atoms :refer
     [spec
      container
      backend-data
@@ -36,7 +36,7 @@
      build-url
      text-in-log-selected?
      ok-status]]
-   [app.contribute-events :refer
+   [app.contribute.events :refer
     [submit-form
      on-how-to-fix-textarea-change
      on-change-fail-reason
@@ -118,12 +118,12 @@
      (cond
        (contains? #{"URL" "Container log"} @build-id-title)
        [:<>
-        (str "We fetched logs from ")
+        "We fetched logs from "
         [:a {:href @build-url} "this URL"]]
 
        (= @build-id-title "Upload")
        [:<>
-        (str "Upload a log file from your computer")]
+        "Upload a log file from your computer"]
 
        :else
        [:<>

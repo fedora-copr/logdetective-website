@@ -1,4 +1,4 @@
-(ns app.contribute-atoms
+(ns app.contribute.atoms
   (:require [reagent.core :as r]))
 
 (def spec (r/atom nil))
