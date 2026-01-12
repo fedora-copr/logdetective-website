@@ -6,7 +6,8 @@
    [malli.core :as m]
    [app.helpers :refer
     [safe
-     fontawesome-icon]]
+     fontawesome-icon
+     get-file-index]]
    [app.editor.core :refer [editor active-file]]
    [app.components.accordion :refer [accordion]]
    [app.components.jumbotron :refer
@@ -28,7 +29,6 @@
      snippet-color-square
      highlight-text
      scroll-to-snippet]]
-   [app.review.logic :refer [index-of-file]]
    [app.review.events :refer
     [on-accordion-item-show
      vote on-vote-button-click
@@ -104,7 +104,7 @@
 
   ;; Parse snippets from backend and store them to @snippets
   (doall (for [file (vals (:logs data))
-               :let [file-index (index-of-file (:name file))]]
+               :let [file-index (get-file-index files (:name file))]]
            (doall (for [snippet (:snippets file)]
                     (add-snippet-from-backend-map
                      @files
@@ -119,7 +119,7 @@
   (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data)))))
 
   (when @snippets
-    (reset! active-file (index-of-file (:file (last @snippets))))))
+    (reset! active-file (get-file-index files (:file (last @snippets))))))
 
 (defn result-id-from-url []
   (let [split (-> js/window .-location .-href (str/split "/review/"))]
