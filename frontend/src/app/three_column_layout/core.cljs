@@ -21,7 +21,11 @@
   [:<>
    [:h4 {} "Instructions"]
    [:ul {:class "fa-ul"}
-    (into [:<>] items)]])
+    (for [[i item] (map-indexed vector items)]
+      ^{:key i} item)]])
+
+(defn left-column [items]
+  (instructions items))
 
 (defn display-error-middle-top [error-title error-description]
   (when error-description

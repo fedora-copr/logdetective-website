@@ -11,8 +11,8 @@
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions
-     status-panel]]
+     status-panel
+     left-column]]
    [app.editor.core :refer [editor active-file]]
    [app.components.jumbotron :refer
     [render-error
@@ -109,46 +109,6 @@
   (if (= (remove-trailing-slash (current-path))  "/contribute/upload")
     (fetch-logs-upload)
     (fetch-logs-backend)))
-
-(defn left-column []
-  (instructions
-   [(instructions-item
-     (not-empty @files)
-
-     (cond
-       (contains? #{"URL" "Container log"} @build-id-title)
-       [:<>
-        "We fetched logs from "
-        [:a {:href @build-url} "this URL"]]
-
-       (= @build-id-title "Upload")
-       [:<>
-        "Upload a log file from your computer"]
-
-       :else
-       [:<>
-        (str "We fetched logs for " @build-id-title " ")
-        [:a {:href @build-url} (str "#" @build-id)]]))
-
-    ;; Maybe "Write why do you think the build failed"
-
-    (instructions-item
-     (not-empty @snippets)
-     "Find log snippets relevant to the failure")
-
-    (instructions-item
-     (not-empty @snippets)
-     "Create snippets by selecting them and clicking 'Add', then writing annotations")
-
-    (instructions-item
-     (some not-empty (map :comment @snippets))
-     "Describe what makes the snippets interesting")
-
-    (instructions-item
-     (not-empty @how-to-fix)
-     "Describe how to fix the issue")
-
-    (instructions-item nil "Submit")]))
 
 (defn middle-column []
   (editor @files))
@@ -280,17 +240,56 @@
     (render-succeeded @ok-status)
 
     @files
-    (do
-      (.addEventListener js/document "selectionchange" on-text-selected)
-      (when (not-empty @snippets)
-        (let [accordion (.getElementById js/document "accordionItems")]
-          (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
+    (let [contribute-instructions
+          [(instructions-item
+            (not-empty @files)
 
-      (three-column-layout
-       (left-column)
-       (middle-column)
-       (right-column)
-       (status-panel @status @error-title @error-description)))
+            (cond
+              (contains? #{"URL" "Container log"} @build-id-title)
+              [:<>
+                "We fetched logs from "
+                [:a {:href @build-url} "this URL"]]
+
+              (= @build-id-title "Upload")
+              [:<>
+                "Upload a log file from your computer"]
+
+              :else
+              [:<>
+                (str "We fetched logs for " @build-id-title " ")
+                [:a {:href @build-url} (str "#" @build-id)]]))
+
+            ;; Maybe "Write why do you think the build failed"
+
+            (instructions-item
+            (not-empty @snippets)
+            "Find log snippets relevant to the failure")
+
+            (instructions-item
+            (not-empty @snippets)
+            "Create snippets by selecting them and clicking 'Add', then writing annotations")
+
+            (instructions-item
+            (some not-empty (map :comment @snippets))
+            "Describe what makes the snippets interesting")
+
+            (instructions-item
+            (not-empty @how-to-fix)
+            "Describe how to fix the issue")
+
+            (instructions-item nil "Submit")]
+            ]
+
+    (.addEventListener js/document "selectionchange" on-text-selected)
+    (when (not-empty @snippets)
+      (let [accordion (.getElementById js/document "accordionItems")]
+        (.addEventListener accordion "show.bs.collapse" on-accordion-item-show)))
+
+    (three-column-layout
+      (left-column contribute-instructions)
+      (middle-column)
+      (right-column)
+      (status-panel @status @error-title @error-description)))
 
     :else
     (loading-screen "Please wait, fetching logs from the outside world.")))
