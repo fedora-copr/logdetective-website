@@ -17,8 +17,8 @@
    [app.three-column-layout.core :refer
     [three-column-layout
      instructions-item
-     instructions
-     status-panel]]
+     status-panel
+     left-column]]
    [app.components.snippets :refer
     [snippets
      add-snippet
@@ -181,26 +181,6 @@
        (fn [_]
          (reset! status "submitted"))})))
 
-(defn left-column []
-  (instructions
-   [(instructions-item
-     true
-     "We fetched a random sample from our collected data set")
-
-    (instructions-item
-     (>= (count (dissoc @votes :how-to-fix :fail-reason)) (count @snippets))
-     "Go through all snippets and either upvote or downvote them")
-
-    (instructions-item
-     (not= (:fail-reason @votes) 0)
-     "Is the explanation why did the build fail correct?")
-
-    (instructions-item
-     (not= (:how-to-fix @votes) 0)
-     "Is the explanation how to fix the issue correct?")
-
-    (instructions-item nil "Submit")]))
-
 (defn on-editor-rendered [element]
   (when element
     (scroll-to-snippet
@@ -331,11 +311,29 @@
     (render-succeeded)
 
     @files
-    (three-column-layout
-     (left-column)
-     (middle-column)
-     (right-column)
-     (status-panel @status @error-title @error-description))
+    (let [review-instructions
+      [(instructions-item
+      true
+      "We fetched a random sample from our collected data set")
+
+      (instructions-item
+      (>= (count (dissoc @votes :how-to-fix :fail-reason)) (count @snippets))
+      "Go through all snippets and either upvote or downvote them")
+
+      (instructions-item
+      (not= (:fail-reason @votes) 0)
+      "Is the explanation why did the build fail correct?")
+
+      (instructions-item
+      (not= (:how-to-fix @votes) 0)
+      "Is the explanation how to fix the issue correct?")
+
+      (instructions-item nil "Submit")]]
+      (three-column-layout
+        (left-column review-instructions)
+        (middle-column)
+        (right-column)
+        (status-panel @status @error-title @error-description)))
 
     :else
     (loading-screen "Please wait, fetching logs from our dataset.")))
