@@ -52,7 +52,13 @@ from src.schema import (
     FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, find_file_by_name, get_logger, start_sentry
+from src.spells import (
+    make_tar,
+    find_file_by_name,
+    get_logger,
+    start_sentry,
+    sanitize_uploaded_log,
+)
 from src.store import Storator3000
 from src.exceptions import NoDataFound
 
@@ -294,7 +300,8 @@ def _store_data_for_providers(
     else:
         result_to_store = schema_inp_to_out(feedback_input)
 
-    contribution_id = storator.store(result_to_store)
+    sanitized_result_to_store = sanitize_uploaded_log(result_to_store)
+    contribution_id = storator.store(sanitized_result_to_store)
     if len(args) > 0:
         rest = f"/{args[0]}"
     else:
