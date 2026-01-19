@@ -60,6 +60,7 @@ from src.spells import (
     read_json_file,
     write_json_file,
     fetch_text,
+    sanitize_uploaded_schema,
 )
 from src.store import Storator3000
 from src.exceptions import NoDataFound
@@ -281,7 +282,8 @@ def _store_data_for_providers(
     else:
         result_to_store = schema_inp_to_out(feedback_input)
 
-    contribution_id = storator.store(result_to_store)
+    sanitized_result_to_store = sanitize_uploaded_schema(result_to_store)
+    contribution_id = storator.store(sanitized_result_to_store)
     if len(args) > 0:
         rest = f"/{args[0]}"
     else:

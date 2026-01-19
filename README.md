@@ -38,7 +38,7 @@ data = {
             "snippets": [
                 {
                     # index of the snippet within the file
-                    # you can check they are correct by doing `log_content[start_index:end_index+1]`
+                    # you can check they are correct by doing `log_content[start_index:end_index]`
                     "start_index": 1,
                     "end_index": 2,
                     "user_comment": "this snippet is relevant because...",

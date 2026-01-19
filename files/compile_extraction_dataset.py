@@ -48,8 +48,8 @@ try:
                 parsed.append(
                     {
                         "answers": {
-                            "text": v["content"][s["start_index"] - 2 : s["end_index"]],
-                            "answer_start": s["start_index"] - 2,
+                            "text": v["content"][s["start_index"] : s["end_index"]],
+                            "answer_start": s["start_index"],
                         },
                         "context": v["content"],
                         "user_comment": s["user_comment"],
