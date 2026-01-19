@@ -104,7 +104,7 @@
 
   ;; Parse snippets from backend and store them to @snippets
   (doseq [file (vals (:logs data))
-               :let [file-index (get-file-index files (:name file))]]
+               :let [file-index (get-file-index @files (:name file))]]
            (doseq [snippet (:snippets file)]
                     (add-snippet-from-backend-map
                      @files
@@ -119,7 +119,7 @@
   (reset! files (vec (map highlight-snippets-withing-log (vals (:logs data)))))
 
   (when @snippets
-    (reset! active-file (get-file-index files (:file (last @snippets))))))
+    (reset! active-file (get-file-index @files (:file (last @snippets))))))
 
 (defn result-id-from-url []
   (let [split (-> js/window .-location .-href (str/split "/review/"))]
