@@ -10,7 +10,7 @@
   (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
         snippet (nth @snippets snippet-id)
         file-name (:file snippet)]
-    (reset! active-file (get-file-index files file-name))
+    (reset! active-file (get-file-index @files file-name))
     (scroll-to-snippet (get @raw-files @active-file) snippet)))
 
 (defn vote [key value]

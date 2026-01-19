@@ -82,7 +82,7 @@
   (let [snippet-id (int (.-indexNumber (.-dataset (.-target event))))
         snippet (nth @snippets snippet-id)
         file-name (:file snippet)]
-    (reset! active-file (get-file-index files file-name))))
+    (reset! active-file (get-file-index @files file-name))))
 
 ;; We might need this function for enabling/disabling the "new snippet" button
 ;; based on whether user selected something (within the <pre>log</pre> area)

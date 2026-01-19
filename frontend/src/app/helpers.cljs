@@ -51,5 +51,5 @@
    (str "Your browser has encountered and error while attempting an upload."
         error-msg)})
 
-(defn get-file-index [files-atom name]
-  (first (keep-indexed (fn [idx f] (when (= (:name f) name) idx)) @files-atom)))
+(defn get-file-index [files-list name]
+  (first (keep-indexed (fn [idx f] (when (= (:name f) name) idx)) files-list)))
