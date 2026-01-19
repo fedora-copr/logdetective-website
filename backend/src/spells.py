@@ -15,6 +15,22 @@ from typing import Any, Iterator, Optional
 import requests
 import sentry_sdk
 
+from src.schema import (
+    FeedbackSchema,
+    NameContentSchema,
+    FeedbackLogSchema,
+)
+from src.sanitization import (
+    SchemaRedactionPipeline,
+    SANITIZATION_PIPELINE,
+)
+from src.log_cleaning import (
+    SNIPPET_LENGTH_THRESHOLD,
+    snap_indexes_to_text,
+    html_careful_unescape,
+    log_schema_redaction,
+)
+
 
 @contextmanager
 def get_temporary_dir() -> Iterator[Path]:
@@ -164,3 +180,92 @@ def ensure_text(content: str | bytes) -> str:
     if isinstance(content, bytes):
         return content.decode("utf-8")
     return content
+
+
+def clean_string(string: str, pipeline: SchemaRedactionPipeline) -> str:
+    """
+    Perform sanitization on a string (without adjusting indexes).
+    """
+    result = html_careful_unescape(string)
+    for redaction in pipeline.steps:
+        result = redaction.pattern.sub(redaction.replacement, result)
+    return result
+
+
+def clean_log_schema(log_schema: FeedbackLogSchema) -> FeedbackLogSchema:
+    """
+    Clean and sanitize a FeedbackLogSchema object by adding snippet texts,
+    unescaping HTML entities, snapping snippet indexes to nearby newlines,
+    and redacting personal information.
+
+    Args:
+        log_schema: The FeedbackLogSchema object to clean.
+        pipeline: The SchemaRedactionPipeline containing redaction steps.
+
+    Returns:
+        The cleaned and sanitized FeedbackLogSchema object.
+    """
+    # 1) add snippet texts
+    for snippet in log_schema.snippets:
+        if snippet.text:
+            continue
+        if snippet.end_index == -1:
+            snippet.end_index = len(log_schema.content)
+        if snippet.start_index > snippet.end_index:
+            snippet.start_index, snippet.end_index = (
+                snippet.end_index,
+                snippet.start_index,
+            )
+        if snippet.end_index - snippet.start_index < SNIPPET_LENGTH_THRESHOLD:
+            continue
+        snippet.text = log_schema.content[snippet.start_index : snippet.end_index]
+    # 2) fix html escapes
+    for snippet in log_schema.snippets:
+        if snippet.text:
+            snippet.text = clean_string(snippet.text, SANITIZATION_PIPELINE)
+        snippet.user_comment = clean_string(snippet.user_comment, SANITIZATION_PIPELINE)
+    log_schema.content = html_careful_unescape(log_schema.content)
+    # 3) adjust indexes (let's use only ratio) + \n snapping
+    snap_indexes_to_text(log_schema, ratio=0.02)
+    # 4) redact personal info (with proper index adjustments)
+    for step in SANITIZATION_PIPELINE.steps:
+        log_schema.content = log_schema_redaction(
+            log_schema.content, step, log_schema.snippets
+        )
+    return log_schema
+
+
+def sanitize_uploaded_schema(input_schema: FeedbackSchema) -> FeedbackSchema:
+    """
+    Run sanitization on every viable string within a FeedbackSchema
+
+    Args:
+        input_schema: FeedbackSchema of a currently uploaded logs + snippets
+
+    Returns:
+        FeedbackSchema with sanitized/redacted personal data
+    """
+
+    sanitized_logs: dict[str, FeedbackLogSchema] = {
+        name: clean_log_schema(schema) for name, schema in input_schema.logs.items()
+    }
+
+    result = FeedbackSchema(
+        fail_reason=clean_string(input_schema.fail_reason, SANITIZATION_PIPELINE),
+        how_to_fix=clean_string(input_schema.how_to_fix, SANITIZATION_PIPELINE),
+        logs=sanitized_logs,
+    )
+    if isinstance(input_schema.spec_file, NameContentSchema):
+        result.spec_file = NameContentSchema(
+            name=input_schema.spec_file.name,
+            content=clean_string(input_schema.spec_file.content, SANITIZATION_PIPELINE),
+        )
+    if isinstance(input_schema.container_file, NameContentSchema):
+        result.container_file = NameContentSchema(
+            name=input_schema.container_file.name,
+            content=clean_string(
+                input_schema.container_file.content, SANITIZATION_PIPELINE
+            ),
+        )
+
+    return result

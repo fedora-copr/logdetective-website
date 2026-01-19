@@ -89,9 +89,9 @@
             ;; inconsistencies. See `offset.js` for more information.
             start (js/getAbsoluteOffsetInContainer "log")
 
-            ;; Index of the last snippet character. When parsing in python, don't
-            ;; forget to do text[start:end+1]
-            end (+ start (count content) -1)
+            ;; Index of the last snippet character. When parsing in python,
+            ;; you can check that text == content[start:end]
+            end (+ start (count content))
 
             snippet
             {:text content
