@@ -412,7 +412,7 @@ def frontend_review_random(result_id):
         raise NoDataFound(f"No result with ID {result_id}")
 
     content = read_json_file(feedback_file)
-    return FeedbackSchema(**content).dict() | {
+    return FeedbackSchema(**content).model_dump() | {
         "id": feedback_file.name.rstrip(".json")
     }
 
