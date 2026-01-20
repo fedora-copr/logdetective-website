@@ -12,33 +12,30 @@ import re
 import argparse
 from collections import namedtuple
 
-
-# Commit Message Header Regex building blocks
-YEAR = r"(?P<year>((20|19)[0-9]{2}))"
-
-NICKNAME = r"[\w\\]+"
-EMAIL = r"<(?P<email>[\w\.\-\+]+(@|([\[\(][aA][tT][\]\)]))[\w\.\-]+)>"
-EMAIL_NOBRACKETS = r"(?P<emailnb>[\w\.\-\+]+(@|([\[\(][aA][tT][\]\)]))[\w\-]+\.[\w\-]+)"
-
-# in case of unicode characters inside the author's name, we also catch hexa \uHHHH sequences
-UPPERCASE = r"([A-Z]|(\\u[0-9a-f]{4}))"
-ANYCASE = r"([A-Za-z'\-\.]|(\\u[0-9a-f]{4}))"
-FULLNAME = r"((" + UPPERCASE + ANYCASE + r"*)(?:\s+" + ANYCASE + r"+){1,})"
-FULLNAME_CAPITALIZED = (
-    r"(" + UPPERCASE + ANYCASE + r"*)(?:\s+" + UPPERCASE + ANYCASE + r"*){1,}"
+from src.regexes_sanitization import (
+    EMAIL_PLACEHOLDER,
+    NAME_PLACEHOLDER,
+    EMAIL_PLACEHOLDER_REGEX,
+    NAME_PLACEHOLDER_REGEX,
+    EMAIL_CONTACT,
+    NAME_CONTACT,
+    HEADER_DATE_FULLNAME_EMAIL_REGEX,
+    UNICODE_HEADER_DATE_FULLNAME_EMAIL_REGEX,
+    HEADER_DATE_NICKNAME_EMAIL_REGEX,
+    UNICODE_FULLNAME_IN_PARENTHESES_REGEX,
+    FULLNAME_IN_PARENTHESES_REGEX,
+    AUTHOR_FULLNAME_REGEX,
+    UNICODE_AUTHOR_FULLNAME_REGEX,
+    AUTHOR_NICKNAME_REGEX,
+    HEADER_DATE_EMAIL_REGEX,
+    HEADER_FULLNAME_EMAIL_REGEX,
+    UNICODE_HEADER_FULLNAME_EMAIL_REGEX,
+    EMAIL_REGEX,
+    RSA_KEY_REGEX,
+    PUBKEY_REGEX,
+    GPG_FINGERPRINT_REGEX,
+    USERNAME_REGEX,
 )
-
-# Commit Message Header Placeholders
-EMAIL_PLACEHOLDER = "#*!copr-team@redhat.com!*#"
-NAME_PLACEHOLDER = "#*!Copr***Team!*#"
-# we replace nicknames/fullnames and emails with placeholders using distinct sequences of
-# special characters, since the matching process is done in more "phases" over the same string,
-# so that we can don't keep replacing and matching the same thing during each step
-EMAIL_PLACEHOLDER_REGEX = re.compile(r"\#\*\!copr-team@redhat\.com\!\*\#")
-NAME_PLACEHOLDER_REGEX = re.compile(r"\#\*\!Copr\*\*\*Team\!\*\#")
-# after everything is done, these placeholders are then replaced with actual valid username/email
-EMAIL_CONTACT = "copr-team@redhat.com"
-NAME_CONTACT = "Copr Team"
 
 
 class RedactionStats:
@@ -108,32 +105,20 @@ ipv4_address_auditor = Auditor("IPV4 Addresses", stats)  # unused
 uuid_auditor = Auditor("UUIDs", stats)  # unused
 
 
-HEADER_DATE_FULLNAME_EMAIL_REGEX = re.compile(
-    (  # phase 1 checking - date fullname email
-        YEAR + r"\s+" + r"(?P<name>" + FULLNAME + r")\s+" + EMAIL
-    )
-)
-
-
-def date_fullname_email_redaction(file_path: str, value: str) -> str:
+def date_fullname_email_redaction(file_path: str, value: str, escaped=True) -> str:
     """Redact info based on commit message headers ... YEAR FULL NAME <email> ..."""
     placeholder = r"\g<year> " + f"{NAME_PLACEHOLDER} <{EMAIL_PLACEHOLDER}>"
-
-    for match in HEADER_DATE_FULLNAME_EMAIL_REGEX.finditer(value):
+    used_regex = (
+        HEADER_DATE_FULLNAME_EMAIL_REGEX
+        if escaped
+        else UNICODE_HEADER_DATE_FULLNAME_EMAIL_REGEX
+    )
+    for match in used_regex.finditer(value):
         matched_name = match.group("name")
         matched_email = match.group("email")
         date_fullname_auditor.insert(matched_name, file_path, match.group(0))
         email_auditor.insert(matched_email, file_path, match.group(0))
-    return HEADER_DATE_FULLNAME_EMAIL_REGEX.sub(placeholder, value)
-
-
-# NOTE: we don't check nickname email combination (without preceding date)
-# -> this would be too strong, as oftentimes emails can be found also in other parts of the log
-HEADER_DATE_NICKNAME_EMAIL_REGEX = re.compile(
-    (  # phase 2 checking - date nickname email
-        YEAR + r"\s+(?P<nick>" + NICKNAME + r")\s+" + EMAIL
-    )
-)
+    return used_regex.sub(placeholder, value)
 
 
 def date_nickname_email_redaction(file_path: str, value: str) -> str:
@@ -151,12 +136,7 @@ def date_nickname_email_redaction(file_path: str, value: str) -> str:
     return HEADER_DATE_NICKNAME_EMAIL_REGEX.sub(placeholder, value)
 
 
-FULLNAME_IN_PARENTHESES_REGEX = re.compile(
-    (r"\(" + r"(?P<name>" + FULLNAME_CAPITALIZED + r")\)\\n")
-)
-
-
-def fullname_parentheses_redaction(file_path: str, value: str) -> str:
+def fullname_parentheses_redaction(file_path: str, value: str, escaped=True) -> str:
     """
     Redact info based on commit message footers containing only fullname in parentheses.
     A lot of commit messages follow this pattern: 'Done some stuff (Name Surname)\n'.
@@ -192,7 +172,7 @@ def fullname_parentheses_redaction(file_path: str, value: str) -> str:
         ]
     )
 
-    placeholder = f"({NAME_PLACEHOLDER})\\n"
+    placeholder = f"({NAME_PLACEHOLDER})\n"
 
     def redact_callback(match: re.Match[str]):
         full_match = match.group(0)
@@ -202,28 +182,24 @@ def fullname_parentheses_redaction(file_path: str, value: str) -> str:
         parenthesised_name_auditor.insert(matched_name, file_path, full_match)
         return f"{placeholder}"
 
-    return FULLNAME_IN_PARENTHESES_REGEX.sub(redact_callback, value)
+    used_regex = (
+        FULLNAME_IN_PARENTHESES_REGEX
+        if escaped
+        else UNICODE_FULLNAME_IN_PARENTHESES_REGEX
+    )
+    return used_regex.sub(redact_callback, value)
 
 
-AUTHOR_FULLNAME_REGEX = re.compile(
-    (r"Author:\s*" + r"(?P<name>" + FULLNAME + r")\s+" + EMAIL)
-)
-
-
-def author_fullname_email_redaction(file_path: str, value: str) -> str:
+def author_fullname_email_redaction(file_path: str, value: str, escaped=True) -> str:
     """Redact commit messages containing pattern "Author: Full Name <email>"."""
     placeholder = f"Author: {NAME_PLACEHOLDER} <{EMAIL_PLACEHOLDER}>"
-    for match in AUTHOR_FULLNAME_REGEX.finditer(value):
+    used_regex = AUTHOR_FULLNAME_REGEX if escaped else UNICODE_AUTHOR_FULLNAME_REGEX
+    for match in used_regex.finditer(value):
         matched_name = match.group("name")
         matched_email = match.group("email")
         fullname_auditor.insert(matched_name, file_path, match.group(0))
         email_auditor.insert(matched_email, file_path, match.group(0))
-    return AUTHOR_FULLNAME_REGEX.sub(placeholder, value)
-
-
-AUTHOR_NICKNAME_REGEX = re.compile(
-    (r"Author:\s*" + r"(?P<nick>" + NICKNAME + r")\s+" + EMAIL)
-)
+    return used_regex.sub(placeholder, value)
 
 
 def author_nickname_email_redaction(file_path: str, value: str) -> str:
@@ -237,13 +213,6 @@ def author_nickname_email_redaction(file_path: str, value: str) -> str:
     return AUTHOR_NICKNAME_REGEX.sub(placeholder, value)
 
 
-HEADER_DATE_EMAIL_REGEX = re.compile(
-    (  # commit msg header phase 2 checking -- date email
-        YEAR + r"\s+(?:" + EMAIL + r"|" + EMAIL_NOBRACKETS + r")"
-    )
-)
-
-
 def date_email_redaction(file_path: str, value: str) -> str:
     """Redact info based on commit message headers: ... YEAR  <email> ... (username is skipped)"""
     placeholder = r"\g<year> " + f"{NAME_PLACEHOLDER} <{EMAIL_PLACEHOLDER}>"
@@ -253,28 +222,18 @@ def date_email_redaction(file_path: str, value: str) -> str:
     return HEADER_DATE_EMAIL_REGEX.sub(placeholder, value)
 
 
-# name surname redaction -> it is possible to find names and surnames within commit messages
-# just based on the fact that they are suffixed by the emails in <> brackets, ie.
-# Submitted by: John Doe <john.doe@domain.com>
-HEADER_FULLNAME_EMAIL_REGEX = re.compile(
-    (  # commit msg phase 3 checking -- fullname email
-        r"(?P<name>" + FULLNAME_CAPITALIZED + r")\s+" + EMAIL
-    )
-)
-
-
-def fullname_email_redaction(file_path: str, value: str) -> str:
+def fullname_email_redaction(file_path: str, value: str, escaped=True) -> str:
     """Redact info based on pattern "Fullname Capitalized <email>"."""
     placeholder = f"{NAME_PLACEHOLDER} <{EMAIL_PLACEHOLDER}>"
-    for match in HEADER_FULLNAME_EMAIL_REGEX.finditer(value):
+    used_regex = (
+        HEADER_FULLNAME_EMAIL_REGEX if escaped else UNICODE_HEADER_FULLNAME_EMAIL_REGEX
+    )
+    for match in used_regex.finditer(value):
         matched_name = match.group("name")
         matched_email = match.group("email")
         fullname_auditor.insert(matched_name, file_path, match.group(0))
         email_auditor.insert(matched_email, file_path, match.group(0))
-    return HEADER_FULLNAME_EMAIL_REGEX.sub(placeholder, value)
-
-
-EMAIL_REGEX = re.compile(EMAIL)
+    return used_regex.sub(placeholder, value)
 
 
 def email_redaction(file_path: str, value: str) -> str:
@@ -286,9 +245,6 @@ def email_redaction(file_path: str, value: str) -> str:
     return EMAIL_REGEX.sub(placeholder, value)
 
 
-RSA_KEY_REGEX = re.compile(r"RSA\s+key\s+(?P<rsa>[0-9A-Fa-f]{32,})", re.IGNORECASE)
-
-
 def rsa_key_redaction(file_path: str, value: str) -> str:
     """Redact public RSA keys."""
     placeholder = f"RSA key {'FFFF' * 10}"
@@ -298,9 +254,6 @@ def rsa_key_redaction(file_path: str, value: str) -> str:
     return RSA_KEY_REGEX.sub(placeholder, value)
 
 
-PUBKEY_REGEX = re.compile(r"pubkey\-(?P<pubkey>[0-9a-fA-F]{40})", re.IGNORECASE)
-
-
 def pubkey_redaction(file_path: str, value: str):
     """Redact strings following the pattern pubkey-40_hexa_character_string."""
     placeholder = f"pubkey-{'ffff' * 10}"
@@ -308,12 +261,6 @@ def pubkey_redaction(file_path: str, value: str):
         matched_key = match.group("pubkey")
         pubkey_auditor.insert(matched_key, file_path, match.group(0))
     return PUBKEY_REGEX.sub(placeholder, value)
-
-
-GPG_FINGERPRINT_REGEX = re.compile(
-    (r"Fingerprint:\s*(?P<fingerprint>([0-9a-fA-F]{40})|((\s*[0-9a-fA-F]{4}){10}))"),
-    re.IGNORECASE,
-)
 
 
 def gpg_fingerprint_redaction(file_path: str, value: str):
@@ -330,7 +277,7 @@ def gpg_fingerprint_redaction(file_path: str, value: str):
 # )
 
 
-# def ipv4_address_redaction(file_path: str, value: str):
+# def ipv4_address_redaction(file_path: str, value: str) -> str:
 #     """Redact IPV4 addresses. (unused)"""
 #     placeholder = f"IP: 0.0.0.0"
 #     for match in IPV4_REGEX.finditer(value):
@@ -339,45 +286,35 @@ def gpg_fingerprint_redaction(file_path: str, value: str):
 #     return IPV4_REGEX.sub(placeholder, value)
 
 
-# def uuid_redaction(file_path: str, value: str):
+# def uuid_redaction(file_path: str, value: str) -> str:
 #     """Redact UUIDs. (unused)"""
 #     pass
 
 
-def sanitize_string(file_path: str, value: str) -> str:
+def sanitize_string(file_path: str, value: str, ascii_only=False) -> str:
     """Run the whole personal data redaction pipeline."""
     if not isinstance(value, str):
         return value
 
-    redaction_pipeline = [
-        date_fullname_email_redaction,
-        date_nickname_email_redaction,
-        fullname_parentheses_redaction,
-        author_fullname_email_redaction,
-        author_nickname_email_redaction,
-        date_email_redaction,
-        fullname_email_redaction,
-        email_redaction,
-        rsa_key_redaction,
-        gpg_fingerprint_redaction,
-        pubkey_redaction,
-        # ipv4_address_redaction,
-        # uuid_redaction,
-    ]
-
-    for func in redaction_pipeline:
-        value = func(file_path, value)
+    value = date_fullname_email_redaction(file_path, value, escaped=ascii_only)
+    value = date_nickname_email_redaction(file_path, value)
+    value = fullname_parentheses_redaction(file_path, value, escaped=ascii_only)
+    value = author_fullname_email_redaction(file_path, value, escaped=ascii_only)
+    value = author_nickname_email_redaction(file_path, value)
+    value = date_email_redaction(file_path, value)
+    value = fullname_email_redaction(file_path, value, escaped=ascii_only)
+    value = email_redaction(file_path, value)
+    value = rsa_key_redaction(file_path, value)
+    value = gpg_fingerprint_redaction(file_path, value)
+    value = pubkey_redaction(file_path, value)
+    # value = ipv4_address_redaction(file_path, value)
+    # value = uuid_redaction(file_path, value)
 
     # change name and email placeholders to copr team contacts
     value = NAME_PLACEHOLDER_REGEX.sub(NAME_CONTACT, value)
     value = EMAIL_PLACEHOLDER_REGEX.sub(EMAIL_CONTACT, value)
 
     return value
-
-
-USERNAME_REGEX = re.compile(
-    r"(?P<indent>\s+)\"username\"\:\s*\"(.*)\"(?P<comma>,?)\s*\n"
-)
 
 
 def sanitize_normal_file(file_path: str) -> None:
@@ -397,7 +334,7 @@ def sanitize_normal_file(file_path: str) -> None:
                 redacted_username = USERNAME_REGEX.sub(username_placeholder, line)
                 redacted_content.append(redacted_username)
                 continue
-            redacted_content.append(sanitize_string(file_path, line))
+            redacted_content.append(sanitize_string(file_path, line, ascii_only=True))
     with open(file_path, "w", encoding="ascii") as f:
         f.write("".join(redacted_content))
 
@@ -415,7 +352,16 @@ def sanitize_directory(path: str):
 
 
 def main(arguments: argparse.Namespace):
-    """Recursively find all JSON files, run the sanitization pipeline and keep some statistics."""
+    """
+    Recursively find all JSON files, run the sanitization pipeline and keep some statistics.
+
+    Default: ascii_only=True => When the script is run directly, it defaults to this.
+    i.e. treat Unicode as raw byte escape sequences.
+
+    When importing sanitize_string() function, you can call it with ascii_only=False, which will
+    utilize unicode-sensitive regexes which help to directly
+    sanitize strings themselves before dumping them into json.
+    """
     try:
         for path in arguments.dir:
             if not os.path.isdir(path):
