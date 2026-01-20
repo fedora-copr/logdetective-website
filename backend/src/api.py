@@ -52,7 +52,15 @@ from src.schema import (
     FeedbackLogSchema,
     schema_inp_to_out,
 )
-from src.spells import make_tar, find_file_by_name, get_logger, start_sentry
+from src.spells import (
+    make_tar,
+    find_file_by_name,
+    get_logger,
+    start_sentry,
+    read_json_file,
+    write_json_file,
+    fetch_text,
+)
 from src.store import Storator3000
 from src.exceptions import NoDataFound
 
@@ -403,11 +411,10 @@ def frontend_review_random(result_id):
     if not feedback_file:
         raise NoDataFound(f"No result with ID {result_id}")
 
-    with open(feedback_file) as fp:
-        content = json.loads(fp.read())
-        return FeedbackSchema(**content).dict() | {
-            "id": feedback_file.name.rstrip(".json")
-        }
+    content = read_json_file(feedback_file)
+    return FeedbackSchema(**content).dict() | {
+        "id": feedback_file.name.rstrip(".json")
+    }
 
 
 @app.post("/frontend/explain/")
@@ -521,7 +528,7 @@ async def _download_log_content(url):
     """Download content of the log file and returns it."""
 
     try:
-        response = requests.get(url, timeout=600)
+        response = fetch_text(url, timeout=600)
     except (
         requests.ConnectionError,
         requests.Timeout,
@@ -563,13 +570,12 @@ def _parse_feedback(review_d: dict, origin_id: int) -> dict:
             detail=f"Original feedback file for ID {origin_id} not found",
         )
 
-    with open(original_file_path, encoding="utf-8") as fp:
-        original_content = json.load(fp)
-        schema = FeedbackSchema(**original_content)
-        schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
-        schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
-        _parse_logs(schema.logs, review_d["snippets"])
-        return schema.model_dump(exclude_unset=True)
+    original_content = read_json_file(original_file_path)
+    schema = FeedbackSchema(**original_content)
+    schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
+    schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
+    _parse_logs(schema.logs, review_d["snippets"])
+    return schema.model_dump(exclude_unset=True)
 
 
 @app.post("/frontend/review")
@@ -589,18 +595,18 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
 
     LOGGER.info("Storing review for %s as %s", original_file_id, file_name)
 
-    with open(reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
-        json.dump(content | {"id": original_file_id}, fp, indent=4)
+    write_json_file(
+        reviews_dir / f"{file_name}.json",
+        content | {"id": original_file_id},
+    )
 
     parsed_feedback = (
         _parse_feedback(content, original_file_id) | {"id": original_file_id},
     )
-    with open(parsed_reviews_dir / f"{file_name}.json", "w", encoding="utf-8") as fp:
-        json.dump(
-            parsed_feedback,
-            fp,
-            indent=4,
-        )
+    write_json_file(
+        parsed_reviews_dir / f"{file_name}.json",
+        parsed_feedback,
+    )
 
     our_server = f"{feedback_input.url.scheme}://{feedback_input.url.netloc}"
     return OkResponse.from_id(file_name, our_server)

@@ -36,7 +36,9 @@ PARENT_DIR_PATH = Path(__file__).parent
 # task_id: 114607543
 @pytest.fixture
 def srpm_task_dict():
-    with open(PARENT_DIR_PATH / "unit/test_data/task/srpm_task_dict.json") as f:
+    with open(
+        PARENT_DIR_PATH / "unit/test_data/task/srpm_task_dict.json", encoding="utf-8"
+    ) as f:
         yield json.load(f)
 
 
@@ -44,7 +46,8 @@ def srpm_task_dict():
 @pytest.fixture
 def rpm_build_noarch_task_dict():
     with open(
-        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_noarch_task_dict.json"
+        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_noarch_task_dict.json",
+        encoding="utf-8",
     ) as f:
         yield json.load(f)
 
@@ -53,26 +56,31 @@ def rpm_build_noarch_task_dict():
 @pytest.fixture
 def rpm_build_arch_task_dict():
     with open(
-        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_arch_task_dict.json"
+        PARENT_DIR_PATH / "unit/test_data/task/rpm_build_arch_task_dict.json",
+        encoding="utf-8",
     ) as f:
         yield json.load(f)
 
 
 @pytest.fixture
 def copr_build_dict():
-    with open(PARENT_DIR_PATH / "unit/test_data/build/copr_build.json") as f:
+    with open(
+        PARENT_DIR_PATH / "unit/test_data/build/copr_build.json", encoding="utf-8"
+    ) as f:
         yield json.load(f)
 
 
 @pytest.fixture
 def copr_task_descendants():
-    with open(PARENT_DIR_PATH / "unit/test_data/build/task_descendants.json") as f:
+    with open(
+        PARENT_DIR_PATH / "unit/test_data/build/task_descendants.json", encoding="utf-8"
+    ) as f:
         yield json.load(f)
 
 
 @pytest.fixture()
 def fake_spec_file():
-    with open(PARENT_DIR_PATH / "unit/test_data/fake.spec") as f:
+    with open(PARENT_DIR_PATH / "unit/test_data/fake.spec", encoding="utf-8") as f:
         yield f.read()
 
 
@@ -97,9 +105,9 @@ def copr_srpm_logs():
 def koji_chroot_logs_x86_64():
     prefix = "./backend/tests/files/koji"
     with (
-        open(f"{prefix}/build_x86_64.log") as f_build_log,
-        open(f"{prefix}/mock_output_x86_64.log") as f_mock_output_log,
-        open(f"{prefix}/root_x86_64.log") as f_root_log,
+        open(f"{prefix}/build_x86_64.log", encoding="utf-8") as f_build_log,
+        open(f"{prefix}/mock_output_x86_64.log", encoding="utf-8") as f_mock_output_log,
+        open(f"{prefix}/root_x86_64.log", encoding="utf-8") as f_root_log,
     ):
         yield {
             "build.log": f_build_log.read(),
