@@ -1,5 +1,4 @@
 import os
-import json
 import random
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +8,7 @@ import uuid
 from src.constants import FEEDBACK_DIR, ProvidersEnum
 from src.exceptions import NoDataFound
 from src.schema import FeedbackSchema
+from src.spells import write_json_file
 
 
 class Storator3000:
@@ -41,8 +41,7 @@ class Storator3000:
         contribution_id = uuid.uuid4()
         file_name = f"{self.build_dir}/{contribution_id}.json"
         feedback_result_dict = feedback_result.model_dump(exclude_unset=True)
-        with open(file_name, "w") as fp:
-            json.dump(feedback_result_dict, fp, indent=4)
+        write_json_file(file_name, feedback_result_dict)
         return contribution_id
 
     @classmethod

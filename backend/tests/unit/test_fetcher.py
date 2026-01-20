@@ -100,6 +100,36 @@ class TestCoprProvider:
 
         assert CoprProvider(123, chroot).fetch_spec_file() is None
 
+    @responses.activate
+    @patch.object(BuildProxy, "get")
+    @patch.object(BuildChrootProxy, "get")
+    def test_fetch_copr_logs_with_utf8(self, mock_build_chroot_proxy, mock_build_proxy):
+        # UTF-8 content in logs should be correctly decoded
+        baseurl = "https://copr.example.com/results"
+        chroot = "fedora-39-x86_64"
+        czech_log = "Chyba: závislost 'žluťoučký-balíček' nebyla nalezena"
+
+        mock_build_chroot_proxy.return_value = MagicMock(result_url=baseurl)
+        mock_build_proxy.return_value = MagicMock(
+            ownername="owner", project_dirname="project", id=123
+        )
+
+        for log_name in ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]:
+            responses.add(
+                responses.GET,
+                url=f"{baseurl}/{log_name}",
+                body=czech_log.encode("utf-8"),
+                status=200,
+                content_type="text/plain",
+            )
+
+        provider = CoprProvider(123, chroot)
+        logs = provider.fetch_logs()
+
+        for log in logs:
+            assert log["content"] == czech_log
+            assert isinstance(log["content"], str)
+
 
 class TestURLProvider:
     @responses.activate
@@ -111,6 +141,21 @@ class TestURLProvider:
 
     def test_fetch_url_spec(self):
         assert URLProvider("https://www.fake.lol").fetch_spec_file() is None
+
+    @responses.activate
+    def test_fetch_url_logs_with_utf8(self):
+        # UTF-8 content should be correctly decoded even without charset header
+        url = "https://www.fake.lol/log.txt"
+        czech_content = "Chyba: balíček nebyl nalezen\nŘešení: přidejte repozitář"
+        provider = URLProvider(url)
+        responses.add(
+            responses.GET,
+            url=url,
+            body=czech_content.encode("utf-8"),
+            content_type="text/plain",  # no charset
+        )
+        logs = provider.fetch_logs()
+        assert logs[0]["content"] == czech_content
 
 
 class TestKojiProviderLogs:
@@ -135,6 +180,24 @@ class TestKojiProviderLogs:
         assert len(logs) == 5
         for log in logs:
             assert log["content"] == "LOG_CONTENT"
+
+    @patch.object(koji, "ClientSession")
+    @patch.object(KojiProvider, "task_info", new_callable=PropertyMock)
+    def test_get_logs_decodes_bytes(
+        self, mock_task_info, mock_client_session, srpm_task_dict
+    ):
+        # Koji API returns bytes - ensure they are decoded as UTF-8
+        czech_log = "Chyba při kompilaci: žádný takový soubor"
+        mock_client_session.return_value = MagicMock(
+            getBuild=MagicMock(side_effect=koji.GenericError),
+            downloadTaskOutput=MagicMock(return_value=czech_log.encode("utf-8")),
+        )
+        mock_task_info.return_value = srpm_task_dict
+        koji_provider = KojiProvider(123, "noarch")
+        logs = koji_provider.fetch_logs()
+        for log in logs:
+            assert log["content"] == czech_log
+            assert isinstance(log["content"], str)
 
     @pytest.mark.parametrize(
         "task_request, get_task_info, result",
@@ -236,6 +299,43 @@ class TestKojiProviderLogs:
 class TestPackitProvider:
     packit_id = 123
     packit_provider = PackitProvider(packit_id)
+
+    @responses.activate
+    @patch.object(BuildProxy, "get")
+    @patch.object(BuildChrootProxy, "get")
+    def test_fetch_logs_with_utf8_via_copr(
+        self, mock_build_chroot_proxy, mock_build_proxy
+    ):
+        # packit -> Copr delegation should preserve UTF-8 content
+        build_id = 456
+        chroot = "fedora-39-x86_64"
+        baseurl = "https://copr.example.com/results"
+        czech_log = "Sestavení selhalo: chybí závislost"
+
+        responses.add(
+            responses.GET,
+            url=self.packit_provider.copr_url,
+            status=200,
+            json={"build_id": build_id, "chroot": chroot},
+        )
+
+        mock_build_chroot_proxy.return_value = MagicMock(result_url=baseurl)
+        mock_build_proxy.return_value = MagicMock(
+            ownername="owner", project_dirname="project", id=build_id
+        )
+
+        for log_name in ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]:
+            responses.add(
+                responses.GET,
+                url=f"{baseurl}/{log_name}",
+                body=czech_log.encode("utf-8"),
+                status=200,
+                content_type="text/plain",
+            )
+
+        logs = self.packit_provider.fetch_logs()
+        for log in logs:
+            assert log["content"] == czech_log
 
     @responses.activate
     def test_get_correct_provider_with_copr(self):

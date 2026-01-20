@@ -17,7 +17,13 @@ from fastapi import HTTPException
 from src.constants import COPR_RESULT_TEMPLATE, LOGGER_NAME
 from src.data import LOG_OUTPUT
 from src.exceptions import FetchError
-from src.spells import get_temporary_dir, get_logger
+from src.spells import (
+    get_temporary_dir,
+    get_logger,
+    read_text_file,
+    fetch_text,
+    ensure_text,
+)
 
 LOGGER = get_logger(LOGGER_NAME)
 
@@ -132,7 +138,7 @@ class CoprProvider(RPMProvider):
         logs = []
         for name in log_names:
             url = "{}/{}".format(baseurl, name)
-            response = requests.get(url)
+            response = fetch_text(url)
             response.raise_for_status()
             logs.append(
                 {
@@ -157,7 +163,7 @@ class CoprProvider(RPMProvider):
             baseurl = build_chroot.result_url
 
         spec_name = f"{name}.spec"
-        response = requests.get(f"{baseurl}/{spec_name}")
+        response = fetch_text(f"{baseurl}/{spec_name}")
         if response.status_code == 404:
             return None
         response.raise_for_status()
@@ -283,7 +289,8 @@ class KojiProvider(RPMProvider):
             except koji.GenericError:
                 # checkout.log not available for buildArch
                 continue
-            logs.append({"name": log_name, "content": log_content})
+            # Koji API may return bytes
+            logs.append({"name": log_name, "content": ensure_text(log_content)})
 
         return logs
 
@@ -318,8 +325,7 @@ class KojiProvider(RPMProvider):
         if fst_spec_file is None:
             return None
 
-        with open(fst_spec_file) as spec_file:
-            return {"name": fst_spec_file.name, "content": spec_file.read()}
+        return {"name": fst_spec_file.name, "content": read_text_file(fst_spec_file)}
 
     def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
         with get_temporary_dir() as temp_dir:
@@ -360,7 +366,7 @@ class KojiProvider(RPMProvider):
             "https://src.fedoraproject.org/rpms/"
             f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
         )
-        response = requests.get(spec_url)
+        response = fetch_text(spec_url)
         try:
             response.raise_for_status()
         except HTTPError as exc:
@@ -450,7 +456,7 @@ class URLProvider(RPMProvider):
     def fetch_logs(self) -> list[dict[str, str]]:
         # TODO Can we recognize a directory listing and show _all_ logs?
         #  also this will allow us to fetch spec files
-        response = requests.get(self.url)
+        response = fetch_text(self.url)
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
@@ -481,7 +487,7 @@ class ContainerProvider(Provider):
     @handle_errors
     def fetch_logs(self) -> list[dict[str, str]]:
         # TODO: c&p from url provider for now, integrate with containers better later on
-        response = requests.get(self.url)
+        response = fetch_text(self.url)
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
