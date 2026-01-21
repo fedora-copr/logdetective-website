@@ -318,7 +318,7 @@ class KojiProvider(RPMProvider):
         if fst_spec_file is None:
             return None
 
-        with open(fst_spec_file) as spec_file:
+        with open(fst_spec_file, encoding="utf-8") as spec_file:
             return {"name": fst_spec_file.name, "content": spec_file.read()}
 
     def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:

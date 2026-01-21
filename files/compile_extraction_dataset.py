@@ -35,7 +35,7 @@ try:
     for file in glob.glob(
         f"{os.path.join(tmp_dir, EXTRACTION_DIR)}/**/*.json", recursive=True
     ):
-        with open(file) as f:
+        with open(file, encoding="utf-8") as f:
             data.append(json.load(f))
 
     print(f"Total {len(data)} files loaded")
@@ -57,7 +57,7 @@ try:
                     }
                 )
 
-    with open(os.path.join(tmp_dir, "q_a_extract.json"), "w") as f:
+    with open(os.path.join(tmp_dir, "q_a_extract.json"), "w", encoding="utf-8") as f:
         json.dump(parsed, f)
 
     # cache_dir: /tmp is the only writable place in an openshift pod

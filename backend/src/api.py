@@ -403,7 +403,7 @@ def frontend_review_random(result_id):
     if not feedback_file:
         raise NoDataFound(f"No result with ID {result_id}")
 
-    with open(feedback_file) as fp:
+    with open(feedback_file, encoding="utf-8") as fp:
         content = json.loads(fp.read())
         return FeedbackSchema(**content).dict() | {
             "id": feedback_file.name.rstrip(".json")
