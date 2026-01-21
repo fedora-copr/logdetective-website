@@ -236,29 +236,19 @@ a:hover {
   --bs-spinner-height: 80px;
 }
 
-#progressbar {
+#collected-logs-counter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
   width: 100%;
-  background-color: var(--gray-0);
-}
-
-#progress {
-  height: 30px;
-  background-color: var(--newblue);
-  text-align: center;
-  line-height: 30px;
-  font-weight: 500;
   color: var(--darkblue);
-  overflow-wrap: normal;
+  background-color: var(--newblue);
+  font-weight: 500;
 }
 
-#progressbar-number {
-  position: absolute;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0px;
-  left: 0;
-  right: 0;
-  text-align: center;
+#collected-logs-counter p {
+  margin: 0;
 }
 
 button.btn-vote:hover {

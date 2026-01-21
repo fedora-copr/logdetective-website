@@ -1,6 +1,5 @@
 (ns app.homepage
   (:require [reagent.core :as r]
-            [cljs.math :as math]
             [clojure.string :as str]
             [cljs.core.match :refer-macros [match]]
             [app.homepage-validation :refer [validate]]
@@ -20,7 +19,6 @@
 (def input-errors (r/atom []))
 (def backend-stats (r/atom nil))
 (def current-hash-atom (r/atom (or (and (not (str/blank? @current-hash)) @current-hash) "#copr")))
-(def report-target (r/atom 1000))
 (def error (r/atom nil))
 
 (defn fetch-stats-backend []
@@ -102,25 +100,10 @@
     (render-navigation-item "Upload" "#upload")
     (render-navigation-item "Container" "#container")]])
 
-(defn progress-width []
-  (min
-   (math/ceil
-    (*
-     (float
-      (/
-       (:total_reports @backend-stats)
-       @report-target)) 100)) 100))
-
 (defn render-stats []
   [:<>
-   [:div {:id "progressbar"}
-    [:p {:id "progressbar-number"} (str (progress-width) "%")]
-    [:div {:id "progress"
-           :style {:width (str (progress-width) "%")}}]
-    [:div {:id "progressbar2"}
-     [:div
-      [:p "Collected " (:total_reports @backend-stats) " logs from "
-       [:a {:href "/documentation#goals"} @report-target]]]]]])
+   [:div {:id "collected-logs-counter"}
+    [:p "You and others have contributed " (:total_reports @backend-stats) " annotated logs"]]])
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
