@@ -600,9 +600,9 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
         content | {"id": original_file_id},
     )
 
-    parsed_feedback = (
-        _parse_feedback(content, original_file_id) | {"id": original_file_id},
-    )
+    parsed_feedback = _parse_feedback(content, original_file_id) | {
+        "id": original_file_id
+    }
     write_json_file(
         parsed_reviews_dir / f"{file_name}.json",
         parsed_feedback,
