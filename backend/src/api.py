@@ -36,6 +36,7 @@ from src.constants import (
     BuildIdTitleEnum,
     ProvidersEnum,
     LOGGER_NAME,
+    LOG_DETECTIVE_TOKEN,
 )
 from src.fetcher import (
     ContainerProvider,
@@ -71,8 +72,6 @@ if start_sentry():
     LOGGER.info("Sentry initialized.")
 else:
     LOGGER.warning("Sentry was not configured for this deployment.")
-
-LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
 
 app = FastAPI(
     title="Log Detective Website",

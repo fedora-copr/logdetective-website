@@ -20,6 +20,9 @@ COPR_RESULT_TEMPLATE = (
 # logdetective inference server URL we will query
 SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:8000")
 
+# Token used for authorization of analysis requests
+LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
+
 
 class ProvidersEnum(StrEnum):
     packit = "packit"
