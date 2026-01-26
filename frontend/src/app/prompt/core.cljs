@@ -136,15 +136,18 @@
         :aria-controls collapse-id}
        [:code {:class "text-truncate"} snippet]]]
 
-     [:div
-      {:id collapse-id
-       :class "accordion-collapse collapse"
-       :aria-labelledby heading-id
-       :data-bs-parent accordion-id}
+     (if comment
       [:div
-       {:class "accordion-body"}
-       [:code snippet]
-       comment]]]))
+        {:id collapse-id
+        :class "accordion-collapse collapse"
+        :aria-labelledby heading-id
+        :data-bs-parent accordion-id}
+        [:div
+        {:class "accordion-body"}
+        [:code snippet]
+        comment]]
+       nil
+      )]))
 
 (defn download []
   (let [name (-> @form :log :name)
