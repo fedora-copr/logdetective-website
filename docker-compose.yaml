@@ -15,7 +15,7 @@ services:
       - .:/opt/logdetective-website:z
       - persistent:/persistent
     env_file:
-      - "files/env"
+      - "./files/env"
     environment:
       - ENV=devel
       - FEEDBACK_DIR=/persistent/results
@@ -43,7 +43,7 @@ services:
     volumes:
       - .:/opt/logdetective-website:z
     env_file:
-      - "files/env"
+      - "./files/env"
     environment:
       - ENV=devel
 
