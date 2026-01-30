@@ -15,7 +15,6 @@ import requests
 from fastapi import HTTPException
 
 from src.constants import COPR_RESULT_TEMPLATE, LOGGER_NAME
-from src.data import LOG_OUTPUT
 from src.exceptions import FetchError
 from src.spells import (
     get_temporary_dir,
@@ -499,12 +498,3 @@ class ContainerProvider(Provider):
                 "content": response.text,
             }
         ]
-
-
-def fetch_debug_logs():
-    return [
-        {
-            "name": "fake-builder-live.log",
-            "content": LOG_OUTPUT,
-        }
-    ]

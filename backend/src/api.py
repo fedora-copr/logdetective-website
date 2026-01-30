@@ -44,7 +44,6 @@ from src.fetcher import (
     KojiProvider,
     PackitProvider,
     URLProvider,
-    fetch_debug_logs,
 )
 from src.schema import (
     ContributeResponseSchema,
@@ -238,25 +237,6 @@ def get_logs_from_container(base64: str) -> ContributeResponseSchema:
         build_url=build_url,
         logs=provider.fetch_logs(),
     )
-
-
-# TODO: no response checking here, it will be deleted anyway
-@app.get("/frontend/contribute/debug")
-def get_debug_build_logs():
-    return {
-        "build_id": 123456,
-        "build_id_title": BuildIdTitleEnum.debug,
-        "build_url": "#",
-        "logs": fetch_debug_logs(),
-        "spec_file": "fake spec file",
-    }
-
-
-# TODO: delete this once in production
-@app.post("/frontend/contribute/debug")
-def frontend_debug_contribute():
-    LOGGER.info("Debug data were fakely stored.")
-    return {"status": "ok"}
 
 
 # TODO: some reasonable ok response would be better
