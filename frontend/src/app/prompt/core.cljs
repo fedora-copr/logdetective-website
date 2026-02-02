@@ -145,7 +145,7 @@
         [:div
         {:class "accordion-body"}
         [:code snippet]
-        comment]]
+        [:p comment]]]
        nil
       )]))
 
