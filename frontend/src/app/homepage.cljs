@@ -101,9 +101,10 @@
     (render-navigation-item "Container" "#container")]])
 
 (defn render-stats []
-  [:<>
-   [:div {:id "collected-logs-counter"}
-    [:p "You and others have contributed " (:total_reports @backend-stats) " annotated logs"]]])
+  (when @backend-stats
+    [:<>
+    [:div {:id "collected-logs-counter"}
+      [:p "You and others have contributed " (:total_reports @backend-stats) " annotated logs"]]]))
 
 (defn render-card [provider url title img text inputs]
   [:div {:class "card-body"}
