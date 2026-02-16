@@ -23,4 +23,5 @@ RUN dnf -y update && \
                    python3-koji \
                    python3-copr \
                    python3-sentry-sdk+fastapi \
+                   python3-regex \
     && dnf clean all
