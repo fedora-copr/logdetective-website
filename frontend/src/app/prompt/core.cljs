@@ -111,8 +111,9 @@
 
 (defn left-column []
   [:div {:class "col-6", :id "left-column"}
-   [:h2 {:class "float-end"}
-    (certainty-icon (:certainty @form))]
+  ;; Rendering of certainty icon is disabled to comply with AIA
+  ;;  [:h2 {:class "float-end"}
+  ;;   (certainty-icon (:certainty @form))]
    [:h2 "Explanation"]
    (map (fn [x] [:p x])
         (-> @form :explanation (str/split #"\n")))
