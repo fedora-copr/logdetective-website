@@ -397,7 +397,7 @@ def frontend_review_random(result_id):
 
 
 @app.post("/frontend/explain/")
-async def frontend_explain_post(request: Request):
+async def frontend_explain_post(request: Request) -> dict:
     """Communicate with the logdetective server and process data.
 
     :returns: {
@@ -461,7 +461,7 @@ async def frontend_explain_post(request: Request):
     return result
 
 
-def _process_server_data(data):
+def _process_server_data(data) -> dict:
     """Process data received from logdetective server.
 
     Return them in format:
@@ -503,7 +503,7 @@ def _process_server_data(data):
     }
 
 
-async def _download_log_content(url):
+async def _download_log_content(url: str) -> str:
     """Download content of the log file and returns it."""
 
     try:
