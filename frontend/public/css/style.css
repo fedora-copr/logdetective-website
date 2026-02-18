@@ -263,3 +263,11 @@ button.btn-vote:hover {
   margin-right: auto;
   text-align: center;
 }
+
+/*
+Text of ordered list items should be aligned left,
+in order for all text to start in the same column.
+*/
+ol{
+  text-align: left;
+}
