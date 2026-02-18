@@ -195,12 +195,11 @@
 
 (defn disclaimer []
   [:div {:class "alert alert-warning text-left" :role "alert"}
-   [:p "Welcome to the new experimental functionality of Log Detective, thank you for your interest!"]
-   [:p "This is our initial prototype that will 'Explain' a log of your choice to you. It has several limitations:"]
+   [:p "Keep in mind that this service is experimental and subject to certain limitations:"]
    [:ol
-    [:li "The inference is slow and serial. We can only process a single request in the background. It will take at least 30 seconds to give you a response. In case of multiple requests, it can ramp up to minutes."]
-    [:li "We use a general-purpose mistral model in the background. The collected data are not being used here just yet. We are still working on fine-tuning our own model."]
-    [:li "Please report any issues you'll encounter. We don't have any alerting in place, the deployment is highly experimental."]]
+    [:li "The service can be slow, time can run into minutes, if multiple requests arrive simultaneously."]
+    [:li "We use a general-purpose model. We are still working on fine-tuning our own model."]
+    [:li "The service may be unstable. Please report any issues you may encounter."]]
    [:p @ai-gen-disclaimer]])
 
 (defn prompt-only []
