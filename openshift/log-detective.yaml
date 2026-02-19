@@ -33,6 +33,43 @@ spec:
             limits:
               memory: "3200Mi"
               cpu: "500m"
+          startupProbe:
+            httpGet:
+              path: /docs
+              port: 8080
+              scheme: HTTPS
+              httpHeaders:
+                - name: X-Purpose
+                  value: Startup-Probing
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTPS
+              httpHeaders:
+                - name: X-Purpose
+                  value: Readiness-Probing
+            timeoutSeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: 8080
+              scheme: HTTPS
+              httpHeaders:
+                - name: X-Purpose
+                  value: Liveness-Probing
+            timeoutSeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 5
           env:
             - name: SERVER_URL
               value: https://logdetective01.fedorainfracloud.org
