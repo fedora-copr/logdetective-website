@@ -50,15 +50,17 @@ RUN dnf -y install python3-fastapi \
                    git \
                    findutils \
                    python3-sentry-sdk+fastapi \
+                   python3-regex \
                    rsync \
     && dnf clean all \
     && pip3 --no-cache-dir install datasets \
-    && mkdir -p /src/{frontend,backend}
+    && mkdir -p /src/{frontend,backend,cleaning_logs}
 
 COPY --from=0 /src/frontend/public /src/frontend/public
 COPY --from=0 /src/backend /src/backend
 COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extraction_dataset.py
 COPY --from=0 /src/files/gunicorn.conf.py /src/gunicorn.conf.py
+COPY --from=0 /src/files/cleaning_logs /src/cleaning_logs
 
 # According to the documentation, gunicorn is a valid production server
 # https://www.uvicorn.org/deployment/
