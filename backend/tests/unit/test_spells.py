@@ -1,11 +1,13 @@
+from unittest.mock import patch
 import responses
-
+from src.constants import DEFAULT_ROBOTS
 from src.spells import (
     ensure_text,
     fetch_text,
     read_json_file,
     read_text_file,
     write_json_file,
+    get_robots,
 )
 
 
@@ -88,3 +90,20 @@ class TestReadTextFile:
         result = read_text_file(file_path)
 
         assert result == content
+
+
+class TestGetRobots:
+    """Tests for robots.txt retrieval function"""
+
+    def test_file_retrieval(self, clear_robots_cache):  # pylint: disable=unused-argument
+        """Test that robots.txt file is properly returned"""
+        robots_txt = get_robots()
+        assert isinstance(robots_txt, str)
+        assert robots_txt != DEFAULT_ROBOTS
+
+    @patch("src.spells.STATIC_SOURCE_DIR", "this/path/does/not/exist")
+    def test_default_fallback(self, clear_robots_cache):  # pylint: disable=unused-argument
+        """Test that default fallback is used if file is not accessible"""
+        robots_txt = get_robots()
+        assert isinstance(robots_txt, str)
+        assert robots_txt == DEFAULT_ROBOTS

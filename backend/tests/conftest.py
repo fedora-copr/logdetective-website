@@ -217,3 +217,12 @@ def container_feedback_input_output_schema_tuple():
             },
         ),
     )
+
+
+@pytest.fixture
+def clear_robots_cache():
+    """Clears cache of get_robots function"""
+    from src.spells import get_robots  # pylint: disable=import-outside-toplevel
+
+    get_robots.cache_clear()
+    yield
