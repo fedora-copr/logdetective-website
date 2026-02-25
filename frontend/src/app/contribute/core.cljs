@@ -180,8 +180,8 @@
    [:div {}
     [:label {:class "form-label"} "Ready to submit the results? "
      "By submitting this form, you agree that your input "
-     "will be covered by " [:a {:href "http://creativecommons.org/"} "CC0"] " and used to create dataset "
-     "released under " [:a {:href "https://cdla.dev/permissive-2-0/"} "CDLA-Permissive-2.0"] " license."]
+     "will be covered by " [:a {:href "http://creativecommons.org/"} "CC0-1.0"] " and used to create a dataset "
+     "released under the " [:a {:href "https://cdla.dev/permissive-2-0/"} "CDLA-Permissive-2.0"] " license."]
     [:br]
     [:button {:type "submit"
               :class "btn btn-primary btn-lg"
