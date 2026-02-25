@@ -200,6 +200,8 @@
     [:li "The service can be slow, time can run into minutes, if multiple requests arrive simultaneously."]
     [:li "We use a general-purpose model. We are still working on fine-tuning our own model."]
     [:li "The service may be unstable. Please report any issues you may encounter."]]
+   [:p "You are about to use a tool that utilizes AI technology to analyze your build failure log."]
+   [:p "Submitted information will not be stored. Ready to submit the results to the AI tool for analysis?"]
    [:p @ai-gen-disclaimer]])
 
 (defn prompt-only []
