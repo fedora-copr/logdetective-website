@@ -1,5 +1,6 @@
 import os
 from enum import StrEnum
+from pathlib import Path
 
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
@@ -44,3 +45,5 @@ class BuildIdTitleEnum(StrEnum):
 
 
 LOGGER_NAME = "logdetective_website"
+
+STATIC_SOURCE_DIR = Path(__file__).parent.parent.parent / "frontend" / "public"
