@@ -9,6 +9,7 @@ import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
@@ -30,6 +31,7 @@ from src.log_cleaning import (
     html_careful_unescape,
     log_schema_redaction,
 )
+from src.constants import DEFAULT_ROBOTS, STATIC_SOURCE_DIR
 
 
 @contextmanager
@@ -269,3 +271,16 @@ def sanitize_uploaded_schema(input_schema: FeedbackSchema) -> FeedbackSchema:
         )
 
     return result
+
+
+@lru_cache(maxsize=1)
+def get_robots() -> str:
+    """Return contents robots.txt, if the file doesn't exist return built-in default."""
+
+    try:
+        with open(
+            os.path.join(STATIC_SOURCE_DIR, "robots.txt"), encoding="utf-8"
+        ) as robots:
+            return robots.read()
+    except FileNotFoundError:
+        return DEFAULT_ROBOTS

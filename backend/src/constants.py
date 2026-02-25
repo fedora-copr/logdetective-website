@@ -47,3 +47,10 @@ class BuildIdTitleEnum(StrEnum):
 LOGGER_NAME = "logdetective_website"
 
 STATIC_SOURCE_DIR = Path(__file__).parent.parent.parent / "frontend" / "public"
+
+DEFAULT_ROBOTS = """
+User-Agent: *
+DisallowAITraining: /
+Content-Usage: ai=n
+Allow: /
+"""

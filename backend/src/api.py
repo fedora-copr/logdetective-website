@@ -18,6 +18,7 @@ from fastapi.responses import (
     JSONResponse,
     FileResponse,
     RedirectResponse,
+    PlainTextResponse,
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -62,6 +63,7 @@ from src.spells import (
     write_json_file,
     fetch_text,
     sanitize_uploaded_schema,
+    get_robots,
 )
 from src.store import Storator3000
 from src.exceptions import NoDataFound
@@ -634,3 +636,9 @@ def get_report_stats() -> dict:
     LOGGER.info("Retrieving annotation statistics")
 
     return Storator3000.get_stats()
+
+
+@app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
+def robots() -> str:
+    """Return robots.txt"""
+    return get_robots()
