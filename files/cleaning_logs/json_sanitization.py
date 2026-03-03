@@ -2,11 +2,16 @@
 Functions for best-effort redaction of personal sensitive information from submitted logs.
 """
 
+# pylint: disable=duplicate-code
+# logic of functions redaction_with_index_consistency() and redaction_ignore_indexes()
+# was used in backend log sanitization, but used different access patterns and no auditing,
+# it is more readable to just rewrite the function and not import it on the backend from here
+
 import logging
 
 import regex as re
 
-from sanitization_regexes import (
+from src.sanitization import (
     EMAIL_PLACEHOLDER,
     NAME_PLACEHOLDER,
     EMAIL_PLACEHOLDER_REGEX,
@@ -105,7 +110,7 @@ class RedactionPipeline:
         date_email = RedactionPipelineStep(
             pattern=HEADER_DATE_EMAIL_REGEX,
             replacement=rf"\g<year> {NAME_PLACEHOLDER} <{EMAIL_PLACEHOLDER}>",
-            auditing={"email": audit.emails, "emailnb": audit.emails} if audit else {},
+            auditing={"email": audit.emails} if audit else {},
         )
         fullname_email = RedactionPipelineStep(
             pattern=HEADER_FULLNAME_EMAIL_REGEX
@@ -116,7 +121,7 @@ class RedactionPipeline:
         )
         only_email = RedactionPipelineStep(
             pattern=EMAIL_REGEX,
-            replacement=f"<{EMAIL_PLACEHOLDER}>",
+            replacement=f"{EMAIL_PLACEHOLDER}",
             auditing={"email": audit.emails} if audit else {},
         )
         rsa_key = RedactionPipelineStep(
