@@ -18,7 +18,7 @@ from resources import (
     DEFAULT_ABSOLUTE,
 )
 
-from sanitization_regexes import FALSE_POSITIVES_PARENTHESISED_NAMES, NAME_PLACEHOLDER
+from src.sanitization import FALSE_POSITIVES_PARENTHESISED_NAMES, NAME_PLACEHOLDER
 
 logger = logging.getLogger(__name__)
 

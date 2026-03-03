@@ -2,6 +2,9 @@
 Some utility functions for preparing/cleaning json files before sanitization.
 """
 
+# pylint: disable=duplicate-code
+# log_schema_redaction() has same logic as redaction_with_index_consistency()
+
 import html
 import logging
 
@@ -196,11 +199,7 @@ def log_schema_redaction(
     """
     matches = list(redaction.pattern.finditer(log))
 
-    # We go in reverse, because if we change something at the start, not only are all snippets
-    # AFTER affected, but also the match indexes are now all wrong. We would have to have some
-    # sort of an overall delta-correction variable, which we would need to factor into the match
-    # start/end indexes. Going in reverse means only updating the snippets while not disrupting
-    # match indexes, which is more elegant.
+    # See files/log_cleaning/sanitization.py: redaction_ignore_indexes() why we go in reverse
     for match in reversed(matches):
         start_pos, end_pos = match.span()
         # the replacement is a) a callback, and we want to obtain how it changed the match

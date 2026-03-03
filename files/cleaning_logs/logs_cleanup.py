@@ -32,7 +32,7 @@ from utils import (
     check_for_broken_escapes,
 )
 
-from sanitization import (
+from json_sanitization import (
     GlobalAuditor,
     sanitize_json_file,
     sanitize_normal_file_raw,
@@ -176,14 +176,24 @@ def logs_cleanup() -> None:
     stats = DataCleaningStats()
     audit = None if args.no_auditing else GlobalAuditor()
 
-    for filename in files_in_dirs(args.dir, (".json",)):
-        handle_json_cleaning(filename, args, stats, audit)
-
-    # with malformed json files, we don't care about fixing snippets or escape sequences,
-    # for that we have special regexes... we just want to redact the data inside
-    for filename in files_in_dirs(args.dir, (".json.borked",)):
-        sanitize_normal_file_raw(filename, audit=audit)
-        stats.files_processed += 1
+    counter = 1
+    try:
+        for filename in files_in_dirs(args.dir, (".json",)):
+            handle_json_cleaning(filename, args, stats, audit)
+            print(f"{' ' * 100}", end="\r")
+            print(f"{counter}: {filename[0:80]}", end="\r")
+            counter += 1
+        # with malformed json files, we don't care about fixing snippets or escape sequences,
+        # for that we have special regexes... we just want to redact the data inside
+        for filename in files_in_dirs(args.dir, (".json.borked",)):
+            sanitize_normal_file_raw(filename, audit=audit)
+            stats.files_processed += 1
+            print(f"{' ' * 100}", end="\r")
+            print(f"{counter}: {filename[0:80]}", end="\r")
+            counter += 1
+    except KeyboardInterrupt:
+        pass
+    print("\n")
 
     if audit:
         auditing_log = os.path.join(args.output_dir, DEFAULT_SANITIZATION_OUTPUT)
