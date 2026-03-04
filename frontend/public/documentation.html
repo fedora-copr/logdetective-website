@@ -262,6 +262,17 @@ We do not know yet. <a href="https://github.com/TomasTomecek">Tomáš</a> experi
 
     <div class="card">
       <div class="card-body">
+        <h5 class="card-title">Does Log Detective sanitize data before processing?</h5>
+        <p>Yes. Before any data is submitted to the inference server, Log Detective passes all information through a dedicated sanitization layer.
+        This process automatically identifies and redacts sensitive information such as email addresses and encryption keys.</p>
+
+        <b>Note:</b> While our tools are robust, please exercise caution when uploading files for AI analysis.
+        Log Detective is designed to analyze logs, not manage private data; if it doesn't need to be there, it's best to leave it out.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
         <h5 class="card-title">Did you consider using AI to generate the data set?</h5>
 Yes, we considered it. However, we cannot use ChatGPT and similar tools because the problematic license can taint the whole project. Additionally, using AI-generated data to teach AI is prone to <a href="https://en.wikipedia.org/wiki/Hallucination_(artificial_intelligence)">hallucinations</a>. We are considering using data from Bugzilla and other tools (if Legals allows that), but we want to have a strong core dataset with a clear license.
       </div>
