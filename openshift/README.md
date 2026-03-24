@@ -194,3 +194,8 @@ OpenShift will reload the new certificates at the edge without dropping any traf
 
 **Important Quota Note:** Because `cert-manager` attempts to validate all 4 domains simultaneously during renewal, it will briefly spin up multiple temporary solver pods.
 The `communishift-log-detective` project must maintain a minimum quota of **5 pods** to ensure renewals do not fail due to resource exhaustion.
+
+In new deployment, use `staging_issuer.yaml` and `staging_certificate.yaml` resource definitions,
+to verify that the cluster supports `cert-manager`.
+
+This test should be conducted before full deployment of the website.
