@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-production
+  namespace: communishift-log-detective
+spec:
+  acme:
+    # The Let's Encrypt Production server!
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: logdetective@redhat.com
+
+    privateKeySecretRef:
+      name: letsencrypt-production-account-key
+
+    solvers:
+    - http01:
+        ingress:
+          serviceType: ClusterIP

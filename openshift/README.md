@@ -160,130 +160,37 @@ oc create secret generic log-detective-secret --from-literal=token=$TOKEN
 
 
 ## TLS certificates
-We use the `certbot` tool to get our Let's Encrypt certificates.
+We use the OpenShift `cert-manager` operator to automate the provisioning and renewal of our Let's Encrypt certificates.
 
-We generate a single certificate that works for both of our domains in 4 combinations:
-1. `*.log-detective.com`
-1. `.log-detective.com`
-1. `*.logdetective.com`
-1. `.logdetective.com`
+We generate a single certificate that covers all 4 of our domain combinations.
 
-We need all these 4 entries to get https://log... and https://www... working.
+*(Note: The HTTP-01 challenge does not support wildcard certificates, so each domain is explicitly listed in the `Ingress` resource).*
 
-Both our domains are hosted on `porkbun.com`. We use DNS TXT entries to verify
-we own the domain during the cert generation process.
+### How it Works
 
-Ping @TomasTomecek to get access to the domain if you want to refresh the certs
-or set up a DNS entry.
+Our architecture relies on **Edge Termination** via OpenShift's routing layer.
+The application pod (Gunicorn) serves plain HTTP traffic on port `8080`, and the OpenShift router handles all HTTPS decryption and redirection.
 
-Start by installing certbot:
-```
-$ dnf install certbot
-```
+The pipeline consists of three main components:
 
-### Automated
+1. **The Issuer (`production_issuer.yaml`):** We maintain a `ClusterIssuer` or `Issuer` configured for the Let's Encrypt production ACME server.
+It uses the `HTTP-01` challenge type. To comply with CommuniShift firewall rules, the solver is configured to use a `ClusterIP` service.
 
-There is a plugin
-[certbot_dns_porkbun](https://github.com/infinityofspace/certbot_dns_porkbun)
-for certbot that makes domain refresh trivial.
+2. **The Ingress (`openshift/log-detective.yaml`):**
+   Instead of manually defining OpenShift `Route` objects, we define a standard Kubernetes `Ingress`.
+   The Ingress contains the `cert-manager.io/issuer: "letsencrypt-production"` annotation. OpenShift automatically translates this `Ingress` into four Edge-terminated `Route` objects.
 
-Makes sure the plugin is installed in the same python sitelib as the main
-certbot tool. Otherwise certbot tool won't find it.
+3. **Certificate Generation & Storage:**
+   When the `Ingress` is applied, `cert-manager` detects the annotation and automatically requests a certificate.
+   It briefly spins up temporary solver pods to answer Let's Encrypt's HTTP-01 verification ping.
+   Once verified, the resulting TLS certificate is saved directly into a Kubernetes `Secret` named `logdetective-production-tls`.
+   OpenShift's router natively injects this secret into the live Routes.
 
-You can verify it works correctly like this:
-```
-$ certbot plugins
+### Maintenance and Renewals
 
-* dns-porkbun
-Description: Obtain certificates using a DNS TXT record for Porkbun domains
-Interfaces: Authenticator, Plugin
-Entry point: EntryPoint(name='dns-porkbun',
-value='certbot_dns_porkbun.cert.client:Authenticator', group='certbot.plugins')
-```
+Approximately 30 days before the certificates expire, `cert-manager` will spin up background solver pods,
+re-verify the domains, and update the Kubernetes `Secret`.
+OpenShift will reload the new certificates at the edge without dropping any traffic and without requiring an application restart.
 
-The plugin uses porkbun's API secret and a key to authenticate. Once you have
-it, just fire this command and it should yield the certificates in a few
-minutes (DNS propagation can take some time, hence the 120 seconds below).
-
-```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ \
-  --authenticator dns-porkbun --preferred-challenges dns --email $USER@redhat.com \
-  -d '*.log-detective.com' -d '*.logdetective.com' \
-  -d 'log-detective.com' -d 'logdetective.com' \
-  --dns-porkbun-key $KEY \
-  --dns-porkbun-secret $SECRET \
-  --dns-porkbun-propagation-seconds 120
-```
-
-**Note: certbot may generate files under either log-detective.com or logdetective.com paths.**
-
-Head over now to the section [Apply certificates](#apply-certificates).
-
-### Manual
-
-This is a copy-pasta of Packit's process: https://github.com/packit/deployment/blob/main/docs/deployment/tls-certs.md
-Praise @jpopelka
-
-Run certbot in the root of this git repo.
-```
-$ certbot certonly --config-dir cert/ --work-dir cert/ --logs-dir cert/ \
-  --manual --preferred-challenges dns \
-  --email $USER@redhat.com \
-  -d '*.log-detective.com' -d '*.logdetective.com' \
-  -d 'log-detective.com' -d 'logdetective.com'
-```
-
-You will soon be prompted:
-```
-Please deploy a DNS TXT record under the name:
-```
-
-Set those 2 TXT DNS entries for log-detective.com and logdetective.com
-and wait for DNS to resolve them:
-```
-$ watch -d nslookup -q=TXT _acme-challenge.logdetective.com
-```
-
-Alternatively check the record using porkbun's DNS server:
-```
-$ dig -t txt _acme-challenge.logdetective.com. @curitiba.ns.porkbun.com.
-```
-Delete those TXT DNS records.
-
-All certificate stuff is in gitignored cert/ folder.
-
-
-### Apply certificates
-
-You can verify the newly created cert with `openssl` CLI. Here we check that both domains are set as SAN:
-```
-$ openssl x509 -inform pem -noout -text -in 'cert/live/logdetective.com/fullchain.pem'
-...
-  X509v3 Subject Alternative Name:
-      DNS:*.log-detective.com, DNS:*.logdetective.com, DNS:log-detective.com, DNS:logdetective.com
-```
-
-Make sure that paths specified in the spec for Log Detective deployment in `log-detective.yaml` are in sync with actual files in volume:
-
-- "/persistent/letsencrypt/live/log-detective.com/cert.pem"
-- "/persistent/letsencrypt/live/log-detective.com/privkey.pem"
-- "/persistent/letsencrypt/live/log-detective.com/fullchain.pem"
-
-The webserver expects them (see the production Dockerfile).
-
-Copy the content of directory `cert/` to the running logdetective website pod:
-```
-$ oc cp cert/ logdetective-website-$pod:/persistent
-```
-
-Connect to the pod, back up old certs and rename cert/ to letsencrypt/:
-```
-$ oc rsh deployment/logdetective-website
-
-$ mv /persistent/letsencrypt{,-old}
-$ mv /persistent/{cert,letsencrypt}
-```
-
-Kill the running pod so the certs are actually loaded.
-
-🎉🎉🎉
+**Important Quota Note:** Because `cert-manager` attempts to validate all 4 domains simultaneously during renewal, it will briefly spin up multiple temporary solver pods.
+The `communishift-log-detective` project must maintain a minimum quota of **5 pods** to ensure renewals do not fail due to resource exhaustion.
