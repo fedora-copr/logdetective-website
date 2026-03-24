@@ -1,0 +1,22 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: log-detective-com-staging
+  namespace: communishift-log-detective
+spec:
+  # This is the name of the Secret that will hold the generated certs
+  secretName: log-detective-com-staging-tls
+
+  # Point this to the staging issuer you just created
+  issuerRef:
+    name: letsencrypt-staging
+    kind: Issuer
+
+  # The domains you want on the certificate
+  commonName: log-detective.com
+  dnsNames:
+    - log-detective.com
+    - www.log-detective.com
+    - logdetective.com
+    - www.logdetective.com

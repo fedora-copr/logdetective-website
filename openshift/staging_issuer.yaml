@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-staging
+  namespace: communishift-log-detective
+spec:
+  acme:
+    # The Let's Encrypt staging server
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: logdetective@redhat.com
+
+    # Name of a secret used to store the ACME account private key
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+
+    solvers:
+    - http01:
+        ingress:
+          serviceType: ClusterIP

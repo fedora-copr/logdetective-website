@@ -37,7 +37,7 @@ spec:
             httpGet:
               path: /docs
               port: 8080
-              scheme: HTTPS
+              scheme: HTTP
               httpHeaders:
                 - name: X-Purpose
                   value: Startup-Probing
@@ -50,7 +50,7 @@ spec:
             httpGet:
               path: /
               port: 8080
-              scheme: HTTPS
+              scheme: HTTP
               httpHeaders:
                 - name: X-Purpose
                   value: Readiness-Probing
@@ -62,7 +62,7 @@ spec:
             httpGet:
               path: /docs
               port: 8080
-              scheme: HTTPS
+              scheme: HTTP
               httpHeaders:
                 - name: X-Purpose
                   value: Liveness-Probing
@@ -119,66 +119,62 @@ spec:
   selector:
     component: log-detective-website
 ---
-# Route stuff stolen from Packit:
-# https://github.com/packit/deployment/blob/main/openshift/packit-service.yml.j2#L147
-# Gunicorn can't do 2 domains at the same time, we need nginx for that:
-#   https://github.com/fedora-copr/logdetective-website/issues/61
-kind: Route
-apiVersion: route.openshift.io/v1
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: log-detective-website
+  name: logdetective-ingress
+  annotations:
+    # cert-manager operator will handle renewal of the production certificate
+    cert-manager.io/issuer: "letsencrypt-production"
+    # Redirect all HTTP traffic to HTTPS
+    ingress.kubernetes.io/ssl-redirect: "true"
 spec:
-  host: log-detective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
   tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: log-detective-website-www
-spec:
-  host: www.log-detective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: logdetective-website
-spec:
-  host: logdetective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: logdetective-website-www
-spec:
-  host: www.logdetective.com
-  to:
-    kind: Service
-    name: logdetective-website
-  port:
-    targetPort: logdetective-website
-  tls:
-    termination: passthrough
-    insecureEdgeTerminationPolicy: Redirect
+    - hosts:
+        - log-detective.com
+        - www.log-detective.com
+        - logdetective.com
+        - www.logdetective.com
+      # cert-manager creates this secret automatically
+      secretName: logdetective-production-tls
+  rules:
+    - host: log-detective.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logdetective-website
+                port:
+                  number: 8080
+    - host: www.log-detective.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logdetective-website
+                port:
+                  number: 8080
+    - host: logdetective.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logdetective-website
+                port:
+                  number: 8080
+    - host: www.logdetective.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logdetective-website
+                port:
+                  number: 8080
