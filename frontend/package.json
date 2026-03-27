@@ -24,7 +24,7 @@
     "jsdom-global": "^3.0.2",
     "marked": "^4.0.10",
     "rimraf": "~3.0.2",
-    "serve-handler": "~6.1.6",
+    "serve-handler": "~6.1.7",
     "shadow-cljs": "^3.3.4",
     "taiko": "^1.0.25",
     "zprint-clj": "~0.8.0"
