@@ -22,13 +22,13 @@
 (def InputSchema
   [:map {:closed true}
    [:explanation :string]
-   [:certainty :int]
 
-   [:reasoning
+   [:extracted_snippets
     [:vector
      [:map
       [:snippet :string]
-      [:comment :string]]]]
+      [:source_file :string]
+      [:line_number :int]]]]
 
    [:log
     [:map
@@ -97,23 +97,8 @@
        :on-click #(send @prompt-value)}
       [:i {:class "fa-solid fa-play prompt-icon"}]]]]])
 
-(defn certainty-icon [percent]
-  (let [title (str "The AI is " percent "% certain of this response")]
-    (cond
-      (> percent 90)
-      [:i {:class "fa-regular fa-face-smile text-primary" :title title}]
-
-      (> percent 70)
-      [:i {:class "fa-regular fa-face-meh text-warning" :title title}]
-
-      :else
-      [:i {:class "fa-regular fa-face-frown-open text-danger" :title title}])))
-
 (defn left-column []
   [:div {:class "col-6", :id "left-column"}
-  ;; Rendering of certainty icon is disabled to comply with AIA
-  ;;  [:h2 {:class "float-end"}
-  ;;   (certainty-icon (:certainty @form))]
    [:h2 "Explanation"]
    (map (fn [x] [:p x])
         (-> @form :explanation (str/split #"\n")))
@@ -122,7 +107,7 @@
     {:class "container", :id "prompt"}
     (prompt-form)]])
 
-(defn reason [id snippet comment]
+(defn reason [id snippet source_file line_number]
   (let [accordion-id "#accordionExample"
         heading-id (str "heading-reason-" id)
         collapse-id (str "collapse-reason-" id)]
@@ -135,20 +120,27 @@
         :data-bs-target (str "#" collapse-id)
         :aria-expanded "false"
         :aria-controls collapse-id}
-       [:code {:class "text-truncate"} snippet]]]
+        [:span
+          {:class "source-file"}
+          source_file
+          ] " : "
+        [:span
+          {:class "line-number"}
+          line_number] " | "
+        [:span
+          {:class "truncated-snippet"}
+          snippet]]]
 
-     (if comment
       [:div
-        {:id collapse-id
-        :class "accordion-collapse collapse"
-        :aria-labelledby heading-id
-        :data-bs-parent accordion-id}
+        {
+          :id collapse-id
+          :class "accordion-collapse collapse"
+          :aria-labelledby heading-id
+          :data-bs-parent accordion-id}
         [:div
-        {:class "accordion-body"}
-        [:code snippet]
-        [:p comment]]]
-       nil
-      )]))
+          [:code {:class "full-snippet"} snippet]]
+        ]
+      ]))
 
 (defn download []
   (let [name (-> @form :log :name)
@@ -170,11 +162,11 @@
     [:i {:class "fa-solid fa-floppy-disk"}]
     " Full log"]
 
-   [:h2 "Reasoning"]
+   [:h2 "Extracted snippets"]
    [:div {:class "accordion accordion-flush" :id "accordionExample"}
     (map-indexed
-     (fn [i x] (reason i (:snippet x) (:comment x)))
-     (:reasoning @form))]])
+     (fn [i x] (reason i (:snippet x) (:source_file x) (:line_number x)))
+     (:extracted_snippets @form))]])
 
 (defn two-column-layout []
   [:div {:class "row" :id "content"}

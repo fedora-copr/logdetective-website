@@ -67,6 +67,12 @@ footer {
   margin-top: 25px;
 }
 
+.accordion-button {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+
 .accordion-button code {
   color: var(--bs-black);
   font-size: 13px;
@@ -86,4 +92,26 @@ footer {
 
 #prompt-examples button {
   margin-right: 10px;
+}
+
+.source-file {
+  color: black;
+  white-space: nowrap;
+}
+
+.line-number {
+  color: black;
+  padding-inline-end: 1em;
+}
+
+.truncated-snippet {
+  padding: 1em 1em;
+  color: grey;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.full-snippet {
+  white-space: pre-wrap;
 }
