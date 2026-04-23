@@ -8,6 +8,7 @@ from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
 from typing import Optional
+from urllib import parse
 
 import requests
 
@@ -405,8 +406,14 @@ async def frontend_explain_post(request: Request) -> dict:
 
     :returns: {
         "explanation": str,
-        "reasoning": {"snippet": str, "comment": str},
-        "certainty": int,
+        "extracted_snippets": [
+            {
+                "snippet": str,
+                "source_file": str,
+                "line_number": int
+            },
+            ...
+        ],
         "log": {"name": str, "content": str}
     }
     """
@@ -414,13 +421,24 @@ async def frontend_explain_post(request: Request) -> dict:
     log_url = data["prompt"]
 
     LOGGER.info("Asking server to analyze log '%s'", log_url)
-    data = {"url": log_url}
+
+    file_name = Path(parse.urlparse(url=log_url).path).name
+
+    data = {
+        "files": [{"name": file_name, "url": log_url}],
+        "build_metadata": {
+            "specfile": None,
+            "last_patch": None,
+            "commentary": "",
+            "infra_status": None,
+        },
+    }
     headers = {"Content-Type": "application/json"}
 
     if LOG_DETECTIVE_TOKEN:
         headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
 
-    server_url = f"{SERVER_URL}/analyze/staged"
+    server_url = f"{SERVER_URL}/analyze"
 
     # download log_file when waiting for logdetective server processing
     download_log_task = create_task(_download_log_content(log_url))
@@ -470,39 +488,37 @@ def _process_server_data(data) -> dict:
     Return them in format:
     {
         "explanation": str,
-        "reasoning": {"snippet": str, "comment": str},
-        "certainty": int,
+        "extracted_snippets": [
+            {
+                "snippet": str,
+                "source_file": str,
+                "line_number": int
+            },
+            ...
+        ]
     }
     """
     try:
-        r_data = json.loads(data)
+        parsed_data = json.loads(data)
     except json.JSONDecodeError as ex:
         raise HTTPException(
             status_code=408, detail="Received invalid data from server"
         ) from ex
 
-    explanation = r_data["explanation"]["text"]
-    reasoning = []
-
-    for snippet in r_data["snippets"]:
-        reasoning.append(
+    explanation = parsed_data["explanation"]["text"]
+    extracted_snippets = []
+    for snippet in parsed_data["snippets"]:
+        extracted_snippets.append(
             {
                 "snippet": snippet["text"],
-                "comment": snippet["explanation"]["text"],
+                "source_file": snippet["source_file"],
+                "line_number": snippet["line_number"],
             }
         )
 
-    try:
-        certainty = int(r_data["response_certainty"])
-    except ValueError as ex:
-        raise HTTPException(
-            status_code=408, detail="Wrong certainty data received from the server"
-        ) from ex
-
     return {
         "explanation": explanation,
-        "reasoning": reasoning,
-        "certainty": certainty,
+        "extracted_snippets": extracted_snippets,
     }
 
 
