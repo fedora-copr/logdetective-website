@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+gunicorn
+jinja2
+pydantic
+requests
+koji
+copr
+regex
+sentry-sdk[fastapi]
+datasets
