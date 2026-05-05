@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
-import requests
+import httpx
 import sentry_sdk
 
 from src.schema import (
@@ -153,19 +153,20 @@ def read_text_file(path: Path | str) -> str:
         return fp.read()
 
 
-def fetch_text(url: str, **kwargs) -> requests.Response:
+async def fetch_text(url: str, **kwargs) -> httpx.Response:
     """
     Fetch text content from URL with consistent UTF-8 encoding.
 
     Args:
         url: The URL to fetch
-        **kwargs: Additional arguments passed to requests.get()
+        **kwargs: Additional arguments passed to AsyncClient.get()
 
     Returns:
-        requests.Response with encoding set to UTF-8
+        httpx.Response with encoding set to UTF-8
     """
-    response = requests.get(url, **kwargs)
-    response.encoding = "utf-8"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, **kwargs)
+        response.encoding = "utf-8"
     return response
 
 

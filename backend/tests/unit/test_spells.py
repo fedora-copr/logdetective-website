@@ -1,5 +1,5 @@
 from unittest.mock import patch
-import responses
+import httpx
 from src.constants import DEFAULT_ROBOTS
 from src.spells import (
     ensure_text,
@@ -36,23 +36,27 @@ class TestEnsureText:
 
 
 class TestFetchText:
-    @responses.activate
-    def test_encoding_set_to_utf8(self):
+    async def test_encoding_set_to_utf8(self):
         """Response encoding should be set to UTF-8."""
         url = "http://example.com/log.txt"
-        # server returns UTF-8 content but doesn't specify charset
-        responses.add(
-            responses.GET,
-            url,
-            body="Příliš žluťoučký kůň".encode("utf-8"),
-            status=200,
-            content_type="text/plain",  # no charset specified
-        )
+        czech_text = "Příliš žluťoučký kůň"
 
-        response = fetch_text(url)
+        def _handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=czech_text.encode("utf-8"),
+                headers={"content-type": "text/plain"},
+            )
+
+        transport = httpx.MockTransport(_handler)
+        with patch(
+            "src.spells.httpx.AsyncClient",
+            return_value=httpx.AsyncClient(transport=transport),
+        ):
+            response = await fetch_text(url)
 
         assert response.encoding == "utf-8"
-        assert response.text == "Příliš žluťoučký kůň"
+        assert response.text == czech_text
 
 
 class TestJsonFileIO:
