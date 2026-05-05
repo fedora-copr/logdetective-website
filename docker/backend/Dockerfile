@@ -24,4 +24,5 @@ RUN dnf -y update && \
                    python3-copr \
                    python3-sentry-sdk+fastapi \
                    python3-regex \
+                   python3-httpx \
     && dnf clean all
