@@ -14,6 +14,9 @@ LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", 18
 LOGDETECTIVE_CONNECT_TIMEOUT = float(
     os.environ.get("LOGDETECTIVE_CONNECT_TIMEOUT", 3.07)
 )
+LOGDETECTIVE_DEFAULT_TIMEOUT = float(
+    os.environ.get("LOGDETECTIVE_DEFAULT_TIMEOUT", 3.07)
+)
 
 COPR_RESULT_TEMPLATE = (
     "https://download.copr.fedorainfracloud.org" + "/results/{0}/{1}/srpm-builds/{2:08}"

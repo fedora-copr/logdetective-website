@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 from urllib import parse
 
-import requests
+import httpx
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -35,6 +35,7 @@ from src.constants import (
     SERVER_URL,
     LOGDETECTIVE_READ_TIMEOUT,
     LOGDETECTIVE_CONNECT_TIMEOUT,
+    LOGDETECTIVE_DEFAULT_TIMEOUT,
     BuildIdTitleEnum,
     ProvidersEnum,
     LOGGER_NAME,
@@ -183,7 +184,7 @@ def explain(request: Request, url: Optional[str] = None):
 
 @app.get("/frontend/contribute/copr/{build_id}/{chroot}")
 @app.get("/frontend/contribute/koji/{build_id}/{chroot}")
-def get_build_logs_with_chroot(
+async def get_build_logs_with_chroot(
     request: Request, build_id: int, chroot: str
 ) -> ContributeResponseSchema:
     provider_name = request.url.path.lstrip("/").split("/")[2]
@@ -200,45 +201,45 @@ def get_build_logs_with_chroot(
         build_id=build_id,
         build_id_title=build_title,
         build_url=build_url,
-        logs=provider.fetch_logs(),
-        spec_file=provider.fetch_spec_file(),
+        logs=await provider.fetch_logs(),
+        spec_file=await provider.fetch_spec_file(),
     )
 
 
 @app.get("/frontend/contribute/packit/{packit_id}")
-def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
+async def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
     provider = PackitProvider(packit_id)
     return ContributeResponseSchema(
         build_id=packit_id,
         build_id_title=BuildIdTitleEnum.packit,
-        build_url=provider.url,
-        logs=provider.fetch_logs(),
-        spec_file=provider.fetch_spec_file(),
+        build_url=await provider.get_url(),
+        logs=await provider.fetch_logs(),
+        spec_file=await provider.fetch_spec_file(),
     )
 
 
 @app.get("/frontend/contribute/url/{base64}")
-def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
+async def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
     build_url = b64decode(base64).decode("utf-8")
     provider = URLProvider(build_url)
     return ContributeResponseSchema(
         build_id=None,
         build_id_title=BuildIdTitleEnum.url,
         build_url=build_url,
-        logs=provider.fetch_logs(),
-        spec_file=provider.fetch_spec_file(),
+        logs=await provider.fetch_logs(),
+        spec_file=await provider.fetch_spec_file(),
     )
 
 
 @app.get("/frontend/contribute/container/{base64}")
-def get_logs_from_container(base64: str) -> ContributeResponseSchema:
+async def get_logs_from_container(base64: str) -> ContributeResponseSchema:
     build_url = b64decode(base64).decode("utf-8")
     provider = ContainerProvider(build_url)
     return ContributeResponseSchema(
         build_id=None,
         build_id_title=BuildIdTitleEnum.container,
         build_url=build_url,
-        logs=provider.fetch_logs(),
+        logs=await provider.fetch_logs(),
     )
 
 
@@ -444,24 +445,28 @@ async def frontend_explain_post(request: Request) -> dict:
     download_log_task = create_task(_download_log_content(log_url))
 
     try:
-        # First value of `timeout` is for connection, second is for recieving the response
-        response = requests.post(
-            server_url,
-            headers=headers,
-            data=json.dumps(data),
-            timeout=(LOGDETECTIVE_CONNECT_TIMEOUT, LOGDETECTIVE_READ_TIMEOUT),
-        )
-    except (requests.ConnectionError, requests.Timeout) as ex:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                server_url,
+                headers=headers,
+                json=data,
+                timeout=httpx.Timeout(
+                    LOGDETECTIVE_DEFAULT_TIMEOUT,
+                    connect=LOGDETECTIVE_CONNECT_TIMEOUT,
+                    read=LOGDETECTIVE_READ_TIMEOUT,
+                ),
+            )
+    except (httpx.ConnectError, httpx.TimeoutException) as ex:
         raise HTTPException(status_code=408, detail=str(ex)) from ex
 
     try:
         LOGGER.debug(
-            "headers: %s data: %s", response.request.headers, response.request.body
+            "headers: %s data: %s", response.request.headers, response.request.content
         )
         response.raise_for_status()
-    except requests.HTTPError as ex:
-        detail = f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
-        raise HTTPException(status_code=ex.response.status_code, detail=detail) from ex
+    except httpx.HTTPError as ex:
+        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
+        raise HTTPException(status_code=response.status_code, detail=detail) from ex
 
     result = _process_server_data(response.content)
 
@@ -526,18 +531,18 @@ async def _download_log_content(url: str) -> str:
     """Download content of the log file and returns it."""
 
     try:
-        response = fetch_text(url, timeout=600)
+        response = await fetch_text(url, timeout=600)
     except (
-        requests.ConnectionError,
-        requests.Timeout,
-        requests.RequestException,
+        httpx.ConnectError,
+        httpx.TimeoutException,
+        httpx.RequestError,
     ) as ex:
         raise HTTPException(status_code=408, detail=str(ex)) from ex
     try:
         response.raise_for_status()
-    except requests.HTTPError as ex:
-        detail = f"{ex.response.status_code} {ex.response.reason}\n{ex.response.url}"
-        raise HTTPException(status_code=ex.response.status_code, detail=detail) from ex
+    except httpx.HTTPError as ex:
+        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
+        raise HTTPException(status_code=response.status_code, detail=detail) from ex
 
     return response.text
 
