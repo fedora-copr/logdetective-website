@@ -1,5 +1,4 @@
 import binascii
-import inspect
 import os
 import re
 import subprocess
@@ -31,31 +30,30 @@ def handle_errors(func):
     """
     Decorator to catch all client API and network issues and re-raise them as
     HTTPException to API which handles them.
-    Supports both sync and async functions.
     """
 
-    def _handle(ex):
-        if isinstance(
-            ex, (copr.v3.exceptions.CoprNoResultException, koji.GenericError)
-        ):
+    @wraps(func)
+    async def inner(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except HTTPException:
+            raise
+        except (copr.v3.exceptions.CoprNoResultException, koji.GenericError) as ex:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST, detail=str(ex)
             ) from ex
-
-        if isinstance(ex, binascii.Error):
+        except binascii.Error as ex:
             detail = (
                 "Unable to decode a log URL from the base64 hash. "
                 "How did you get to this page?"
             )
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=detail) from ex
-
-        if isinstance(ex, httpx.HTTPStatusError):
+        except httpx.HTTPStatusError as ex:
             detail = f"{ex.response.status_code} {ex.response.reason_phrase}\n{ex.response.url}"
             raise HTTPException(
                 status_code=ex.response.status_code, detail=detail
             ) from ex
-
-        if isinstance(ex, subprocess.CalledProcessError):
+        except subprocess.CalledProcessError as ex:
             if "No such task" in str(ex.stderr):
                 raise HTTPException(
                     status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -70,31 +68,7 @@ def handle_errors(func):
 
             raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR) from ex
 
-        raise ex
-
-    if inspect.iscoroutinefunction(func):
-
-        @wraps(func)
-        async def async_inner(*args, **kwargs):
-            try:
-                return await func(*args, **kwargs)
-            except HTTPException:
-                raise
-            except Exception as ex:
-                _handle(ex)
-
-        return async_inner
-
-    @wraps(func)
-    def sync_inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except HTTPException:
-            raise
-        except Exception as ex:
-            _handle(ex)
-
-    return sync_inner
+    return inner
 
 
 class Provider(ABC):

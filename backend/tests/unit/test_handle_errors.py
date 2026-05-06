@@ -119,38 +119,3 @@ class TestHandleErrorsAsync:
             return "ok"
 
         assert await succeeding() == "ok"
-
-
-class TestHandleErrorsSync:
-    def test_binascii_error(self):
-        @handle_errors
-        def failing():
-            raise binascii.Error("bad input")
-
-        with pytest.raises(HTTPException) as exc_info:
-            failing()
-        assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
-
-    def test_koji_generic_error(self):
-        @handle_errors
-        def failing():
-            raise koji.GenericError("bad task")
-
-        with pytest.raises(HTTPException) as exc_info:
-            failing()
-        assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
-
-    def test_success_returns_value(self):
-        @handle_errors
-        def succeeding():
-            return 42
-
-        assert succeeding() == 42
-
-    def test_unknown_exception_reraised(self):
-        @handle_errors
-        def failing():
-            raise ValueError("nope")
-
-        with pytest.raises(ValueError, match="nope"):
-            failing()
