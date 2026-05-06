@@ -24,7 +24,7 @@ jobs:
         with:
           subdirectory: backend
           install_rpm_packages: |
-            python3-starlette python3-requests python3-sentry-sdk+fastapi python3-regex
+            python3-starlette python3-requests python3-sentry-sdk+fastapi python3-regex python3-httpx
 
       - name: Upload artifact with detected defects in SARIF format
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
