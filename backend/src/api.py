@@ -507,7 +507,7 @@ def _process_server_data(data) -> dict:
         parsed_data = json.loads(data)
     except json.JSONDecodeError as ex:
         raise HTTPException(
-            status_code=408, detail="Received invalid data from server"
+            status_code=500, detail="Received invalid data from server"
         ) from ex
 
     explanation = parsed_data["explanation"]["text"]
