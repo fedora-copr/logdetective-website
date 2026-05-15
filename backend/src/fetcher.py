@@ -82,6 +82,16 @@ class Provider(ABC):
         """
         ...
 
+    @abstractmethod
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        """
+        Returns log URLs without downloading content.
+
+        Returns:
+            List of dict where each dict contains log name and its URL.
+        """
+        ...
+
 
 class RPMProvider(Provider):
     """
@@ -109,8 +119,22 @@ class CoprProvider(RPMProvider):
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
-        log_names = ["builder-live.log.gz", "backend.log.gz"]
+        baseurl, log_names = self._get_baseurl_and_log_names()
+        logs = []
+        for name in log_names:
+            url = "{}/{}".format(baseurl, name)
+            response = await fetch_text(url)
+            response.raise_for_status()
+            logs.append(
+                {
+                    "name": name.removesuffix(".gz"),
+                    "content": response.text,
+                }
+            )
+        return logs
 
+    def _get_baseurl_and_log_names(self):
+        log_names = ["builder-live.log.gz", "backend.log.gz"]
         if self.chroot == "srpm-builds":
             build = self.client.build_proxy.get(self.build_id)
             baseurl = COPR_RESULT_TEMPLATE.format(
@@ -127,19 +151,15 @@ class CoprProvider(RPMProvider):
             raise FetchError(
                 "There are no results for {}/{}".format(self.build_id, self.chroot)
             )
+        return baseurl, log_names
 
-        logs = []
-        for name in log_names:
-            url = "{}/{}".format(baseurl, name)
-            response = await fetch_text(url)
-            response.raise_for_status()
-            logs.append(
-                {
-                    "name": name.removesuffix(".gz"),
-                    "content": response.text,
-                }
-            )
-        return logs
+    @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        baseurl, log_names = self._get_baseurl_and_log_names()
+        return [
+            {"name": name.removesuffix(".gz"), "url": "{}/{}".format(baseurl, name)}
+            for name in log_names
+        ]
 
     @handle_errors
     async def fetch_spec_file(self) -> Optional[dict[str, str]]:
@@ -253,19 +273,12 @@ class KojiProvider(RPMProvider):
             return task_request_url
         return None
 
-    def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
-        # since we require arch in the input, we can check if the task matches it
-        # but I think it's not a good UX, if the user gives us task ID, let's just use it
-        # if someone complains about, just reintroduce the if below
-        # if self.task_info["arch"] != self.arch:
-
+    def _validate_task_method(self) -> None:
         if self.task_info["method"] not in (
             "buildArch",
             "buildSRPMFromSCM",
             "flatpakBuildArch",
         ):
-            # we could navigate to the right task, but let's be explicit in the meantime
-            # let user input the proper task instead of us guessing
             raise HTTPException(
                 detail=(
                     f"Task {self.task_id} method is "
@@ -274,6 +287,14 @@ class KojiProvider(RPMProvider):
                 ),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
+
+    def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
+        # since we require arch in the input, we can check if the task matches it
+        # but I think it's not a good UX, if the user gives us task ID, let's just use it
+        # if someone complains about, just reintroduce the if below
+        # if self.task_info["arch"] != self.arch:
+
+        self._validate_task_method()
 
         logs = []
         for log_name in self.logs_to_look_for:
@@ -298,6 +319,29 @@ class KojiProvider(RPMProvider):
             )
 
         return logs
+
+    @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        self._validate_task_method()
+
+        available = self.client.listTaskOutput(self.task_id)
+        task_relpath = f"tasks/{self.task_id % 10000}/{self.task_id}"
+        urls = []
+        for log_name in self.logs_to_look_for:
+            if log_name in available:
+                urls.append(
+                    {
+                        "name": log_name,
+                        "url": f"{self.koji_pkgs_url}/{task_relpath}/{log_name}",
+                    }
+                )
+
+        if not urls:
+            raise FetchError(
+                f"No logs for build {self.build_id} task #{self.task_id} and architecture"
+                f" {self.arch}"
+            )
+        return urls
 
     def _get_srpm_url_from_task(self) -> Optional[str]:
         # example: 'cli-build/1705395313.3717997.mjCDejui/sqlite-3.45.0-1.fc40.src.rpm'
@@ -429,6 +473,11 @@ class PackitProvider(RPMProvider):
         return await provider.fetch_logs()
 
     @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        provider = await self._get_provider()
+        return await provider.fetch_log_urls()
+
+    @handle_errors
     async def fetch_spec_file(self) -> Optional[dict[str, str]]:
         provider = await self._get_provider()
         return await provider.fetch_spec_file()
@@ -464,6 +513,10 @@ class URLProvider(RPMProvider):
         ]
 
     @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        return [{"name": "Log file", "url": self.url}]
+
+    @handle_errors
     async def fetch_spec_file(self) -> Optional[dict[str, str]]:
         # FIXME: Please implement me!
         #  raise NotImplementedError("Please implement me!")
@@ -493,3 +546,7 @@ class ContainerProvider(Provider):
                 "content": response.text,
             }
         ]
+
+    @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        return [{"name": "Container log", "url": self.url}]

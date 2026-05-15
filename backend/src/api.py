@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 import uuid
-from asyncio import create_task
+from asyncio import create_task, gather
 from base64 import b64decode
 from datetime import datetime
 from http import HTTPStatus
@@ -37,6 +37,7 @@ from src.constants import (
     LOGDETECTIVE_CONNECT_TIMEOUT,
     LOGDETECTIVE_DEFAULT_TIMEOUT,
     BuildIdTitleEnum,
+    PROVIDER_COMMENTARY,
     ProvidersEnum,
     LOGGER_NAME,
     LOG_DETECTIVE_TOKEN,
@@ -48,6 +49,8 @@ from src.fetcher import (
     KojiProvider,
     PackitProvider,
     URLProvider,
+    RPMProvider,
+    Provider,
 )
 from src.schema import (
     ContributeResponseSchema,
@@ -169,12 +172,14 @@ def review(request: Request):
     return template_response("app.html", mapping)
 
 
+@app.get("/explain/{args:path}", response_class=HTMLResponse)
 @app.get("/explain", response_class=HTMLResponse)
-def explain(request: Request, url: Optional[str] = None):
+def explain(request: Request, args: str = "", url: Optional[str] = None):
     # the URL is parsed by frontend, but having it mentioned here
     # means we have it documented
     _ = url
-    mapping = {"name": "app-prompt", "request": request}
+    _ = args
+    mapping = {"name": "app-explain", "request": request}
     return template_response("app.html", mapping)
 
 
@@ -401,36 +406,55 @@ def frontend_review_random(result_id):
     }
 
 
-@app.post("/frontend/explain/")
-async def frontend_explain_post(request: Request) -> dict:
-    """Communicate with the logdetective server and process data.
+async def _check_log_urls(log_urls: list[dict[str, str]]) -> None:
+    """Verify all log URLs are reachable using HEAD requests."""
+    async with httpx.AsyncClient() as client:
+        results = await gather(
+            *(
+                client.head(f["url"], follow_redirects=True, timeout=10)
+                for f in log_urls
+            ),
+            return_exceptions=True,
+        )
+    unreachable = []
+    for file_info, result in zip(log_urls, results):
+        if isinstance(result, BaseException):
+            unreachable.append((file_info["name"], file_info["url"], str(result)))
+        elif result.status_code >= 400:
+            unreachable.append(
+                (file_info["name"], file_info["url"], str(result.status_code))
+            )
+    if unreachable:
+        detail = "; ".join(
+            f"{name} ({url}): {reason}" for name, url, reason in unreachable
+        )
+        LOGGER.error("Unreachable log URLs: %s", detail)
+        raise HTTPException(status_code=422, detail=f"Unreachable log files: {detail}")
 
-    :returns: {
-        "explanation": str,
-        "extracted_snippets": [
-            {
-                "snippet": str,
-                "source_file": str,
-                "line_number": int
-            },
-            ...
-        ],
-        "log": {"name": str, "content": str}
-    }
-    """
-    data = await request.json()
-    log_url = data["prompt"]
 
-    LOGGER.info("Asking server to analyze log '%s'", log_url)
+async def _call_analyze_api(
+    log_urls: list[dict[str, str]],
+    spec_content: str | None = None,
+    provider_name: Optional[str] = None,
+) -> dict:
+    """Send log URLs to the logdetective analyze API and return processed results."""
+    commentary = ""
+    if provider_name:
+        commentary = PROVIDER_COMMENTARY.get(provider_name, "")
 
-    file_name = Path(parse.urlparse(url=log_url).path).name
+    LOGGER.info(
+        "Log files to analyze: %s",
+        [(f["name"], f["url"]) for f in log_urls],
+    )
+
+    await _check_log_urls(log_urls)
 
     data = {
-        "files": [{"name": file_name, "url": log_url}],
+        "files": [{"name": f["name"], "url": f["url"]} for f in log_urls],
         "build_metadata": {
-            "specfile": None,
+            "specfile": spec_content,
             "last_patch": None,
-            "commentary": "",
+            "commentary": commentary,
             "infra_status": None,
         },
     }
@@ -440,9 +464,6 @@ async def frontend_explain_post(request: Request) -> dict:
         headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
 
     server_url = f"{SERVER_URL}/analyze"
-
-    # download log_file when waiting for logdetective server processing
-    download_log_task = create_task(_download_log_content(log_url))
 
     try:
         async with httpx.AsyncClient() as client:
@@ -468,7 +489,51 @@ async def frontend_explain_post(request: Request) -> dict:
         detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
         raise HTTPException(status_code=response.status_code, detail=detail) from ex
 
-    result = _process_server_data(response.content)
+    return _process_server_data(response.content)
+
+
+async def _explain_with_provider(provider: Provider, provider_name: str) -> dict:
+    """Fetch log URLs, analyze them, fetch log content, return combined result."""
+
+    log_urls = await provider.fetch_log_urls()
+
+    spec_content = None
+    if isinstance(provider, RPMProvider):
+        spec = await provider.fetch_spec_file()
+        spec_content = spec["content"] if spec else None
+
+    analyze_task = create_task(_call_analyze_api(log_urls, spec_content, provider_name))
+    content_task = create_task(provider.fetch_logs())
+    result, logs = await gather(analyze_task, content_task)
+
+    result["logs"] = [{"name": log["name"], "content": log["content"]} for log in logs]
+    return result
+
+
+@app.post("/frontend/explain/")
+async def frontend_explain_post(request: Request) -> dict:
+    """Communicate with the logdetective server and process data.
+
+    :returns: {
+        "explanation": str,
+        "extracted_snippets": [...],
+        "logs": [{"name": str, "content": str}, ...]
+    }
+    """
+    data = await request.json()
+    log_url = data["prompt"]
+
+    LOGGER.info("Asking server to analyze log '%s'", log_url)
+
+    file_name = Path(parse.urlparse(url=log_url).path).name
+    log_urls = [{"name": file_name, "url": log_url}]
+
+    download_log_task = create_task(_download_log_content(log_url))
+    analyze_task = create_task(
+        _call_analyze_api(log_urls, provider_name=ProvidersEnum.url)
+    )
+
+    result = await analyze_task
 
     try:
         log_data = await download_log_task
@@ -479,12 +544,41 @@ async def frontend_explain_post(request: Request) -> dict:
         LOGGER.error(exception_details)
         raise HTTPException(status_code=500, detail=exception_details) from ex
 
-    log = {"name": f"{log_url}", "content": log_data}
-
-    # add missing data from the original log
-    result["log"] = log
+    result["logs"] = [{"name": file_name, "content": log_data}]
 
     return result
+
+
+@app.post("/frontend/explain/copr/{build_id}/{chroot}")
+async def explain_copr(build_id: int, chroot: str) -> dict:
+    provider = CoprProvider(build_id, chroot)
+    return await _explain_with_provider(provider, ProvidersEnum.copr)
+
+
+@app.post("/frontend/explain/koji/{build_id}/{chroot}")
+async def explain_koji(build_id: int, chroot: str) -> dict:
+    provider = KojiProvider(build_id, chroot)
+    return await _explain_with_provider(provider, ProvidersEnum.koji)
+
+
+@app.post("/frontend/explain/packit/{packit_id}")
+async def explain_packit(packit_id: int) -> dict:
+    provider = PackitProvider(packit_id)
+    return await _explain_with_provider(provider, ProvidersEnum.packit)
+
+
+@app.post("/frontend/explain/url/{base64}")
+async def explain_url(base64: str) -> dict:
+    url = b64decode(base64).decode("utf-8")
+    provider = URLProvider(url)
+    return await _explain_with_provider(provider, ProvidersEnum.url)
+
+
+@app.post("/frontend/explain/container/{base64}")
+async def explain_container(base64: str) -> dict:
+    url = b64decode(base64).decode("utf-8")
+    provider = ContainerProvider(url)
+    return await _explain_with_provider(provider, ProvidersEnum.container)
 
 
 def _process_server_data(data) -> dict:

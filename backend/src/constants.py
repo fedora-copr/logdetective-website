@@ -47,6 +47,34 @@ class BuildIdTitleEnum(StrEnum):
     debug = "Debug output"
 
 
+PROVIDER_COMMENTARY: dict[str, str] = {
+    ProvidersEnum.copr: (
+        "Logs are from a Copr build.\n"
+        "Copr builds use mock chroots; root.log contains mock/DNF output,\n"
+        "builder-live.log contains the actual build output."
+    ),
+    ProvidersEnum.koji: (
+        "Logs are from a Koji build.\n"
+        "Koji builds run in mock; build.log has compilation output,\n"
+        "root.log has dependency resolution and mock setup."
+    ),
+    ProvidersEnum.packit: (
+        "Logs are from a Packit CI job.\n"
+        "Packit triggers builds in Copr or Koji on behalf of a pull request.\n"
+        "Interpret logs as you would for the underlying build system."
+    ),
+    ProvidersEnum.url: (
+        "Log was submitted as a raw URL.\n"
+        "No build system metadata is available.\n"
+        "Treat it as a generic RPM build log."
+    ),
+    ProvidersEnum.container: (
+        "Log is from a container build.\n"
+        "Expect Dockerfile/Containerfile instructions, layer output,\n"
+        "and package installation logs rather than RPM spec macros."
+    ),
+}
+
 LOGGER_NAME = "logdetective_website"
 
 STATIC_SOURCE_DIR = Path(__file__).parent.parent.parent / "frontend" / "public"

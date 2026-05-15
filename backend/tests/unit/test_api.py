@@ -8,6 +8,8 @@ from base64 import b64encode
 from unittest.mock import patch, AsyncMock, MagicMock
 
 import httpx
+import pytest
+from starlette.exceptions import HTTPException
 
 from src.api import app
 
@@ -145,9 +147,10 @@ class TestContributeEndpoints:
 
 
 class TestExplainEndpoint:
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
     @patch("src.api.httpx.AsyncClient")
-    async def test_explain_success(self, mock_client_cls, mock_download):
+    async def test_explain_success(self, mock_client_cls, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_response = MagicMock()
@@ -175,12 +178,16 @@ class TestExplainEndpoint:
         data = resp.json()
         assert "explanation" in data
         assert "extracted_snippets" in data
-        assert "log" in data
-        assert data["log"]["content"] == FAKE_LOG_CONTENT
+        assert "logs" in data
+        assert len(data["logs"]) == 1
+        assert data["logs"][0]["content"] == FAKE_LOG_CONTENT
 
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
     @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_timeout(self, mock_client_cls, mock_download):
+    async def test_explain_server_timeout(
+        self, mock_client_cls, mock_download, _mock_check
+    ):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_client = AsyncMock()
@@ -200,9 +207,12 @@ class TestExplainEndpoint:
 
         assert resp.status_code == 408
 
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
     @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_connect_error(self, mock_client_cls, mock_download):
+    async def test_explain_server_connect_error(
+        self, mock_client_cls, mock_download, _mock_check
+    ):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_client = AsyncMock()
@@ -224,9 +234,12 @@ class TestExplainEndpoint:
 
         assert resp.status_code == 408
 
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
     @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_500(self, mock_client_cls, mock_download):
+    async def test_explain_server_500(
+        self, mock_client_cls, mock_download, _mock_check
+    ):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_response = MagicMock()
@@ -258,6 +271,296 @@ class TestExplainEndpoint:
             )
 
         assert resp.status_code == 500
+
+
+class TestExplainProviderEndpoints:
+    """Tests for provider-specific explain endpoints."""
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.CoprProvider")
+    async def test_explain_copr(self, mock_cls, mock_analyze):
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[
+                {"name": "build.log", "url": "https://copr.example.com/build.log"}
+            ]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=FAKE_SPEC)
+        mock_analyze.return_value = {
+            "explanation": "The build failed due to missing dependency.",
+            "extracted_snippets": [
+                {
+                    "snippet": "error: package not found",
+                    "source_file": "build.log",
+                    "line_number": 42,
+                }
+            ],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "extracted_snippets" in data
+        assert "logs" in data
+        assert len(data["logs"]) == 1
+        assert data["logs"][0]["content"] == FAKE_LOG_CONTENT
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.KojiProvider")
+    async def test_explain_koji(self, mock_cls, mock_analyze):
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[
+                {"name": "build.log", "url": "https://kojipkgs.example.com/build.log"}
+            ]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+        mock_analyze.return_value = {
+            "explanation": "Build failed.",
+            "extracted_snippets": [],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post("/frontend/explain/koji/456/x86_64")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "logs" in data
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.PackitProvider")
+    async def test_explain_packit(self, mock_cls, mock_analyze):
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "build.log", "url": "https://example.com/build.log"}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+        mock_analyze.return_value = {
+            "explanation": "Build failed.",
+            "extracted_snippets": [],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post("/frontend/explain/packit/789")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "logs" in data
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.URLProvider")
+    async def test_explain_url(self, mock_cls, mock_analyze):
+        url = "https://example.com/build.log"
+        b64 = b64encode(url.encode()).decode()
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "Log file", "url": url}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "Log file", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_analyze.return_value = {
+            "explanation": "Build failed.",
+            "extracted_snippets": [],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(f"/frontend/explain/url/{b64}")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "logs" in data
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.ContainerProvider")
+    async def test_explain_container(self, mock_cls, mock_analyze):
+        url = "https://example.com/container.log"
+        b64 = b64encode(url.encode()).decode()
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "Container log", "url": url}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "Container log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_analyze.return_value = {
+            "explanation": "Build failed.",
+            "extracted_snippets": [],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(f"/frontend/explain/container/{b64}")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "logs" in data
+
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api.httpx.AsyncClient")
+    @patch("src.api.CoprProvider")
+    async def test_explain_provider_timeout(self, mock_cls, mock_http_cls, _mock_check):
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "build.log", "url": "https://example.com/build.log"}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("read timed out"))
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_http_cls.return_value = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
+
+        assert resp.status_code == 408
+
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api.httpx.AsyncClient")
+    @patch("src.api.CoprProvider")
+    async def test_explain_provider_server_error(
+        self, mock_cls, mock_http_cls, _mock_check
+    ):
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "build.log", "url": "https://example.com/build.log"}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.reason_phrase = "Internal Server Error"
+        mock_response.url = "http://127.0.0.1:8000/analyze"
+        mock_response.request = MagicMock(headers={}, content=b"")
+        mock_response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "Server Error",
+                request=httpx.Request("POST", "http://127.0.0.1:8000/analyze"),
+                response=httpx.Response(500),
+            )
+        )
+
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_http_cls.return_value = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
+
+        assert resp.status_code == 500
+
+
+class TestCheckLogUrls:
+    """Tests for _check_log_urls."""
+
+    @patch("src.api.httpx.AsyncClient")
+    async def test_all_reachable(self, mock_client_cls):
+        from src.api import _check_log_urls
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        mock_client = AsyncMock()
+        mock_client.head = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        await _check_log_urls(
+            [
+                {"name": "build.log", "url": "https://example.com/build.log"},
+                {"name": "root.log", "url": "https://example.com/root.log"},
+            ]
+        )
+
+    @patch("src.api.httpx.AsyncClient")
+    async def test_unreachable_url_returns_404(self, mock_client_cls):
+        from src.api import _check_log_urls
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+
+        mock_client = AsyncMock()
+        mock_client.head = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        with pytest.raises(HTTPException) as exc_info:
+            await _check_log_urls(
+                [
+                    {"name": "build.log", "url": "https://example.com/missing.log"},
+                ]
+            )
+        assert exc_info.value.status_code == 422
+        assert "missing.log" in exc_info.value.detail
+
+    @patch("src.api.httpx.AsyncClient")
+    async def test_unreachable_url_connection_error(self, mock_client_cls):
+        from src.api import _check_log_urls
+
+        mock_client = AsyncMock()
+        mock_client.head = AsyncMock(
+            side_effect=httpx.ConnectError("connection refused")
+        )
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        with pytest.raises(HTTPException) as exc_info:
+            await _check_log_urls(
+                [
+                    {"name": "build.log", "url": "https://example.com/build.log"},
+                ]
+            )
+        assert exc_info.value.status_code == 422
+        assert "connection refused" in exc_info.value.detail
 
 
 def test_our_server_url(tmp_path):
