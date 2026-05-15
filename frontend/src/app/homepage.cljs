@@ -5,6 +5,7 @@
             [app.homepage-validation :refer [validate]]
             [lambdaisland.fetch :as fetch]
             [app.components.jumbotron :refer [render-error]]
+            [app.common.provider-forms :as pf]
             [app.helpers :refer
              [current-path
               redirect
@@ -64,9 +65,7 @@
   (reset! input-errors []))
 
 (defn on-input-change [target]
-  (swap! input-values assoc
-         (keyword (.-name target))
-         (.-value target)))
+  (pf/on-input-change-handler target input-values))
 
 (defn on-input-change-file [event]
   (let [target (.-target event)
@@ -82,23 +81,16 @@
     (.addEventListener reader "load" set-atom)
     (.readAsText reader file)))
 
-(defn render-navigation-item [title href]
-  (let [active? (= href @current-hash-atom)]
-    [:li {:class "nav-item ml-auto"}
-     [:a {:class ["nav-link" (if active? "active" nil)]
-          :href href
-          :on-click #(on-tab-click href)}
-      title]]))
+(def contribute-tabs
+  [["Copr" "#copr"]
+   ["Koji" "#koji"]
+   ["Packit" "#packit"]
+   ["URL" "#url"]
+   ["Upload" "#upload"]
+   ["Container" "#container"]])
 
 (defn render-navigation []
-  [:div {:class "card-header"}
-   [:ul {:class "nav nav-tabs card-header-tabs"}
-    (render-navigation-item "Copr" "#copr")
-    (render-navigation-item "Koji" "#koji")
-    (render-navigation-item "Packit" "#packit")
-    (render-navigation-item "URL" "#url")
-    (render-navigation-item "Upload" "#upload")
-    (render-navigation-item "Container" "#container")]])
+  (pf/render-navigation contribute-tabs current-hash-atom on-tab-click))
 
 (defn render-stats []
   (when @backend-stats
@@ -107,45 +99,12 @@
       [:p "You and others have contributed " (:total_reports @backend-stats) " annotated logs"]]]))
 
 (defn render-card [provider url title img text inputs]
-  [:div {:class "card-body"}
-   [:div {:class "row"}
-    [:div {:class "col-2"}
-     [:a {:href url :title (if provider (str "Go to " provider) nil)}
-      [:img {:src img, :class "card-img-top", :alt "..."}]]]
-
-    [:div {:class "col-8"}
-     [:h2 {:class "card-title"} title]
-     [:p {:class "card-text"} text]
-
-     [:form
-      (if (= provider "Upload")
-        {:action "/contribute/upload"
-         :method "POST"
-         :on-submit #'on-submit-upload
-         :enc-type "multipart/form-data"}
-        {:on-submit #'on-submit})
-      (for [[i input] (map-indexed vector inputs)]
-        ^{:key i}
-        [:div {:class "input-group mb-3 container"}
-         input
-         (when (= (- (count inputs) 1) i)
-           [:button
-            {:class "btn btn-outline-primary",
-             :type "submit"}
-            "Let's go"])])]]
-
-    [:div {:class "col-2"}]]])
+  (if (= provider "Upload")
+    (pf/render-card provider url title img text inputs #'on-submit-upload)
+    (pf/render-card provider url title img text inputs #'on-submit)))
 
 (defn input [name placeholder]
-  [:input
-   {:type "text"
-    :class ["form-control"
-            (when (some #{name} @input-errors)
-              "validation-error")]
-    :name name
-    :placeholder placeholder
-    :value (get @input-values (keyword name))
-    :on-change #(on-input-change (.-target %))}])
+  (pf/input-field name placeholder input-values input-errors pf/on-input-change-handler))
 
 (defn input-file [name]
   [:input

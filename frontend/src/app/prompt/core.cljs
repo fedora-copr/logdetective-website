@@ -18,6 +18,10 @@
 (def form (r/atom nil))
 (def prompt-value (r/atom nil))
 (def ai-gen-disclaimer (r/atom "This explanation was provided by AI. Always review AI generated content prior to use."))
+(def mission-statement-prompt (r/atom
+  (str
+    "Trying to improve RPM packaging experience by analyzing build "
+    "logs and explaining the failure in simple words.")))
 
 (def InputSchema
   [:map {:closed true}
@@ -30,10 +34,11 @@
       [:source_file :string]
       [:line_number :int]]]]
 
-   [:log
-    [:map
-     [:name :string]
-     [:content :string]]]])
+   [:logs
+    [:vector
+     [:map
+      [:name :string]
+      [:content :string]]]]])
 
 ;; TODO We allow nil for easier debugging now but should reject it later
 (def OutputSchema
@@ -102,10 +107,7 @@
    [:h2 "Explanation"]
    (map (fn [x] [:p x])
         (-> @form :explanation (str/split #"\n")))
-   [:p @ai-gen-disclaimer]
-   [:div
-    {:class "container", :id "prompt"}
-    (prompt-form)]])
+   [:p @ai-gen-disclaimer]])
 
 (defn reason [id snippet source_file line_number]
   (let [accordion-id "#accordionExample"
@@ -142,25 +144,24 @@
         ]
       ]))
 
-(defn download []
-  (let [name (-> @form :log :name)
-        content (-> @form :log :content)
-        mime "text/plain"
-
-        a (.createElement js/document "a")
-        blob (new js/Blob #js [content] #js {:type mime})
+(defn download-log [log]
+  (let [a (.createElement js/document "a")
+        blob (new js/Blob #js [(:content log)] #js {:type "text/plain"})
         url (.createObjectURL js/URL blob)]
     (.setAttribute a "href" url)
-    (.setAttribute a "download" name)
+    (.setAttribute a "download" (:name log))
     (.click a)))
 
 (defn right-column []
   [:div {:class "col-6", :id "right-column"}
-   [:button {:type "button"
-             :class "btn btn-outline-primary float-end"
-             :on-click download}
-    [:i {:class "fa-solid fa-floppy-disk"}]
-    " Full log"]
+   [:div {:class "float-end"}
+    (for [log (:logs @form)]
+      ^{:key (:name log)}
+      [:button {:type "button"
+                :class "btn btn-outline-primary ms-1"
+                :on-click #(download-log log)}
+       [:i {:class "fa-solid fa-floppy-disk"}]
+       (str " " (:name log))])]
 
    [:h2 "Extracted snippets"]
    [:div {:class "accordion accordion-flush" :id "accordionExample"}
@@ -196,7 +197,7 @@
    [:p "Submitted information will not be stored. Ready to submit the results to the AI tool for analysis?"]])
 
 (defn prompt-only []
-  [:div {:id "content-narrow" :class "container"}
+  [:div {:id "content" :class "container"}
    [:section
     {:class "py-1 text-center container"}
     [:div
@@ -206,12 +207,8 @@
       [:h1 {:class "fw-light"} "Log Detective"]
       [:p
        {:class "lead text-body-secondary"}
-       (str "Trying to improve RPM packaging experience by analyzing build "
-            "logs and explaining the failure in simple words.")]
-      (disclaimer)
-
-      [:div {:class "py-4"}
-       (prompt-form)]]]]
+       (mission-statement-prompt)]
+      (disclaimer)]]]
 
    [:div {:class "container" :id "about"}
     [:h2 {:class "text-center"} "About the project"]
