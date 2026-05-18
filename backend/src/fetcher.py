@@ -198,12 +198,13 @@ class KojiProvider(RPMProvider):
     ]
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
+    task_id: int
+
     def __init__(self, build_or_task_id: int, arch: str) -> None:
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
         self.arch = arch
-        self.task_id = None
         self.build_id = None
         # this block detects what we got: is it build or task?
         # failed builds are useless sadly, we will only work with tasks
