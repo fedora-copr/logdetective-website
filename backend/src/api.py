@@ -528,21 +528,10 @@ async def frontend_explain_post(request: Request) -> dict:
     file_name = Path(parse.urlparse(url=log_url).path).name
     log_urls = [{"name": file_name, "url": log_url}]
 
-    download_log_task = create_task(_download_log_content(log_url))
-    analyze_task = create_task(
-        _call_analyze_api(log_urls, provider_name=ProvidersEnum.url)
-    )
+    download_log_task = _download_log_content(log_url)
+    analyze_task = _call_analyze_api(log_urls, provider_name=ProvidersEnum.url)
 
-    result = await analyze_task
-
-    try:
-        log_data = await download_log_task
-    except HTTPException as ex:
-        exception_details = (
-            f"Attempt to retrieve log from '{log_url}' failed with '{ex.status_code}'"
-        )
-        LOGGER.error(exception_details)
-        raise HTTPException(status_code=500, detail=exception_details) from ex
+    result, log_data = await gather(analyze_task, download_log_task)
 
     result["logs"] = [{"name": file_name, "content": log_data}]
 
