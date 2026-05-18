@@ -1,6 +1,5 @@
 import json
 import os
-import tempfile
 import uuid
 from asyncio import create_task, gather
 from base64 import b64decode
@@ -24,7 +23,6 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
 from src.constants import (
@@ -60,7 +58,6 @@ from src.schema import (
     schema_inp_to_out,
 )
 from src.spells import (
-    make_tar,
     find_file_by_name,
     get_logger,
     start_sentry,
@@ -703,34 +700,31 @@ def download_results():
     """
     Download all results we have as a tar.gz archive.
 
-    We create a temporary directory and store the archive in there.
-    After the client browser gets the whole file, we delete our temp
-    file and directory using the cleanup() method as a background task.
-
-    This function was rewritten from an async implementation that stopped working
-    (probably after an update to fastapi and starlette).
-    https://github.com/fedora-copr/log-detective-website/issues/157
+    The archive is pre-built daily by the create-archive CronJob and stored at
+    /persistent/results-YYYY-MM-DD.tar.gz. This endpoint just serves the most
+    recent one directly, avoiding a long blocking tar creation on each request.
     """
     if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
 
-    tmp_dir = Path(tempfile.mkdtemp())
-    tar_name = f"results-{int(datetime.now().timestamp())}.tar.gz"
-    tar_path = make_tar(tar_name, [Path(FEEDBACK_DIR), Path(REVIEWS_DIR)], tmp_dir)
+    storage_dir = Path(FEEDBACK_DIR).parent
+    archives = sorted(
+        [f for f in storage_dir.glob("results-*-*-*.tar.gz") if f.is_file()],
+        reverse=True,
+    )
+    if not archives:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="No archive available yet, please try again later",
+        )
 
-    LOGGER.info("Starting download of the annotated dataset.")
-
-    def cleanup():
-        os.unlink(tar_path)
-        os.rmdir(tmp_dir)
+    tar_path = archives[0]
+    LOGGER.info("Starting download of the annotated dataset: %s", tar_path.name)
 
     # https://fastapi.tiangolo.com/advanced/custom-response/?h=fileresponse#fileresponse
-    # https://fastapi.tiangolo.com/reference/background/?h=background
     return FileResponse(
         tar_path,
-        filename=tar_name,
-        media_type="application/x-tar",
-        background=BackgroundTask(cleanup),
+        filename=tar_path.name,
     )
 
 
