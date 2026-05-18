@@ -34,3 +34,44 @@ spec:
                 memory: "550Mi"
                 cpu: "250m"
           restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: create-archive
+spec:
+  schedule: "45 23 * * *"
+  concurrencyPolicy: "Replace"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            parent: "cronjob-create-archive"
+          name: create-archive
+        spec:
+          volumes:
+            - name: persistent
+              persistentVolumeClaim:
+                claimName: persistent
+          containers:
+          - name: create-archive
+            image: quay.io/sclorg/python-313-c10s:latest
+            imagePullPolicy: Always
+            command: ["python3", "/usr/bin/create_archive.py"]
+            volumeMounts:
+              - name: persistent
+                mountPath: /persistent
+            env:
+            - name: FEEDBACK_DIR
+              value: /persistent/results
+            - name: REVIEWS_DIR
+              value: /persistent/reviews
+            resources:
+              requests:
+                memory: "200Mi"
+                cpu: "100m"
+              limits:
+                memory: "500Mi"
+                cpu: "500m"
+          restartPolicy: OnFailure

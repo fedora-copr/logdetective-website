@@ -60,6 +60,7 @@ RUN dnf -y install python3-fastapi \
 COPY --from=0 /src/frontend/public /src/frontend/public
 COPY --from=0 /src/backend /src/backend
 COPY --from=0 /src/files/compile_extraction_dataset.py /usr/bin/compile_extraction_dataset.py
+COPY --from=0 /src/files/create_archive.py /usr/bin/create_archive.py
 COPY --from=0 /src/files/gunicorn.conf.py /src/gunicorn.conf.py
 COPY --from=0 /src/files/cleaning_logs /src/cleaning_logs
 
