@@ -1,3 +1,4 @@
+import asyncio
 import binascii
 import os
 import re
@@ -121,9 +122,11 @@ class CoprProvider(RPMProvider):
     async def fetch_logs(self) -> list[dict[str, str]]:
         baseurl, log_names = self._get_baseurl_and_log_names()
         logs = []
-        for name in log_names:
-            url = "{}/{}".format(baseurl, name)
-            response = await fetch_text(url)
+        responses = await asyncio.gather(
+            *[fetch_text("{}/{}".format(baseurl, name)) for name in log_names]
+        )
+
+        for name, response in zip(log_names, responses):
             response.raise_for_status()
             logs.append(
                 {
@@ -288,7 +291,7 @@ class KojiProvider(RPMProvider):
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
-    def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
+    async def _fetch_task_logs_from_task_id(self) -> list[dict[str, str]]:
         # since we require arch in the input, we can check if the task matches it
         # but I think it's not a good UX, if the user gives us task ID, let's just use it
         # if someone complains about, just reintroduce the if below
@@ -297,9 +300,12 @@ class KojiProvider(RPMProvider):
         self._validate_task_method()
 
         logs = []
+        # Logs are gathered sequentially for to preserve error handling
         for log_name in self.logs_to_look_for:
             try:
-                log_content = self.client.downloadTaskOutput(self.task_id, log_name)
+                log_content = await asyncio.to_thread(
+                    self.client.downloadTaskOutput, self.task_id, log_name
+                )
             except koji.GenericError:
                 # checkout.log not available for buildArch
                 continue
@@ -310,7 +316,7 @@ class KojiProvider(RPMProvider):
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
-        logs = self._fetch_task_logs_from_task_id()
+        logs = await self._fetch_task_logs_from_task_id()
 
         if not logs:
             raise FetchError(
@@ -323,12 +329,13 @@ class KojiProvider(RPMProvider):
     @handle_errors
     async def fetch_log_urls(self) -> list[dict[str, str]]:
         self._validate_task_method()
-
-        available = self.client.listTaskOutput(self.task_id)
+        available_logs = await asyncio.to_thread(
+            self.client.listTaskOutput, self.task_id
+        )
         task_relpath = f"tasks/{self.task_id % 10000}/{self.task_id}"
         urls = []
         for log_name in self.logs_to_look_for:
-            if log_name in available:
+            if log_name in available_logs:
                 urls.append(
                     {
                         "name": log_name,
