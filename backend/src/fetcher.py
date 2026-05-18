@@ -354,8 +354,16 @@ class KojiProvider(RPMProvider):
         # request_url is not a link but rather a relative path to the SRPM
         if request_url is None:
             return await self._fetch_spec_file_from_task_id()
-        package_name = re.findall(r"/rpms/(.+)\.git", request_url)[0]
-        commit_hash = re.findall(r"\.git#(.+)$", request_url)[0]
+        package_name_matches = re.findall(r"/rpms/(.+)\.git", request_url)
+        commit_hash_matches = re.findall(r"\.git#(.+)$", request_url)
+        if not (package_name_matches and commit_hash_matches):
+            LOGGER.error(
+                "Either package name or commit hash missing from the URL: %s",
+                request_url,
+            )
+            return None
+        package_name = package_name_matches[0]
+        commit_hash = commit_hash_matches[0]
         spec_url = (
             "https://src.fedoraproject.org/rpms/"
             f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
