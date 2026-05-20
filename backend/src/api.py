@@ -440,8 +440,9 @@ async def _call_analyze_api(
         commentary = PROVIDER_COMMENTARY.get(provider_name, "")
 
     LOGGER.info(
-        "Log files to analyze: %s",
+        "Log files to analyze: %s with commentary: %s",
         [(f["name"], f["url"]) for f in log_urls],
+        commentary,
     )
 
     await _check_log_urls(log_urls)
@@ -492,6 +493,7 @@ async def _call_analyze_api(
 async def _explain_with_provider(provider: Provider, provider_name: str) -> dict:
     """Fetch log URLs, analyze them, fetch log content, return combined result."""
 
+    LOGGER.info("Received request for analysis from: %s", provider_name)
     log_urls = await provider.fetch_log_urls()
 
     spec_content = None
