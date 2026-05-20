@@ -28,6 +28,7 @@ from starlette.exceptions import HTTPException
 from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
+    OBS_BUILD_URL,
     FEEDBACK_DIR,
     REVIEWS_DIR,
     SERVER_URL,
@@ -45,6 +46,7 @@ from src.fetcher import (
     ContainerProvider,
     CoprProvider,
     KojiProvider,
+    OBSProvider,
     PackitProvider,
     URLProvider,
     RPMProvider,
@@ -245,6 +247,21 @@ async def get_logs_from_container(base64: str) -> ContributeResponseSchema:
     )
 
 
+@app.get("/frontend/contribute/obs/{project}/{repository}/{architecture}/{package}")
+async def get_obs_build_logs(
+    project: str, repository: str, architecture: str, package: str
+) -> ContributeResponseSchema:
+    """Return logs and spec file for an OBS build."""
+    provider = OBSProvider(project, repository, architecture, package)
+    return ContributeResponseSchema(
+        build_id=None,
+        build_id_title=BuildIdTitleEnum.obs,
+        build_url=OBS_BUILD_URL.format(project, package),
+        logs=await provider.fetch_logs(),
+        spec_file=await provider.fetch_spec_file(),
+    )
+
+
 # TODO: some reasonable ok response would be better
 class OkResponse(BaseModel):
     """Response on successful annotation submission, containing sumbission id and relative URLs
@@ -381,6 +398,25 @@ def contribute_review_container_logs(
         feedback_input,
         ProvidersEnum.container,
         url,
+        our_server=f"{request.url.scheme}://{request.url.netloc}",
+    )
+
+
+@app.post("/frontend/contribute/obs/{project}/{repository}/{architecture}/{package}")
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+def contribute_review_obs(
+    feedback_input: FeedbackInputSchema,
+    project: str,
+    repository: str,
+    architecture: str,
+    package: str,
+    request: Request,
+) -> OkResponse:
+    """Contributor feedback for an OBS build log."""
+    return _store_data_for_providers(
+        feedback_input,
+        ProvidersEnum.obs,
+        f"{project}/{repository}/{architecture}/{package}",
         our_server=f"{request.url.scheme}://{request.url.netloc}",
     )
 
@@ -565,6 +601,15 @@ async def explain_container(base64: str) -> dict:
     url = b64decode(base64).decode("utf-8")
     provider = ContainerProvider(url)
     return await _explain_with_provider(provider, ProvidersEnum.container)
+
+
+@app.post("/frontend/explain/obs/{project}/{repository}/{architecture}/{package}")
+async def explain_obs(
+    project: str, repository: str, architecture: str, package: str
+) -> dict:
+    """Forward an OBS build log to the logdetective server for explanation."""
+    provider = OBSProvider(project, repository, architecture, package)
+    return await _explain_with_provider(provider, ProvidersEnum.obs)
 
 
 def _process_server_data(data) -> dict:

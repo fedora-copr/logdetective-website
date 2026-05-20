@@ -5,6 +5,7 @@ from pathlib import Path
 
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
 KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
+OBS_BUILD_URL = "https://build.opensuse.org/package/show/{0}/{1}"
 FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/persistent/results")
 REVIEWS_DIR = os.environ.get("REVIEWS_DIR", "/persistent/reviews")
 
@@ -36,6 +37,7 @@ class ProvidersEnum(StrEnum):
     container = "container"
     debug = "debug"
     upload = "upload"
+    obs = "obs"  # pylint: disable=invalid-name
 
 
 class BuildIdTitleEnum(StrEnum):
@@ -45,6 +47,7 @@ class BuildIdTitleEnum(StrEnum):
     url = "URL"
     container = "Container log"
     debug = "Debug output"
+    obs = "OBS build"  # pylint: disable=invalid-name
 
 
 PROVIDER_COMMENTARY: dict[str, str] = {
@@ -62,6 +65,11 @@ PROVIDER_COMMENTARY: dict[str, str] = {
         "Logs are from a Packit CI job.\n"
         "Packit triggers builds in Copr or Koji on behalf of a pull request.\n"
         "Interpret logs as you would for the underlying build system."
+    ),
+    ProvidersEnum.obs: (
+        "Logs are from an OBS build.\n"
+        "OBS builds run in a chroot similar to mock; all build output\n"
+        "is contained in build.log."
     ),
     ProvidersEnum.url: (
         "Log was submitted as a raw URL.\n"

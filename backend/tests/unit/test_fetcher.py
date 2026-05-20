@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
 
 import httpx
 from copr.v3 import BuildProxy, BuildChrootProxy
+from fastapi import HTTPException
 
 from src.constants import COPR_RESULT_TEMPLATE
 from src.exceptions import FetchError
@@ -13,6 +14,7 @@ from src.fetcher import (
     URLProvider,
     PackitProvider,
     ContainerProvider,
+    OBSProvider,
 )
 from tests.spells import sort_by_name
 
@@ -220,6 +222,61 @@ class TestURLProvider:
         provider = URLProvider(url)
         result = await provider.fetch_log_urls()
         assert result == [{"name": "Log file", "url": url}]
+
+
+class TestOBSProvider:
+    """Unit tests for OBSProvider log, log-URL, and spec-file fetching."""
+
+    project = "openSUSE:Factory"
+    repository = "standard"
+    architecture = "x86_64"
+    package = "ed"
+    expected_log_url = (
+        "https://build.opensuse.org/public/build/"
+        "openSUSE:Factory/standard/x86_64/ed/_log"
+    )
+    expected_spec_url = (
+        "https://build.opensuse.org/public/source/openSUSE:Factory/ed/ed.spec"
+    )
+
+    def _provider(self):
+        return OBSProvider(
+            self.project, self.repository, self.architecture, self.package
+        )
+
+    async def test_fetch_logs(self):
+        """fetch_logs returns the OBS build log content as a single entry."""
+        url_map = {self.expected_log_url: ("obs log content", 200)}
+        with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
+            result = await self._provider().fetch_logs()
+        assert result == [{"name": "build.log", "content": "obs log content"}]
+
+    async def test_fetch_log_urls(self):
+        """fetch_log_urls returns the OBS log URL without downloading content."""
+        result = await self._provider().fetch_log_urls()
+        assert result == [{"name": "build.log", "url": self.expected_log_url}]
+
+    async def test_fetch_spec_file_success(self, fake_spec_file):
+        """fetch_spec_file returns the spec contents when the URL responds 200."""
+        url_map = {self.expected_spec_url: (fake_spec_file, 200)}
+        with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
+            result = await self._provider().fetch_spec_file()
+        assert result == {"name": "ed.spec", "content": fake_spec_file}
+
+    async def test_fetch_spec_file_missing(self):
+        """fetch_spec_file returns None when OBS responds 404."""
+        url_map = {self.expected_spec_url: ("", 404)}
+        with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
+            result = await self._provider().fetch_spec_file()
+        assert result is None
+
+    async def test_fetch_logs_http_error(self):
+        """fetch_logs raises HTTPException"""
+        url_map = {self.expected_log_url: ("", 404)}
+        with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
+            with pytest.raises(HTTPException) as exc_info:
+                await self._provider().fetch_logs()
+            assert exc_info.value.status_code == 404
 
 
 class TestKojiProviderLogs:

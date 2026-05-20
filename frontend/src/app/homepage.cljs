@@ -40,6 +40,10 @@
                  "#packit"    [(get @input-values :packit-id)]
                  "#koji"      [(get @input-values :koji-build-id)
                                (get @input-values :koji-arch)]
+                 "#obs"       [(get @input-values :obs-project)
+                               (get @input-values :obs-repository)
+                               (get @input-values :obs-architecture)
+                               (get @input-values :obs-package)]
                  "#url"       [(js/btoa (get @input-values :url))]
                  "#container" [(js/btoa (get @input-values :url))])
         url (str/join "/" (concat ["/contribute" source] (map str/trim params)))]
@@ -85,6 +89,7 @@
   [["Copr" "#copr"]
    ["Koji" "#koji"]
    ["Packit" "#packit"]
+   ["OBS" "#obs"]
    ["URL" "#url"]
    ["Upload" "#upload"]
    ["Container" "#container"]])
@@ -145,6 +150,19 @@
    [(input "koji-build-id" "Koji build ID, e.g. 2274591")
     (input "koji-arch" "Architecture, e.g. x86_64")]))
 
+(defn render-obs-card []
+  (render-card
+   "OBS"
+   "https://build.opensuse.org"
+   "Submit logs from openSUSE Build Service"
+   "img/opensuse-logo.png"
+   (str/join "" ["Specify an OBS project, repository, architecture, and "
+                 "package; we will fetch and display the build log."])
+   [(input "obs-project" "Project, e.g. openSUSE:Factory")
+    (input "obs-repository" "Repository, e.g. standard")
+    (input "obs-architecture" "Architecture, e.g. x86_64")
+    (input "obs-package" "Package, e.g. ed")]))
+
 (defn render-url-card []
   (render-card
    nil
@@ -180,6 +198,7 @@
     "#copr"      (render-copr-card)
     "#packit"    (render-packit-card)
     "#koji"      (render-koji-card)
+    "#obs"       (render-obs-card)
     "#url"       (render-url-card)
     "#upload"    (render-upload-card)
     "#container" (render-container-card)
