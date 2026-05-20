@@ -566,3 +566,62 @@ class ContainerProvider(Provider):
     @handle_errors
     async def fetch_log_urls(self) -> list[dict[str, str]]:
         return [{"name": "Container log", "url": self.url}]
+
+
+class OBSProvider(RPMProvider):
+    """
+    Fetches a build log from the OBS public endpoint.
+    """
+
+    obs_log_url = (
+        "https://build.opensuse.org/public/build/"
+        "{project}/{repository}/{architecture}/{package}/_log"
+    )
+    obs_spec_url = (
+        "https://build.opensuse.org/public/source/{project}/{package}/{filename}"
+    )
+
+    def __init__(
+        self, project: str, repository: str, architecture: str, package: str
+    ) -> None:
+        self.project = project
+        self.repository = repository
+        self.architecture = architecture
+        self.package = package
+
+    @cached_property
+    def log_url(self) -> str:
+        """Return the OBS public build-log URL for this provider's coordinates."""
+        return self.obs_log_url.format(
+            project=self.project,
+            repository=self.repository,
+            architecture=self.architecture,
+            package=self.package,
+        )
+
+    @handle_errors
+    async def fetch_logs(self) -> list[dict[str, str]]:
+        response = await fetch_text(self.log_url)
+        response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "")
+        if "text/plain" not in content_type:
+            raise FetchError(
+                f"The OBS log URL did not return a plain text file. URL: {self.log_url}"
+            )
+        return [{"name": "build.log", "content": response.text}]
+
+    @handle_errors
+    async def fetch_log_urls(self) -> list[dict[str, str]]:
+        return [{"name": "build.log", "url": self.log_url}]
+
+    @handle_errors
+    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+        spec_name = f"{self.package}.spec"
+        url = self.obs_spec_url.format(
+            project=self.project, package=self.package, filename=spec_name
+        )
+        response = await fetch_text(url)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return {"name": spec_name, "content": response.text}

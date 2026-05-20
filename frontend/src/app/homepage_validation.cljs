@@ -45,6 +45,20 @@
       (when (empty? (get @input-values :koji-arch))
         (swap! input-errors conj "koji-arch")))
 
+    "#obs"
+    (do
+      (when (empty? (get @input-values :obs-project))
+        (swap! input-errors conj "obs-project"))
+
+      (when (empty? (get @input-values :obs-repository))
+        (swap! input-errors conj "obs-repository"))
+
+      (when (empty? (get @input-values :obs-architecture))
+        (swap! input-errors conj "obs-architecture"))
+
+      (when (empty? (get @input-values :obs-package))
+        (swap! input-errors conj "obs-package")))
+
     "#url"
     (when (empty? (get @input-values :url))
       (swap! input-errors conj "url"))

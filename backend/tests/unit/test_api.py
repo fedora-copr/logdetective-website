@@ -145,6 +145,35 @@ class TestContributeEndpoints:
         assert data["build_id_title"] == "Container log"
         assert len(data["logs"]) == 1
 
+    @patch("src.api.OBSProvider")
+    async def test_contribute_obs(self, mock_cls, tmp_path):
+        """POST /frontend/contribute/obs feedback and returns OK."""
+        os.environ["FEEDBACK_DIR"] = str(tmp_path / "results")
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                "/frontend/contribute/obs/openSUSE:Factory/standard/x86_64/ed"
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["build_id"] is None
+        assert data["build_id_title"] == "OBS build"
+        assert data["build_url"] == (
+            "https://build.opensuse.org/package/show/openSUSE:Factory/ed"
+        )
+        assert len(data["logs"]) == 1
+        assert data["spec_file"] is None
+        mock_cls.assert_called_once_with("openSUSE:Factory", "standard", "x86_64", "ed")
+
 
 class TestExplainEndpoint:
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
@@ -425,6 +454,41 @@ class TestExplainProviderEndpoints:
         data = resp.json()
         assert "explanation" in data
         assert "logs" in data
+
+    @patch("src.api._call_analyze_api", new_callable=AsyncMock)
+    @patch("src.api.OBSProvider")
+    async def test_explain_obs(self, mock_cls, mock_analyze):
+        """POST /frontend/explain/obs forwards an OBS log to the logdetective server."""
+        log_url = (
+            "https://build.opensuse.org/public/build/"
+            "openSUSE:Factory/standard/x86_64/ed/_log"
+        )
+        mock_provider = mock_cls.return_value
+        mock_provider.fetch_log_urls = AsyncMock(
+            return_value=[{"name": "build.log", "url": log_url}]
+        )
+        mock_provider.fetch_logs = AsyncMock(
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
+        )
+        mock_provider.fetch_spec_file = AsyncMock(return_value=None)
+        mock_analyze.return_value = {
+            "explanation": "Build failed.",
+            "extracted_snippets": [],
+        }
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/obs/openSUSE:Factory/standard/x86_64/ed"
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "explanation" in data
+        assert "logs" in data
+        mock_cls.assert_called_once_with("openSUSE:Factory", "standard", "x86_64", "ed")
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api.httpx.AsyncClient")
