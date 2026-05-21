@@ -50,12 +50,12 @@ class BuildIdTitleEnum(StrEnum):
 PROVIDER_COMMENTARY: dict[str, str] = {
     ProvidersEnum.copr: (
         "Logs are from a Copr build.\n"
-        "Copr builds use mock chroots; root.log contains mock/DNF output,\n"
+        "Copr builds use mock chroots; build.log contains mock output,\n"
         "builder-live.log contains the actual build output."
     ),
     ProvidersEnum.koji: (
         "Logs are from a Koji build.\n"
-        "Koji builds run in mock; build.log has compilation output,\n"
+        "Koji builds use mock chroots; build.log contains build output,\n"
         "root.log has dependency resolution and mock setup."
     ),
     ProvidersEnum.packit: (
