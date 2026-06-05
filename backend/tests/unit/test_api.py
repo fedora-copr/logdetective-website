@@ -108,7 +108,7 @@ class TestContributeEndpoints:
         b64 = b64encode(url.encode()).decode()
         mock_provider = mock_cls.return_value
         mock_provider.fetch_logs = AsyncMock(
-            return_value=[{"name": "Log file", "content": FAKE_LOG_CONTENT}]
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
         )
         mock_provider.fetch_spec_file = AsyncMock(return_value=None)
 
@@ -377,10 +377,10 @@ class TestExplainProviderEndpoints:
         b64 = b64encode(url.encode()).decode()
         mock_provider = mock_cls.return_value
         mock_provider.fetch_log_urls = AsyncMock(
-            return_value=[{"name": "Log file", "url": url}]
+            return_value=[{"name": "build.log", "url": url}]
         )
         mock_provider.fetch_logs = AsyncMock(
-            return_value=[{"name": "Log file", "content": FAKE_LOG_CONTENT}]
+            return_value=[{"name": "build.log", "content": FAKE_LOG_CONTENT}]
         )
         mock_analyze.return_value = {
             "explanation": "Build failed.",

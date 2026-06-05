@@ -523,14 +523,14 @@ class URLProvider(RPMProvider):
             )
         return [
             {
-                "name": "Log file",
+                "name": "build.log",
                 "content": response.text,
             }
         ]
 
     @handle_errors
     async def fetch_log_urls(self) -> list[dict[str, str]]:
-        return [{"name": "Log file", "url": self.url}]
+        return [{"name": "build.log", "url": self.url}]
 
     @handle_errors
     async def fetch_spec_file(self) -> Optional[dict[str, str]]:
