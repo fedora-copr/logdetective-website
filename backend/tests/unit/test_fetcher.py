@@ -201,7 +201,7 @@ class TestURLProvider:
         url_map = {url: ("text", 200)}
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
             result = await provider.fetch_logs()
-        assert result == [{"name": "Log file", "content": "text"}]
+        assert result == [{"name": "build.log", "content": "text"}]
 
     async def test_fetch_url_spec(self):
         assert await URLProvider("https://www.fake.lol").fetch_spec_file() is None
@@ -219,7 +219,7 @@ class TestURLProvider:
         url = "https://www.fake.lol/build.log"
         provider = URLProvider(url)
         result = await provider.fetch_log_urls()
-        assert result == [{"name": "Log file", "url": url}]
+        assert result == [{"name": "build.log", "url": url}]
 
 
 class TestKojiProviderLogs:
