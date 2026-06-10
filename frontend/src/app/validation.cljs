@@ -1,4 +1,4 @@
-(ns app.homepage-validation
+(ns app.validation
   (:require
    [clojure.string :as str]
    [cljs.core.match :refer-macros [match]]))

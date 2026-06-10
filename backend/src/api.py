@@ -139,7 +139,16 @@ def _custom_http_exception_handler(
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return template_response("index.html", {"request": request})
+    return template_response("index.html", {"request": request, "name": "app-homepage"})
+
+
+@app.get("/contribute", response_class=HTMLResponse)
+def contribute_landing(request: Request):
+    """
+    Submission dialog for log annotation contributions
+    """
+    mapping = {"name": "app-contribute-landing", "request": request}
+    return template_response("app.html", mapping)
 
 
 @app.get("/contribute/{args:path}", response_class=HTMLResponse)

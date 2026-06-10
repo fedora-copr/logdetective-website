@@ -202,7 +202,7 @@
      (:review_url_website ok-response)]]
    [:a {:type "submit"
         :class "btn btn-primary btn-lg"
-        :href "/"}
+        :href "/contribute"}
     [:<> (fontawesome-icon "fa-plus") " Add another log"]]))
 
 (defn on-text-selected []
