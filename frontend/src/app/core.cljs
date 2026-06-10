@@ -4,7 +4,6 @@
             [app.homepage :refer [homepage fetch-stats-backend]]
             [app.contribute.core :refer [contribute init-data]]
             [app.review.core :refer [review init-data-review]]
-            [app.prompt.core :refer [prompt]]
             [app.explain.core :refer [explain-page init-explain]]))
 
 (defn ^:dev/after-load render
@@ -15,7 +14,6 @@
   (let [routes [["app-homepage" homepage fetch-stats-backend]
                 ["app-contribute" contribute init-data]
                 ["app-review" review init-data-review]
-                ["app-prompt" prompt nil]
                 ["app-explain" explain-page init-explain]]
         route (->> routes
                    (filter (fn [x] (.getElementById js/document (first x))))
