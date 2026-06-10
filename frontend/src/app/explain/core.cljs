@@ -1,9 +1,10 @@
 (ns app.explain.core
   (:require
    [clojure.string :as str]
+   [malli.core :as m]
    [cljs.core.match :refer-macros [match]]
    [ajax.core :refer [POST]]
-   [app.helpers :refer [current-path redirect query-params-get]]
+   [app.helpers :refer [current-path redirect query-params-get change-url]]
    [app.homepage-validation :refer [validate]]
    [app.common.provider-forms :as pf]
    [app.explain.atoms :as atoms]
@@ -12,8 +13,184 @@
     [status
      error-description
      error-title
-     handle-backend-error]]
-   [app.prompt.core :as prompt]))
+     handle-backend-error]]))
+
+(def InputSchema
+  [:map {:closed true}
+   [:explanation :string]
+
+   [:extracted_snippets
+    [:vector
+     [:map
+      [:snippet :string]
+      [:source_file :string]
+      [:line_number :int]]]]
+
+   [:logs
+    [:vector
+     [:map
+      [:name :string]
+      [:content :string]]]]])
+
+;; TODO We allow nil for easier debugging now but should reject it later
+(def OutputSchema
+  [:map {:closed true}
+   [:prompt [:maybe :string]]])
+
+(defn send [url]
+  (let [data {:prompt url}]
+    (if (m/validate OutputSchema data)
+      (do
+        (change-url (str "?url=" url))
+        (reset! status "waiting")
+        (POST "/frontend/explain/"
+          :params data
+          :format :json
+          :response-format :json
+          :keywords? true
+
+          :error-handler
+          (fn [error]
+            (handle-backend-error
+             (:error (:response error))
+             (:description (:response error))))
+
+          :handler
+          (fn [data]
+            (if (m/validate InputSchema data)
+              (do
+                (reset! status "ok")
+                (reset! atoms/form data))
+              (handle-backend-error
+               "Invalid data"
+               "Got invalid data from the backend. This is likely a bug.")))))
+
+      (if (not url)
+        (reset! status "No URL provided. Please enter a URL.")
+        (handle-backend-error
+         "Client error"
+         "Something went wrong when preparing a request to server")))))
+
+(defn left-column []
+  [:div {:class "col-6", :id "left-column"}
+   [:h2 "Explanation"]
+   (map (fn [x] [:p x])
+        (-> @atoms/form :explanation (str/split #"\n")))
+   [:p @atoms/ai-gen-disclaimer]])
+
+(defn reason [id snippet source_file line_number]
+  (let [accordion-id "#accordionExample"
+        heading-id (str "heading-reason-" id)
+        collapse-id (str "collapse-reason-" id)]
+    [:div {:class "accordion-item" :key id}
+     [:h2 {:class "accordion-header" :id heading-id}
+      [:button
+       {:class "accordion-button collapsed"
+        :type "button",
+        :data-bs-toggle "collapse"
+        :data-bs-target (str "#" collapse-id)
+        :aria-expanded "false"
+        :aria-controls collapse-id}
+        [:span
+          {:class "source-file"}
+          source_file
+          ] " : "
+        [:span
+          {:class "line-number"}
+          line_number] " | "
+        [:span
+          {:class "truncated-snippet"}
+          snippet]]]
+
+      [:div
+        {
+          :id collapse-id
+          :class "accordion-collapse collapse"
+          :aria-labelledby heading-id
+          :data-bs-parent accordion-id}
+        [:div
+          [:code {:class "full-snippet"} snippet]]
+        ]
+      ]))
+
+(defn download-log [log]
+  (let [a (.createElement js/document "a")
+        blob (new js/Blob #js [(:content log)] #js {:type "text/plain"})
+        url (.createObjectURL js/URL blob)]
+    (.setAttribute a "href" url)
+    (.setAttribute a "download" (:name log))
+    (.click a)))
+
+(defn right-column []
+  [:div {:class "col-6", :id "right-column"}
+   [:div {:class "float-end"}
+    (for [log (:logs @atoms/form)]
+      ^{:key (:name log)}
+      [:button {:type "button"
+                :class "btn btn-outline-primary ms-1"
+                :on-click #(download-log log)}
+       [:i {:class "fa-solid fa-floppy-disk"}]
+       (str " " (:name log))])]
+
+   [:h2 "Extracted snippets"]
+   [:div {:class "accordion accordion-flush" :id "accordionExample"}
+    (map-indexed
+     (fn [i x] (reason i (:snippet x) (:source_file x) (:line_number x)))
+     (:extracted_snippets @atoms/form))]])
+
+(defn two-column-layout []
+  [:div {:class "row" :id "content"}
+   (left-column)
+   (right-column)])
+
+(defn card [title body]
+  [:div {:class "card"}
+   [:div {:class "card-body"}
+    [:h5 {:class "card-title"} title]
+    body]])
+
+(defn disclaimer []
+  [:div {:class "alert alert-warning text-left" :role "alert"}
+   [:p "Keep in mind that this service is experimental and subject to certain limitations:"]
+   [:ol
+    [:li "The service can be slow, time can run into minutes, if multiple requests arrive simultaneously."]
+    [:li "We use a general-purpose model. We are still working on fine-tuning our own model."]
+    [:li "The service may be unstable. Please report any issues you may encounter."]]
+   [:p "You are about to use a tool that utilizes AI technology to analyze your build failure log."]
+   [:p "Submitted information will not be stored. Ready to submit the results to the AI tool for analysis?"]])
+
+(defn prompt-only []
+  [:div {:id "content" :class "container"}
+   [:section
+    {:class "py-1 text-center container"}
+    [:div
+     {:class "row py-lg-3"}
+     [:div
+      {:class "col-md-10 mx-auto"}
+      [:h1 {:class "fw-light"} "Log Detective"]
+      [:p
+       {:class "lead text-body-secondary"}
+       @atoms/mission-statement-prompt]
+      (disclaimer)]]]
+
+   [:div {:class "container" :id "about"}
+    [:h2 {:class "text-center"} "About the project"]
+
+    (card "Debugging failed builds is hard"
+          (str "Each build produces thousands of lines of output split among "
+               "multiple log files. And the relevant error message can be "
+               "anywhere. It's just like a needle in a haystack."))
+
+    (card "Does it matter?"
+          (str "Veteran packagers have an intuition where the error message "
+               "will most likely be, but the process is tedious regardless. "
+               "Newbies are often overwhelmed by the complexity and miss the "
+               "error message completely."))
+
+    (card "What is our goal?"
+          (str "Training an AI model to understand RPM build logs and explain "
+               "the failure in simple words, with recommendations how to fix "
+               "it. You won't need to open the logs at all."))]])
 
 ;; --- Input mode: provider selection tabs ---
 
@@ -139,8 +316,8 @@
       [:h1 {:class "fw-light"} "Log Detective"]
       [:p
        {:class "lead text-body-secondary"}
-       @prompt/mission-statement-prompt]
-      (prompt/disclaimer)
+       @atoms/mission-statement-prompt]
+      (disclaimer)
       [:div {:class "py-4"}
        [:div {:class "card text-center"}
         (pf/render-navigation explain-tabs atoms/current-hash-atom on-tab-click)
@@ -164,7 +341,7 @@
     :handler
     (fn [data]
       (reset! status "ok")
-      (reset! prompt/form data))))
+      (reset! atoms/form data))))
 
 (defn provider-path []
   (let [path (current-path)]
@@ -186,7 +363,7 @@
       ;; Old ?url= flow: backward compatible
       (and query-url (not= @status "ok"))
       (do
-        (prompt/send query-url)
+        (send query-url)
         (loading-screen "Getting a response from the server"))
 
       ;; Provider path: e.g. /explain/copr/123/fedora-39-x86_64
@@ -195,12 +372,12 @@
         (send-provider (str "/frontend/explain/" ppath))
         (loading-screen "Getting a response from the server"))
 
-      @prompt/form
-      (prompt/two-column-layout)
+      @atoms/form
+      (two-column-layout)
 
       :else
       (explain-input))))
 
 (defn init-explain []
   (reset! status nil)
-  (reset! prompt/form nil))
+  (reset! atoms/form nil))
