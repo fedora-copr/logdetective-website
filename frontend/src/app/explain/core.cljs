@@ -5,7 +5,7 @@
    [cljs.core.match :refer-macros [match]]
    [ajax.core :refer [POST]]
    [app.helpers :refer [current-path redirect query-params-get change-url]]
-   [app.homepage-validation :refer [validate]]
+   [app.validation :refer [validate]]
    [app.common.provider-forms :as pf]
    [app.explain.atoms :as atoms]
    [app.components.jumbotron :refer [render-error loading-screen]]
@@ -143,54 +143,15 @@
    (left-column)
    (right-column)])
 
-(defn card [title body]
-  [:div {:class "card"}
-   [:div {:class "card-body"}
-    [:h5 {:class "card-title"} title]
-    body]])
-
 (defn disclaimer []
   [:div {:class "alert alert-warning text-left" :role "alert"}
-   [:p "Keep in mind that this service is experimental and subject to certain limitations:"]
+   [:p "The service is experimental and subject to limitations:"]
    [:ol
-    [:li "The service can be slow, time can run into minutes, if multiple requests arrive simultaneously."]
-    [:li "We use a general-purpose model. We are still working on fine-tuning our own model."]
+    [:li "Response time can run into minutes, if multiple requests arrive simultaneously."]
+    [:li "We use a general-purpose model that may not have the most recent information."]
     [:li "The service may be unstable. Please report any issues you may encounter."]]
    [:p "You are about to use a tool that utilizes AI technology to analyze your build failure log."]
    [:p "Submitted information will not be stored. Ready to submit the results to the AI tool for analysis?"]])
-
-(defn prompt-only []
-  [:div {:id "content" :class "container"}
-   [:section
-    {:class "py-1 text-center container"}
-    [:div
-     {:class "row py-lg-3"}
-     [:div
-      {:class "col-md-10 mx-auto"}
-      [:h1 {:class "fw-light"} "Log Detective"]
-      [:p
-       {:class "lead text-body-secondary"}
-       @atoms/mission-statement-prompt]
-      (disclaimer)]]]
-
-   [:div {:class "container" :id "about"}
-    [:h2 {:class "text-center"} "About the project"]
-
-    (card "Debugging failed builds is hard"
-          (str "Each build produces thousands of lines of output split among "
-               "multiple log files. And the relevant error message can be "
-               "anywhere. It's just like a needle in a haystack."))
-
-    (card "Does it matter?"
-          (str "Veteran packagers have an intuition where the error message "
-               "will most likely be, but the process is tedious regardless. "
-               "Newbies are often overwhelmed by the complexity and miss the "
-               "error message completely."))
-
-    (card "What is our goal?"
-          (str "Training an AI model to understand RPM build logs and explain "
-               "the failure in simple words, with recommendations how to fix "
-               "it. You won't need to open the logs at all."))]])
 
 ;; --- Input mode: provider selection tabs ---
 
@@ -306,7 +267,7 @@
     :else        (render-copr-card)))
 
 (defn explain-input []
-  [:div {:id "content" :class "container"}
+  [:div {:id "content" :class "container provider-form"}
    [:section
     {:class "py-1 text-center container"}
     [:div
@@ -345,7 +306,7 @@
 
 (defn provider-path []
   (let [path (current-path)]
-    (when (not= path "/explain")
+    (when (and (not= path "/explain") (not= path "/"))
       (str/replace path #"^/explain/" ""))))
 
 ;; --- Main component ---

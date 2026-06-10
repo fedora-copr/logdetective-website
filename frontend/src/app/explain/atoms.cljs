@@ -8,5 +8,5 @@
 (def ai-gen-disclaimer (r/atom "This explanation was provided by AI. Always review AI generated content prior to use."))
 (def mission-statement-prompt (r/atom
   (str
-    "Trying to improve RPM packaging experience by analyzing build "
+    "Improving RPM packaging experience by analyzing build "
     "logs and explaining the failure in simple words.")))

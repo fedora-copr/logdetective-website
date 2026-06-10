@@ -1,17 +1,15 @@
-(ns app.homepage
+(ns app.contribute.landing
   (:require [reagent.core :as r]
             [clojure.string :as str]
             [cljs.core.match :refer-macros [match]]
-            [app.homepage-validation :refer [validate]]
+            [app.validation :refer [validate]]
             [lambdaisland.fetch :as fetch]
             [app.components.jumbotron :refer [render-error]]
             [app.common.provider-forms :as pf]
             [app.helpers :refer
-             [current-path
-              redirect
+             [redirect
               local-storage-enabled
               local-storage-error
-              remove-trailing-slash
               upload-error]]))
 
 (def current-hash (r/atom (. (. js/document -location) -hash)))
@@ -23,12 +21,11 @@
 (def error (r/atom nil))
 
 (defn fetch-stats-backend []
-  (let [url (remove-trailing-slash (str "/stats" (current-path)))]
-    (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp]
-                 (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [resp]
-                 (reset! backend-stats resp))))))
+  (-> (fetch/get "/stats" {:accept :json :content-type :json})
+      (.then (fn [resp]
+               (-> resp :body (js->clj :keywordize-keys true))))
+      (.then (fn [resp]
+               (reset! backend-stats resp)))))
 
 (defn on-submit [event]
   (.preventDefault event)
@@ -204,10 +201,33 @@
     "#container" (render-container-card)
     :else        (render-copr-card)))
 
-(defn homepage []
+(defn contribute-landing []
   (if @error
     (render-error (:title @error) (:description @error))
-    [:div {:class "card text-center"}
-     (render-stats)
-     (render-navigation)
-     (render-cards)]))
+    [:div {:class "provider-form" :style {:max-width "1000px" :margin "0 auto"}}
+     [:section {:class "py-1 text-center container"}
+      [:div {:class "row py-lg-3"}
+       [:div {:class "col-md-10 mx-auto"}
+        [:h1 {:class "fw-light"} "Log Detective"]
+        [:p {:class "lead text-body-secondary"}
+         "Help us improve the RPM packaging experience by training an AI model "
+         "to recognize and explain build failures in simple words."]]]]
+     [:section {:id "dataset-banner" :class "container text-center py-1"}
+      [:p {:class "text-body-secondary"}
+       "Our "
+       [:a {:href "https://huggingface.co/datasets/fedora-copr/log_detective_qna"} "first dataset"]
+       " has been published on Hugging Face and is available for use in model training."]]
+     [:section {:id "packit-banner" :class "container text-center py-1"}
+      [:p {:class "text-body-secondary"}
+       "Log Detective is now providing build analysis of downstream "
+       [:a {:href "https://koji.fedoraproject.org/koji/"} "Koji"]
+       " scratch builds for "
+       [:a {:href "https://packit.dev/"} "Packit"]
+       " Fedora CI."]]
+     [:div {:class "card text-center"}
+      (render-stats)
+      (render-navigation)
+      (render-cards)]]))
+
+(defn init-contribute-landing []
+  (fetch-stats-backend))

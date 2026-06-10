@@ -84,7 +84,7 @@ h2 {
   color: var(--gray-8) !important;
 }
 
-#app-homepage .card {
+.provider-form .card {
   border-color: var(--gray-3);
 }
 
@@ -100,14 +100,14 @@ h2 {
   --bs-nav-tabs-link-active-border-color: var(--gray-3);
 }
 
-#app-homepage a.nav-link:hover {
+.provider-form a.nav-link:hover {
   border-bottom-color: var(--gray-3) !important;
   border-left-color: var(--gray-0) !important;
   border-top-color: var(--gray-0) !important;
   border-right-color: var(--gray-0) !important;
 }
 
-#app-homepage a.active:hover {
+.provider-form a.active:hover {
   border-bottom-color: white !important;
   border-left-color: var(--gray-3) !important;
   border-top-color: var(--gray-3) !important;
@@ -144,21 +144,21 @@ h2 {
   --bs-btn-active-border-color: var(--magenta);
 }
 
-#app-homepage .card-title {
+.provider-form .card-title {
   margin-top: 15px;
   margin-bottom: 15px;
   color: var(--green);
 }
 
-#app-homepage .card-body {
+.provider-form .card-body {
   min-height: 250px;
 }
 
-#app-homepage input.validation-error {
+.provider-form input.validation-error {
   border-color: var(--magenta);
 }
 
-#app-homepage .input-group {
+.provider-form .input-group {
   max-width: 600px;
 }
 

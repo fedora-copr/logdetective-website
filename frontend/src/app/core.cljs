@@ -1,7 +1,7 @@
 (ns app.core
   "This namespace contains your application and is the entrypoint for 'yarn start'."
   (:require [reagent.core :as r]
-            [app.homepage :refer [homepage fetch-stats-backend]]
+            [app.contribute.landing :refer [contribute-landing init-contribute-landing]]
             [app.contribute.core :refer [contribute init-data]]
             [app.review.core :refer [review init-data-review]]
             [app.explain.core :refer [explain-page init-explain]]))
@@ -11,7 +11,8 @@
   []
   ;; This is not the standard way of doing this, we should probably use some
   ;; router. But it is good enough for now.
-  (let [routes [["app-homepage" homepage fetch-stats-backend]
+  (let [routes [["app-homepage" explain-page init-explain]
+                ["app-contribute-landing" contribute-landing init-contribute-landing]
                 ["app-contribute" contribute init-data]
                 ["app-review" review init-data-review]
                 ["app-explain" explain-page init-explain]]
