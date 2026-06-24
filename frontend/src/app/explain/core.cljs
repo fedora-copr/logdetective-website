@@ -119,7 +119,8 @@
         url (.createObjectURL js/URL blob)]
     (.setAttribute a "href" url)
     (.setAttribute a "download" (:name log))
-    (.click a)))
+    (.click a)
+    (.revokeObjectURL js/URL url)))
 
 (defn right-column []
   [:div {:class "col-6", :id "right-column"}
