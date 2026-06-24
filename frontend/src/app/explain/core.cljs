@@ -32,10 +32,9 @@
       [:name :string]
       [:content :string]]]]])
 
-;; TODO We allow nil for easier debugging now but should reject it later
 (def OutputSchema
   [:map {:closed true}
-   [:prompt [:maybe :string]]])
+   [:prompt [:string]]])
 
 (defn send [url]
   (let [data {:prompt url}]
