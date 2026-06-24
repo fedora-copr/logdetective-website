@@ -76,7 +76,7 @@
    [:h2 "Explanation"]
    (map (fn [x] [:p x])
         (-> @atoms/form :explanation (str/split #"\n")))
-   [:p @atoms/ai-gen-disclaimer]])
+   [:p atoms/ai-gen-disclaimer]])
 
 (defn reason [id snippet source_file line_number]
   (let [accordion-id "#accordionExample"
@@ -277,7 +277,7 @@
       [:h1 {:class "fw-light"} "Log Detective"]
       [:p
        {:class "lead text-body-secondary"}
-       @atoms/mission-statement-prompt]
+       atoms/mission-statement-prompt]
       (disclaimer)
       [:div {:class "py-4"}
        [:div {:class "card text-center"}
