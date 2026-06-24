@@ -304,10 +304,11 @@
       (reset! status "ok")
       (reset! atoms/form data))))
 
+;; Remove /explain/ prefix from paths with provider information
 (defn provider-path []
   (let [path (current-path)]
-    (when (and (not= path "/explain") (not= path "/"))
-      (str/replace path #"^/explain/" ""))))
+    (when (str/starts-with? path "/explain/")
+      (subs path (count "/explain/")))))
 
 ;; --- Main component ---
 
