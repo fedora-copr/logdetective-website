@@ -9,6 +9,12 @@
   max-width: 1700px;
 }
 
+#content-main {
+  padding-top: 30px;
+  background-color: white;
+  max-width: 1700px;
+}
+
 #content-narrow {
   max-width: 1000px;
 }

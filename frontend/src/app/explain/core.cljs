@@ -139,7 +139,7 @@
      (:extracted_snippets @atoms/form))]])
 
 (defn two-column-layout []
-  [:div {:class "row" :id "content"}
+  [:div {:class "row" :id "content-main"}
    (left-column)
    (right-column)])
 
@@ -267,7 +267,7 @@
     :else        (render-copr-card)))
 
 (defn explain-input []
-  [:div {:id "content" :class "container provider-form"}
+  [:div {:class "container provider-form"}
    [:section
     {:class "py-1 text-center container"}
     [:div
