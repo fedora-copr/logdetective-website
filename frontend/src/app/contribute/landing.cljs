@@ -25,7 +25,11 @@
       (.then (fn [resp]
                (-> resp :body (js->clj :keywordize-keys true))))
       (.then (fn [resp]
-               (reset! backend-stats resp)))))
+               (reset! backend-stats resp)))
+      (.catch (fn [err]
+               (reset! error {
+                  :title "Error fetching server statistics"
+                  :description err })))))
 
 (defn on-submit [event]
   (.preventDefault event)
