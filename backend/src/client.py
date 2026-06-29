@@ -1,3 +1,7 @@
+"""
+HTTP client utility module
+"""
+
 from httpx import AsyncClient, Timeout, Limits
 
 from src.constants import (
