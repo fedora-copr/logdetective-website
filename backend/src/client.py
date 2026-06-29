@@ -1,9 +1,11 @@
-from httpx import AsyncClient, Timeout
+from httpx import AsyncClient, Timeout, Limits
 
 from src.constants import (
     LOGDETECTIVE_CONNECT_TIMEOUT,
     LOGDETECTIVE_DEFAULT_TIMEOUT,
     LOGDETECTIVE_READ_TIMEOUT,
+    LOGDETECTIVE_MAX_CONNECTION_LIMIT,
+    LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS,
 )
 
 
@@ -16,4 +18,8 @@ def get_http_client() -> AsyncClient:
             read=LOGDETECTIVE_READ_TIMEOUT,
         ),
         follow_redirects=True,
+        limits=Limits(
+            max_connections=LOGDETECTIVE_MAX_CONNECTION_LIMIT,
+            max_keepalive_connections=LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS,
+        ),
     )
