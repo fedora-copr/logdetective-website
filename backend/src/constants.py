@@ -9,7 +9,9 @@ OBS_BUILD_URL = "https://build.opensuse.org/package/show/{0}/{1}"
 FEEDBACK_DIR = os.environ.get("FEEDBACK_DIR", "/persistent/results")
 REVIEWS_DIR = os.environ.get("REVIEWS_DIR", "/persistent/reviews")
 
-LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", 1800))
+# Gunicorn worker timeout (files/gunicorn.conf.py) must be > this value.
+# Note: > 90 % analysis requests finish within 30 seconds as of June 2026.
+LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", 600))
 # Set to slightly more than retransmission window of 3s from RFC2988
 # https://datatracker.ietf.org/doc/html/rfc2988
 LOGDETECTIVE_CONNECT_TIMEOUT = float(
