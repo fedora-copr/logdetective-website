@@ -13,6 +13,14 @@ from starlette.exceptions import HTTPException
 
 from src.api import app
 
+
+@pytest.fixture(autouse=True)
+def _provide_app_http_client():
+    """Ensure app.state.http_client exists for tests that bypass lifespan."""
+    app.state.http_client = MagicMock()
+    yield
+
+
 FAKE_LOG_CONTENT = "mock build log content"
 FAKE_SPEC = {"name": "test.spec", "content": "spec content"}
 
@@ -172,14 +180,19 @@ class TestContributeEndpoints:
         )
         assert len(data["logs"]) == 1
         assert data["spec_file"] is None
-        mock_cls.assert_called_once_with("openSUSE:Factory", "standard", "x86_64", "ed")
+        mock_cls.assert_called_once_with(
+            "openSUSE:Factory",
+            "standard",
+            "x86_64",
+            "ed",
+            http_client=app.state.http_client,
+        )
 
 
 class TestExplainEndpoint:
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
-    async def test_explain_success(self, mock_client_cls, mock_download, _mock_check):
+    async def test_explain_success(self, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_response = MagicMock()
@@ -190,9 +203,7 @@ class TestExplainEndpoint:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -213,17 +224,12 @@ class TestExplainEndpoint:
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_timeout(
-        self, mock_client_cls, mock_download, _mock_check
-    ):
+    async def test_explain_server_timeout(self, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("read timed out"))
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -238,19 +244,14 @@ class TestExplainEndpoint:
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_connect_error(
-        self, mock_client_cls, mock_download, _mock_check
-    ):
+    async def test_explain_server_connect_error(self, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(
             side_effect=httpx.ConnectError("connection refused")
         )
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -265,10 +266,7 @@ class TestExplainEndpoint:
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
-    async def test_explain_server_500(
-        self, mock_client_cls, mock_download, _mock_check
-    ):
+    async def test_explain_server_500(self, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
         mock_response = MagicMock()
@@ -286,9 +284,7 @@ class TestExplainEndpoint:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -488,12 +484,17 @@ class TestExplainProviderEndpoints:
         data = resp.json()
         assert "explanation" in data
         assert "logs" in data
-        mock_cls.assert_called_once_with("openSUSE:Factory", "standard", "x86_64", "ed")
+        mock_cls.assert_called_once_with(
+            "openSUSE:Factory",
+            "standard",
+            "x86_64",
+            "ed",
+            http_client=app.state.http_client,
+        )
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
     @patch("src.api.CoprProvider")
-    async def test_explain_provider_timeout(self, mock_cls, mock_http_cls, _mock_check):
+    async def test_explain_provider_timeout(self, mock_cls, _mock_check):
         mock_provider = mock_cls.return_value
         mock_provider.fetch_log_urls = AsyncMock(
             return_value=[{"name": "build.log", "url": "https://example.com/build.log"}]
@@ -505,9 +506,7 @@ class TestExplainProviderEndpoints:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("read timed out"))
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_http_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -518,11 +517,8 @@ class TestExplainProviderEndpoints:
         assert resp.status_code == 408
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
-    @patch("src.api.httpx.AsyncClient")
     @patch("src.api.CoprProvider")
-    async def test_explain_provider_server_error(
-        self, mock_cls, mock_http_cls, _mock_check
-    ):
+    async def test_explain_provider_server_error(self, mock_cls, _mock_check):
         mock_provider = mock_cls.return_value
         mock_provider.fetch_log_urls = AsyncMock(
             return_value=[{"name": "build.log", "url": "https://example.com/build.log"}]
@@ -547,9 +543,7 @@ class TestExplainProviderEndpoints:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_http_cls.return_value = mock_client
+        app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -563,8 +557,7 @@ class TestExplainProviderEndpoints:
 class TestCheckLogUrls:
     """Tests for _check_log_urls."""
 
-    @patch("src.api.httpx.AsyncClient")
-    async def test_all_reachable(self, mock_client_cls):
+    async def test_all_reachable(self):
         from src.api import _check_log_urls
 
         mock_response = MagicMock()
@@ -572,19 +565,16 @@ class TestCheckLogUrls:
 
         mock_client = AsyncMock()
         mock_client.head = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
 
         await _check_log_urls(
             [
                 {"name": "build.log", "url": "https://example.com/build.log"},
                 {"name": "root.log", "url": "https://example.com/root.log"},
-            ]
+            ],
+            http_client=mock_client,
         )
 
-    @patch("src.api.httpx.AsyncClient")
-    async def test_unreachable_url_returns_404(self, mock_client_cls):
+    async def test_unreachable_url_returns_404(self):
         from src.api import _check_log_urls
 
         mock_response = MagicMock()
@@ -592,36 +582,31 @@ class TestCheckLogUrls:
 
         mock_client = AsyncMock()
         mock_client.head = AsyncMock(return_value=mock_response)
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
 
         with pytest.raises(HTTPException) as exc_info:
             await _check_log_urls(
                 [
                     {"name": "build.log", "url": "https://example.com/missing.log"},
-                ]
+                ],
+                http_client=mock_client,
             )
         assert exc_info.value.status_code == 422
         assert "missing.log" in exc_info.value.detail
 
-    @patch("src.api.httpx.AsyncClient")
-    async def test_unreachable_url_connection_error(self, mock_client_cls):
+    async def test_unreachable_url_connection_error(self):
         from src.api import _check_log_urls
 
         mock_client = AsyncMock()
         mock_client.head = AsyncMock(
             side_effect=httpx.ConnectError("connection refused")
         )
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=False)
-        mock_client_cls.return_value = mock_client
 
         with pytest.raises(HTTPException) as exc_info:
             await _check_log_urls(
                 [
                     {"name": "build.log", "url": "https://example.com/build.log"},
-                ]
+                ],
+                http_client=mock_client,
             )
         assert exc_info.value.status_code == 422
         assert "connection refused" in exc_info.value.detail

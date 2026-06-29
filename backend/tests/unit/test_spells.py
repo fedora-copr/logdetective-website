@@ -49,11 +49,8 @@ class TestFetchText:
             )
 
         transport = httpx.MockTransport(_handler)
-        with patch(
-            "src.spells.httpx.AsyncClient",
-            return_value=httpx.AsyncClient(transport=transport),
-        ):
-            response = await fetch_text(url)
+        client = httpx.AsyncClient(transport=transport)
+        response = await fetch_text(url, client=client)
 
         assert response.encoding == "utf-8"
         assert response.text == czech_text

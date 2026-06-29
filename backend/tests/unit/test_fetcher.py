@@ -63,7 +63,7 @@ class TestCoprProvider:
 
         logs = copr_srpm_logs if chroot == "srpm-builds" else copr_chroot_logs
 
-        provider = CoprProvider(123, chroot)
+        provider = CoprProvider(123, chroot, http_client=MagicMock())
         if not baseurl:
             with pytest.raises(FetchError):
                 await provider.fetch_logs()
@@ -111,12 +111,16 @@ class TestCoprProvider:
         url_map = {f"{baseurl}/{spec_name}": (fake_spec_file, 200)}
 
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
-            result = await CoprProvider(123, chroot).fetch_spec_file()
+            result = await CoprProvider(
+                123, chroot, http_client=MagicMock()
+            ).fetch_spec_file()
         assert {"name": spec_name, "content": fake_spec_file} == result
 
         url_map_404 = {f"{baseurl}/{spec_name}": ("", 404)}
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map_404)):
-            result = await CoprProvider(123, chroot).fetch_spec_file()
+            result = await CoprProvider(
+                123, chroot, http_client=MagicMock()
+            ).fetch_spec_file()
         assert result is None
 
     @patch.object(BuildProxy, "get")
@@ -138,7 +142,7 @@ class TestCoprProvider:
             for name in ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]
         }
 
-        provider = CoprProvider(123, chroot)
+        provider = CoprProvider(123, chroot, http_client=MagicMock())
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
             logs = await provider.fetch_logs()
 
@@ -168,7 +172,7 @@ class TestCoprProvider:
         mock_build_proxy.return_value = MagicMock(
             ownername="ownername", project_dirname="dirname", id=123
         )
-        provider = CoprProvider(123, chroot)
+        provider = CoprProvider(123, chroot, http_client=MagicMock())
         result = await provider.fetch_log_urls()
 
         for entry in result:
@@ -191,7 +195,7 @@ class TestCoprProvider:
         mock_build_proxy.return_value = MagicMock(
             ownername="ownername", project_dirname="dirname", id=123
         )
-        provider = CoprProvider(123, "fedora-39_x86_64")
+        provider = CoprProvider(123, "fedora-39_x86_64", http_client=MagicMock())
         with pytest.raises(FetchError):
             await provider.fetch_log_urls()
 
@@ -199,19 +203,24 @@ class TestCoprProvider:
 class TestURLProvider:
     async def test_fetch_url_logs(self):
         url = "https://www.fake.lol"
-        provider = URLProvider(url)
+        provider = URLProvider(url, http_client=MagicMock())
         url_map = {url: ("text", 200)}
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
             result = await provider.fetch_logs()
         assert result == [{"name": "build.log", "content": "text"}]
 
     async def test_fetch_url_spec(self):
-        assert await URLProvider("https://www.fake.lol").fetch_spec_file() is None
+        assert (
+            await URLProvider(
+                "https://www.fake.lol", http_client=MagicMock()
+            ).fetch_spec_file()
+            is None
+        )
 
     async def test_fetch_url_logs_with_utf8(self):
         url = "https://www.fake.lol/log.txt"
         czech_content = "Chyba: balíček nebyl nalezen\nŘešení: přidejte repozitář"
-        provider = URLProvider(url)
+        provider = URLProvider(url, http_client=MagicMock())
         url_map = {url: (czech_content, 200)}
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
             logs = await provider.fetch_logs()
@@ -219,7 +228,7 @@ class TestURLProvider:
 
     async def test_fetch_log_urls(self):
         url = "https://www.fake.lol/build.log"
-        provider = URLProvider(url)
+        provider = URLProvider(url, http_client=MagicMock())
         result = await provider.fetch_log_urls()
         assert result == [{"name": "build.log", "url": url}]
 
@@ -241,7 +250,11 @@ class TestOBSProvider:
 
     def _provider(self):
         return OBSProvider(
-            self.project, self.repository, self.architecture, self.package
+            self.project,
+            self.repository,
+            self.architecture,
+            self.package,
+            http_client=MagicMock(),
         )
 
     async def test_fetch_logs(self):
@@ -298,7 +311,7 @@ class TestKojiProviderLogs:
             downloadTaskOutput=MagicMock(return_value="LOG_CONTENT"),
         )
         mock_task_info.return_value = request.getfixturevalue(f_task_dict)
-        koji_provider = KojiProvider(123, "noarch")
+        koji_provider = KojiProvider(123, "noarch", http_client=MagicMock())
         logs = await koji_provider.fetch_logs()
         assert len(logs) == 5
         for log in logs:
@@ -315,7 +328,7 @@ class TestKojiProviderLogs:
             downloadTaskOutput=MagicMock(return_value=czech_log.encode("utf-8")),
         )
         mock_task_info.return_value = srpm_task_dict
-        koji_provider = KojiProvider(123, "noarch")
+        koji_provider = KojiProvider(123, "noarch", http_client=MagicMock())
         logs = await koji_provider.fetch_logs()
         for log in logs:
             assert log["content"] == czech_log
@@ -367,7 +380,9 @@ class TestKojiProviderLogs:
         url_map = {spec_url: (fake_spec_file, 200)}
         expected = {"name": "copr-frontend.spec", "content": fake_spec_file}
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
-            result = await KojiProvider(123, "noarch").fetch_spec_file()
+            result = await KojiProvider(
+                123, "noarch", http_client=MagicMock()
+            ).fetch_spec_file()
         assert expected == result
 
     @patch.object(KojiProvider, "_fetch_spec_file_from_task_id", new_callable=AsyncMock)
@@ -386,7 +401,9 @@ class TestKojiProviderLogs:
         mock_get_task_request_url.return_value = None
         expected = {"name": "copr-fronend.spec", "content": fake_spec_file}
         mock_fetch_spec_file_from_task_id.return_value = expected
-        result = await KojiProvider(123, "noarch").fetch_spec_file()
+        result = await KojiProvider(
+            123, "noarch", http_client=MagicMock()
+        ).fetch_spec_file()
         assert expected == result
 
     @patch.object(KojiProvider, "_fetch_spec_file_from_task_id", new_callable=AsyncMock)
@@ -404,7 +421,9 @@ class TestKojiProviderLogs:
         )
         mock_get_task_request_url.return_value = None
         mock_fetch_spec_file_from_task_id.return_value = None
-        koji_result = await KojiProvider(123, "noarch").fetch_spec_file()
+        koji_result = await KojiProvider(
+            123, "noarch", http_client=MagicMock()
+        ).fetch_spec_file()
         assert koji_result is None
 
     @patch.object(koji, "ClientSession")
@@ -418,7 +437,7 @@ class TestKojiProviderLogs:
                 return_value={str(root_task_id): copr_task_descendants}
             ),
         )
-        KojiProvider(123, "noarch")
+        KojiProvider(123, "noarch", http_client=MagicMock())
 
     @patch.object(koji, "ClientSession")
     @patch.object(KojiProvider, "task_info", new_callable=PropertyMock)
@@ -432,7 +451,7 @@ class TestKojiProviderLogs:
             listTaskOutput=MagicMock(return_value=available_files),
         )
         mock_task_info.return_value = srpm_task_dict
-        provider = KojiProvider(task_id, "noarch")
+        provider = KojiProvider(task_id, "noarch", http_client=MagicMock())
         result = await provider.fetch_log_urls()
 
         expected_relpath = f"tasks/{task_id % 10000}/{task_id}"
@@ -457,14 +476,14 @@ class TestKojiProviderLogs:
             listTaskOutput=MagicMock(return_value=["state.log"]),
         )
         mock_task_info.return_value = srpm_task_dict
-        provider = KojiProvider(123, "noarch")
+        provider = KojiProvider(123, "noarch", http_client=MagicMock())
         with pytest.raises(FetchError):
             await provider.fetch_log_urls()
 
 
 class TestPackitProvider:
     packit_id = 123
-    packit_provider = PackitProvider(packit_id)
+    packit_provider = PackitProvider(packit_id, http_client=MagicMock())
 
     @patch.object(BuildProxy, "get")
     @patch.object(BuildChrootProxy, "get")
@@ -494,13 +513,11 @@ class TestPackitProvider:
 
         transport = httpx.MockTransport(_transport_handler)
 
-        with patch(
-            "src.fetcher.httpx.AsyncClient",
-            return_value=httpx.AsyncClient(transport=transport),
-        ):
-            with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
-                provider = PackitProvider(self.packit_id)
-                logs = await provider.fetch_logs()
+        with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
+            provider = PackitProvider(
+                self.packit_id, http_client=httpx.AsyncClient(transport=transport)
+            )
+            logs = await provider.fetch_logs()
 
         for log in logs:
             assert log["content"] == czech_log
@@ -517,13 +534,11 @@ class TestPackitProvider:
             return httpx.Response(404)
 
         transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(
+            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
+        )
 
-        with patch(
-            "src.fetcher.httpx.AsyncClient",
-            return_value=httpx.AsyncClient(transport=transport),
-        ):
-            correct_provider = await provider._resolve_provider()
+        correct_provider = await provider._resolve_provider()
 
         assert isinstance(correct_provider, CoprProvider)
         assert correct_provider.build_id == build_id
@@ -547,13 +562,11 @@ class TestPackitProvider:
             return httpx.Response(404)
 
         transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(
+            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
+        )
 
-        with patch(
-            "src.fetcher.httpx.AsyncClient",
-            return_value=httpx.AsyncClient(transport=transport),
-        ):
-            correct_provider = await provider._resolve_provider()
+        correct_provider = await provider._resolve_provider()
 
         assert isinstance(correct_provider, KojiProvider)
 
@@ -562,18 +575,16 @@ class TestPackitProvider:
             return httpx.Response(404)
 
         transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(
+            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
+        )
 
-        with patch(
-            "src.fetcher.httpx.AsyncClient",
-            return_value=httpx.AsyncClient(transport=transport),
-        ):
-            with pytest.raises(FetchError):
-                await provider._resolve_provider()
+        with pytest.raises(FetchError):
+            await provider._resolve_provider()
 
     async def test_get_url_copr(self):
         mock_copr = MagicMock(spec=CoprProvider)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(self.packit_id, http_client=MagicMock())
         with patch.object(
             provider, "_get_provider", new=AsyncMock(return_value=mock_copr)
         ):
@@ -584,7 +595,7 @@ class TestPackitProvider:
 
     async def test_get_url_koji(self):
         mock_koji = MagicMock(spec=KojiProvider)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(self.packit_id, http_client=MagicMock())
         with patch.object(
             provider, "_get_provider", new=AsyncMock(return_value=mock_koji)
         ):
@@ -597,7 +608,7 @@ class TestPackitProvider:
         fake_urls = [{"name": "build.log", "url": "https://example.com/build.log"}]
         mock_inner = AsyncMock()
         mock_inner.fetch_log_urls = AsyncMock(return_value=fake_urls)
-        provider = PackitProvider(self.packit_id)
+        provider = PackitProvider(self.packit_id, http_client=MagicMock())
         with patch.object(
             provider, "_get_provider", new=AsyncMock(return_value=mock_inner)
         ):
@@ -618,7 +629,7 @@ class TestContainerProvider:
                 request=httpx.Request("GET", u),
             )
 
-        provider = ContainerProvider(url)
+        provider = ContainerProvider(url, http_client=MagicMock())
         with patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text):
             result = await provider.fetch_logs()
         assert result == [{"name": "Container log", "content": content}]
@@ -634,7 +645,7 @@ class TestContainerProvider:
                 request=httpx.Request("GET", u),
             )
 
-        provider = ContainerProvider(url)
+        provider = ContainerProvider(url, http_client=MagicMock())
         with patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text):
             with pytest.raises(FetchError):
                 await provider.fetch_logs()
@@ -650,7 +661,7 @@ class TestContainerProvider:
                 request=httpx.Request("GET", u),
             )
 
-        provider = ContainerProvider(url)
+        provider = ContainerProvider(url, http_client=MagicMock())
         with patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text):
             from fastapi import HTTPException
 
@@ -660,6 +671,6 @@ class TestContainerProvider:
 
     async def test_fetch_log_urls(self):
         url = "https://example.com/container.log"
-        provider = ContainerProvider(url)
+        provider = ContainerProvider(url, http_client=MagicMock())
         result = await provider.fetch_log_urls()
         assert result == [{"name": "Container log", "url": url}]
