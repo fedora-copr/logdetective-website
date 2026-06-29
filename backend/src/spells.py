@@ -132,7 +132,7 @@ def read_text_file(path: Path | str) -> str:
         return fp.read()
 
 
-async def fetch_text(url: str, **kwargs) -> httpx.Response:
+async def fetch_text(url: str, client: httpx.AsyncClient, **kwargs) -> httpx.Response:
     """
     Fetch text content from URL with consistent UTF-8 encoding.
 
@@ -143,9 +143,9 @@ async def fetch_text(url: str, **kwargs) -> httpx.Response:
     Returns:
         httpx.Response with encoding set to UTF-8
     """
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, **kwargs)
-        response.encoding = "utf-8"
+
+    response = await client.get(url, **kwargs)
+    response.encoding = "utf-8"
     return response
 
 

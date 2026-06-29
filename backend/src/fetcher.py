@@ -113,17 +113,23 @@ class RPMProvider(Provider):
 class CoprProvider(RPMProvider):
     copr_url = "https://copr.fedorainfracloud.org"
 
-    def __init__(self, build_id: int, chroot: str) -> None:
+    def __init__(
+        self, build_id: int, chroot: str, http_client: httpx.AsyncClient
+    ) -> None:
         self.build_id = build_id
         self.chroot = chroot
         self.client = copr.v3.Client({"copr_url": self.copr_url})
+        self.http_client = http_client
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
         baseurl, log_names = self._get_baseurl_and_log_names()
         logs = []
         responses = await asyncio.gather(
-            *[fetch_text("{}/{}".format(baseurl, name)) for name in log_names]
+            *[
+                fetch_text("{}/{}".format(baseurl, name), client=self.http_client)
+                for name in log_names
+            ]
         )
 
         for name, response in zip(log_names, responses):
@@ -179,7 +185,7 @@ class CoprProvider(RPMProvider):
             baseurl = build_chroot.result_url
 
         spec_name = f"{name}.spec"
-        response = await fetch_text(f"{baseurl}/{spec_name}")
+        response = await fetch_text(f"{baseurl}/{spec_name}", client=self.http_client)
         if response.status_code == 404:
             return None
         response.raise_for_status()
@@ -200,12 +206,15 @@ class KojiProvider(RPMProvider):
 
     task_id: int
 
-    def __init__(self, build_or_task_id: int, arch: str) -> None:
+    def __init__(
+        self, build_or_task_id: int, arch: str, http_client: httpx.AsyncClient
+    ) -> None:
         api_url = "{}/kojihub".format(self.koji_url)
         self.client = koji.ClientSession(api_url)
 
         self.arch = arch
         self.build_id = None
+        self.http_client = http_client
         # this block detects what we got: is it build or task?
         # failed builds are useless sadly, we will only work with tasks
         try:
@@ -377,17 +386,16 @@ class KojiProvider(RPMProvider):
             srpm_url = self._get_srpm_url_from_task()
             if not srpm_url:
                 return None
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(srpm_url)
-                if not resp.is_success:
-                    LOGGER.error(
-                        "SRPM %s for task %s not accessible: %s (%s)",
-                        srpm_url,
-                        self.task_id,
-                        resp.status_code,
-                        resp.reason_phrase,
-                    )
-                    return None
+            resp = await self.http_client.get(srpm_url)
+            if not resp.is_success:
+                LOGGER.error(
+                    "SRPM %s for task %s not accessible: %s (%s)",
+                    srpm_url,
+                    self.task_id,
+                    resp.status_code,
+                    resp.reason_phrase,
+                )
+                return None
 
             destination = Path(f"{temp_dir}/{srpm_url.split('/')[-1]}")
             with open(destination, "wb") as srpm_f:
@@ -420,7 +428,7 @@ class KojiProvider(RPMProvider):
             "https://src.fedoraproject.org/rpms/"
             f"{package_name}/raw/{commit_hash}/f/{package_name}.spec"
         )
-        response = await fetch_text(spec_url)
+        response = await fetch_text(spec_url, client=self.http_client)
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
@@ -449,10 +457,11 @@ class PackitProvider(RPMProvider):
     packit_api_url = "https://prod.packit.dev/api"
     _provider: Optional[CoprProvider | KojiProvider] = None
 
-    def __init__(self, packit_id: int) -> None:
+    def __init__(self, packit_id: int, http_client: httpx.AsyncClient) -> None:
         self.packit_id = packit_id
         self.copr_url = f"{self.packit_api_url}/copr-builds/{self.packit_id}"
         self.koji_url = f"{self.packit_api_url}/koji-builds/{self.packit_id}"
+        self.http_client = http_client
 
     async def _get_provider(self) -> CoprProvider | KojiProvider:
         if self._provider:
@@ -461,17 +470,20 @@ class PackitProvider(RPMProvider):
         return self._provider
 
     async def _resolve_provider(self) -> CoprProvider | KojiProvider:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(self.copr_url)
-            if resp.is_success:
-                build = resp.json()
-                return CoprProvider(build["build_id"], build["chroot"])
+        resp = await self.http_client.get(self.copr_url)
+        if resp.is_success:
+            build = resp.json()
+            return CoprProvider(
+                build_id=build["build_id"],
+                chroot=build["chroot"],
+                http_client=self.http_client,
+            )
 
-            resp = await client.get(self.koji_url)
-            if not resp.is_success:
-                raise FetchError(
-                    f"Couldn't find any build logs for Packit ID #{self.packit_id}."
-                )
+        resp = await self.http_client.get(self.koji_url)
+        if not resp.is_success:
+            raise FetchError(
+                f"Couldn't find any build logs for Packit ID #{self.packit_id}."
+            )
 
         build = resp.json()
         task_id = build["task_id"]
@@ -481,7 +493,9 @@ class PackitProvider(RPMProvider):
         if arch is None:
             raise FetchError(f"No arch was found for koji task #{task_id}")
 
-        return KojiProvider(task_id, arch)
+        return KojiProvider(
+            build_or_task_id=task_id, arch=arch, http_client=self.http_client
+        )
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
@@ -508,14 +522,15 @@ class PackitProvider(RPMProvider):
 
 
 class URLProvider(RPMProvider):
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, http_client: httpx.AsyncClient) -> None:
         self.url = url
+        self.http_client = http_client
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
         # TODO Can we recognize a directory listing and show _all_ logs?
         #  also this will allow us to fetch spec files
-        response = await fetch_text(self.url)
+        response = await fetch_text(self.url, client=self.http_client)
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
@@ -544,13 +559,14 @@ class ContainerProvider(Provider):
     Fetching container logs only from URL for now
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, http_client: httpx.AsyncClient) -> None:
         self.url = url
+        self.http_client = http_client
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
         # TODO: c&p from url provider for now, integrate with containers better later on
-        response = await fetch_text(self.url)
+        response = await fetch_text(self.url, client=self.http_client)
         response.raise_for_status()
         if "text/plain" not in response.headers["Content-Type"]:
             raise FetchError(
@@ -582,12 +598,18 @@ class OBSProvider(RPMProvider):
     )
 
     def __init__(
-        self, project: str, repository: str, architecture: str, package: str
+        self,
+        project: str,
+        repository: str,
+        architecture: str,
+        package: str,
+        http_client: httpx.AsyncClient,
     ) -> None:
         self.project = project
         self.repository = repository
         self.architecture = architecture
         self.package = package
+        self.http_client = http_client
 
     @cached_property
     def log_url(self) -> str:
@@ -601,7 +623,7 @@ class OBSProvider(RPMProvider):
 
     @handle_errors
     async def fetch_logs(self) -> list[dict[str, str]]:
-        response = await fetch_text(self.log_url)
+        response = await fetch_text(self.log_url, client=self.http_client)
         response.raise_for_status()
         content_type = response.headers.get("Content-Type", "")
         if "text/plain" not in content_type:
@@ -620,7 +642,7 @@ class OBSProvider(RPMProvider):
         url = self.obs_spec_url.format(
             project=self.project, package=self.package, filename=spec_name
         )
-        response = await fetch_text(url)
+        response = await fetch_text(url, client=self.http_client)
         if response.status_code == 404:
             return None
         response.raise_for_status()

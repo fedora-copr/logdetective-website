@@ -3,6 +3,7 @@ import os
 import uuid
 from asyncio import create_task, gather
 from base64 import b64decode
+from contextlib import asynccontextmanager
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -71,6 +72,7 @@ from src.spells import (
 )
 from src.store import Storator3000
 from src.exceptions import NoDataFound
+from src.client import get_http_client
 
 LOGGER = get_logger(LOGGER_NAME)
 
@@ -80,8 +82,18 @@ if start_sentry():
 else:
     LOGGER.warning("Sentry was not configured for this deployment.")
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Manage application-wide resources."""
+    _app.state.http_client = get_http_client()
+    yield
+    await _app.state.http_client.aclose()
+
+
 app = FastAPI(
     title="Log Detective Website",
+    lifespan=lifespan,
     contact={
         "name": "Log Detective developers",
         "url": "https://github.com/fedora-copr/logdetective-website",
@@ -202,7 +214,7 @@ async def get_build_logs_with_chroot(
 ) -> ContributeResponseSchema:
     provider_name = request.url.path.lstrip("/").split("/")[2]
     prov_kls = CoprProvider if provider_name == ProvidersEnum.copr else KojiProvider
-    provider = prov_kls(build_id, chroot)
+    provider = prov_kls(build_id, chroot, http_client=app.state.http_client)
     if provider_name == ProvidersEnum.copr:
         build_title = BuildIdTitleEnum.copr
         build_url = COPR_BUILD_URL.format(build_id)
@@ -221,7 +233,7 @@ async def get_build_logs_with_chroot(
 
 @app.get("/frontend/contribute/packit/{packit_id}")
 async def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
-    provider = PackitProvider(packit_id)
+    provider = PackitProvider(packit_id, http_client=app.state.http_client)
     return ContributeResponseSchema(
         build_id=packit_id,
         build_id_title=BuildIdTitleEnum.packit,
@@ -234,7 +246,7 @@ async def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
 @app.get("/frontend/contribute/url/{base64}")
 async def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
     build_url = b64decode(base64).decode("utf-8")
-    provider = URLProvider(build_url)
+    provider = URLProvider(build_url, http_client=app.state.http_client)
     return ContributeResponseSchema(
         build_id=None,
         build_id_title=BuildIdTitleEnum.url,
@@ -247,7 +259,7 @@ async def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
 @app.get("/frontend/contribute/container/{base64}")
 async def get_logs_from_container(base64: str) -> ContributeResponseSchema:
     build_url = b64decode(base64).decode("utf-8")
-    provider = ContainerProvider(build_url)
+    provider = ContainerProvider(build_url, http_client=app.state.http_client)
     return ContributeResponseSchema(
         build_id=None,
         build_id_title=BuildIdTitleEnum.container,
@@ -261,7 +273,9 @@ async def get_obs_build_logs(
     project: str, repository: str, architecture: str, package: str
 ) -> ContributeResponseSchema:
     """Return logs and spec file for an OBS build."""
-    provider = OBSProvider(project, repository, architecture, package)
+    provider = OBSProvider(
+        project, repository, architecture, package, http_client=app.state.http_client
+    )
     return ContributeResponseSchema(
         build_id=None,
         build_id_title=BuildIdTitleEnum.obs,
@@ -448,16 +462,14 @@ def frontend_review_random(result_id):
     }
 
 
-async def _check_log_urls(log_urls: list[dict[str, str]]) -> None:
+async def _check_log_urls(
+    log_urls: list[dict[str, str]], http_client: httpx.AsyncClient
+) -> None:
     """Verify all log URLs are reachable using HEAD requests."""
-    async with httpx.AsyncClient() as client:
-        results = await gather(
-            *(
-                client.head(f["url"], follow_redirects=True, timeout=10)
-                for f in log_urls
-            ),
-            return_exceptions=True,
-        )
+    results = await gather(
+        *(http_client.head(f["url"], timeout=10) for f in log_urls),
+        return_exceptions=True,
+    )
     unreachable = []
     for file_info, result in zip(log_urls, results):
         if isinstance(result, BaseException):
@@ -476,6 +488,7 @@ async def _check_log_urls(log_urls: list[dict[str, str]]) -> None:
 
 async def _call_analyze_api(
     log_urls: list[dict[str, str]],
+    http_client: httpx.AsyncClient,
     spec_content: str | None = None,
     provider_name: Optional[str] = None,
 ) -> dict:
@@ -490,7 +503,7 @@ async def _call_analyze_api(
         commentary,
     )
 
-    await _check_log_urls(log_urls)
+    await _check_log_urls(log_urls, http_client=http_client)
 
     data = {
         "files": [{"name": f["name"], "url": f["url"]} for f in log_urls],
@@ -509,17 +522,16 @@ async def _call_analyze_api(
     server_url = f"{SERVER_URL}/analyze"
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                server_url,
-                headers=headers,
-                json=data,
-                timeout=httpx.Timeout(
-                    LOGDETECTIVE_DEFAULT_TIMEOUT,
-                    connect=LOGDETECTIVE_CONNECT_TIMEOUT,
-                    read=LOGDETECTIVE_READ_TIMEOUT,
-                ),
-            )
+        response = await http_client.post(
+            server_url,
+            headers=headers,
+            json=data,
+            timeout=httpx.Timeout(
+                LOGDETECTIVE_DEFAULT_TIMEOUT,
+                connect=LOGDETECTIVE_CONNECT_TIMEOUT,
+                read=LOGDETECTIVE_READ_TIMEOUT,
+            ),
+        )
     except (httpx.ConnectError, httpx.TimeoutException) as ex:
         raise HTTPException(status_code=408, detail=str(ex)) from ex
 
@@ -535,7 +547,9 @@ async def _call_analyze_api(
     return _process_server_data(response.content)
 
 
-async def _explain_with_provider(provider: Provider, provider_name: str) -> dict:
+async def _explain_with_provider(
+    provider: Provider, provider_name: str, http_client: httpx.AsyncClient
+) -> dict:
     """Fetch log URLs, analyze them, fetch log content, return combined result."""
 
     LOGGER.info("Received request for analysis from: %s", provider_name)
@@ -546,7 +560,14 @@ async def _explain_with_provider(provider: Provider, provider_name: str) -> dict
         spec = await provider.fetch_spec_file()
         spec_content = spec["content"] if spec else None
 
-    analyze_task = create_task(_call_analyze_api(log_urls, spec_content, provider_name))
+    analyze_task = create_task(
+        _call_analyze_api(
+            log_urls,
+            http_client=http_client,
+            spec_content=spec_content,
+            provider_name=provider_name,
+        )
+    )
     content_task = create_task(provider.fetch_logs())
     result, logs = await gather(analyze_task, content_task)
 
@@ -572,8 +593,10 @@ async def frontend_explain_post(request: Request) -> dict:
     file_name = Path(parse.urlparse(url=log_url).path).name
     log_urls = [{"name": file_name, "url": log_url}]
 
-    download_log_task = _download_log_content(log_url)
-    analyze_task = _call_analyze_api(log_urls, provider_name=ProvidersEnum.url)
+    download_log_task = _download_log_content(log_url, client=app.state.http_client)
+    analyze_task = _call_analyze_api(
+        log_urls, provider_name=ProvidersEnum.url, http_client=app.state.http_client
+    )
 
     result, log_data = await gather(analyze_task, download_log_task)
 
@@ -584,34 +607,44 @@ async def frontend_explain_post(request: Request) -> dict:
 
 @app.post("/frontend/explain/copr/{build_id}/{chroot}")
 async def explain_copr(build_id: int, chroot: str) -> dict:
-    provider = CoprProvider(build_id, chroot)
-    return await _explain_with_provider(provider, ProvidersEnum.copr)
+    provider = CoprProvider(build_id, chroot, http_client=app.state.http_client)
+    return await _explain_with_provider(
+        provider, ProvidersEnum.copr, http_client=app.state.http_client
+    )
 
 
 @app.post("/frontend/explain/koji/{build_id}/{chroot}")
 async def explain_koji(build_id: int, chroot: str) -> dict:
-    provider = KojiProvider(build_id, chroot)
-    return await _explain_with_provider(provider, ProvidersEnum.koji)
+    provider = KojiProvider(build_id, chroot, http_client=app.state.http_client)
+    return await _explain_with_provider(
+        provider, ProvidersEnum.koji, http_client=app.state.http_client
+    )
 
 
 @app.post("/frontend/explain/packit/{packit_id}")
 async def explain_packit(packit_id: int) -> dict:
-    provider = PackitProvider(packit_id)
-    return await _explain_with_provider(provider, ProvidersEnum.packit)
+    provider = PackitProvider(packit_id, http_client=app.state.http_client)
+    return await _explain_with_provider(
+        provider, ProvidersEnum.packit, http_client=app.state.http_client
+    )
 
 
 @app.post("/frontend/explain/url/{base64}")
 async def explain_url(base64: str) -> dict:
     url = b64decode(base64).decode("utf-8")
-    provider = URLProvider(url)
-    return await _explain_with_provider(provider, ProvidersEnum.url)
+    provider = URLProvider(url, http_client=app.state.http_client)
+    return await _explain_with_provider(
+        provider, ProvidersEnum.url, http_client=app.state.http_client
+    )
 
 
 @app.post("/frontend/explain/container/{base64}")
 async def explain_container(base64: str) -> dict:
     url = b64decode(base64).decode("utf-8")
-    provider = ContainerProvider(url)
-    return await _explain_with_provider(provider, ProvidersEnum.container)
+    provider = ContainerProvider(url, http_client=app.state.http_client)
+    return await _explain_with_provider(
+        provider, ProvidersEnum.container, http_client=app.state.http_client
+    )
 
 
 @app.post("/frontend/explain/obs/{project}/{repository}/{architecture}/{package}")
@@ -619,8 +652,12 @@ async def explain_obs(
     project: str, repository: str, architecture: str, package: str
 ) -> dict:
     """Forward an OBS build log to the logdetective server for explanation."""
-    provider = OBSProvider(project, repository, architecture, package)
-    return await _explain_with_provider(provider, ProvidersEnum.obs)
+    provider = OBSProvider(
+        project, repository, architecture, package, http_client=app.state.http_client
+    )
+    return await _explain_with_provider(
+        provider, ProvidersEnum.obs, http_client=app.state.http_client
+    )
 
 
 def _process_server_data(data) -> dict:
@@ -663,11 +700,11 @@ def _process_server_data(data) -> dict:
     }
 
 
-async def _download_log_content(url: str) -> str:
+async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
     """Download content of the log file and returns it."""
 
     try:
-        response = await fetch_text(url, timeout=600)
+        response = await fetch_text(url, client=client, timeout=600)
     except (
         httpx.ConnectError,
         httpx.TimeoutException,
