@@ -28,6 +28,14 @@ SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:8000")
 # Token used for authorization of analysis requests
 LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
 
+# Connection limits for fetcher client
+LOGDETECTIVE_MAX_CONNECTION_LIMIT = int(
+    os.environ.get("LOGDETECTIVE_MAX_CONNECTION_LIMIT", 250)
+)
+LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS = int(
+    os.environ.get("LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS", 50)
+)
+
 
 class ProvidersEnum(StrEnum):
     packit = "packit"
