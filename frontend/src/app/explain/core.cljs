@@ -307,33 +307,24 @@
 ;; --- Main component ---
 
 (defn explain-page []
-  (let [query-url (query-params-get "url")
-        ppath (provider-path)]
-    (cond
-      (= @status "error")
-      (render-error @error-title @error-description)
+  (cond
+    (= @status "error")
+    (render-error @error-title @error-description)
 
-      (= @status "waiting")
-      (loading-screen "Getting a response from the server")
+    (= @status "waiting")
+    (loading-screen "Getting a response from the server")
 
-      ;; Old ?url= flow: backward compatible
-      (and query-url (not= @status "ok"))
-      (do
-        (send query-url)
-        (loading-screen "Getting a response from the server"))
+    @atoms/form
+    (two-column-layout)
 
-      ;; Provider path: e.g. /explain/copr/123/fedora-39-x86_64
-      (and ppath (not= @status "ok"))
-      (do
-        (send-provider (str "/frontend/explain/" ppath))
-        (loading-screen "Getting a response from the server"))
-
-      @atoms/form
-      (two-column-layout)
-
-      :else
-      (explain-input))))
+    :else
+    (explain-input)))
 
 (defn init-explain []
   (reset! status nil)
-  (reset! atoms/form nil))
+  (reset! atoms/form nil)
+  (let [query-url (query-params-get "url")
+        ppath (provider-path)]
+    (cond
+      query-url (send query-url)
+      ppath (send-provider (str "/frontend/explain/" ppath)))))
