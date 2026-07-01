@@ -37,6 +37,16 @@ def handle_errors(func):
     async def inner(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
+        except httpx.TimeoutException as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.GATEWAY_TIMEOUT,
+                detail=f"Request to the server timed out: {ex}",
+            ) from ex
+        except httpx.RequestError as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail=f"Could not connect to the server: {ex}",
+            ) from ex
         except HTTPException:
             raise
         except (copr.v3.exceptions.CoprNoResultException, koji.GenericError) as ex:

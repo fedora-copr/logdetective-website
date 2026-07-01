@@ -532,8 +532,16 @@ async def _call_analyze_api(
                 read=LOGDETECTIVE_READ_TIMEOUT,
             ),
         )
-    except (httpx.ConnectError, httpx.TimeoutException) as ex:
-        raise HTTPException(status_code=408, detail=str(ex)) from ex
+    except httpx.TimeoutException as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=f"Request to analysis server timed out: {ex}",
+        ) from ex
+    except httpx.RequestError as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Could not connect to analysis server: {ex}",
+        ) from ex
 
     try:
         LOGGER.debug(
@@ -705,12 +713,16 @@ async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
 
     try:
         response = await fetch_text(url, client=client, timeout=600)
-    except (
-        httpx.ConnectError,
-        httpx.TimeoutException,
-        httpx.RequestError,
-    ) as ex:
-        raise HTTPException(status_code=408, detail=str(ex)) from ex
+    except httpx.TimeoutException as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=f"Request to download log file timed out: {ex}",
+        ) from ex
+    except httpx.RequestError as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Could not connect to log file URL: {ex}",
+        ) from ex
     try:
         response.raise_for_status()
     except httpx.HTTPError as ex:
