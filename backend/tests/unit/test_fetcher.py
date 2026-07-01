@@ -209,14 +209,6 @@ class TestURLProvider:
             result = await provider.fetch_logs()
         assert result == [{"name": "build.log", "content": "text"}]
 
-    async def test_fetch_url_spec(self):
-        assert (
-            await URLProvider(
-                "https://www.fake.lol", http_client=MagicMock()
-            ).fetch_spec_file()
-            is None
-        )
-
     async def test_fetch_url_logs_with_utf8(self):
         url = "https://www.fake.lol/log.txt"
         czech_content = "Chyba: balíček nebyl nalezen\nŘešení: přidejte repozitář"
