@@ -8,5 +8,7 @@ max_requests = 100
 max_requests_jitter = 10
 threads = multiprocessing.cpu_count() * 2
 bind = "0.0.0.0:8080"
-timeout = 1800
+# Must be larger than LOGDETECTIVE_READ_TIMEOUT (backend/src/constants.py).
+# to allow leeway for parsing, error handling, etc.
+timeout = 630
 accesslog = "-"

@@ -486,6 +486,17 @@ async def _check_log_urls(
         raise HTTPException(status_code=422, detail=f"Unreachable log files: {detail}")
 
 
+def _extract_error_detail_from_response(response: httpx.Response) -> str:
+    """Extract error detail from a httpx.Response object.
+    Note: logs at ERROR level as a side effect."""
+    try:
+        server_detail = response.json().get("detail", response.text)
+    except (json.JSONDecodeError, ValueError, AttributeError):
+        server_detail = response.text
+    LOGGER.error("Analysis server error %s: %s", response.status_code, server_detail)
+    return f"{response.status_code} {response.reason_phrase}\n{response.url}\n{server_detail}"
+
+
 async def _call_analyze_api(
     log_urls: list[dict[str, str]],
     http_client: httpx.AsyncClient,
@@ -532,8 +543,16 @@ async def _call_analyze_api(
                 read=LOGDETECTIVE_READ_TIMEOUT,
             ),
         )
-    except (httpx.ConnectError, httpx.TimeoutException) as ex:
-        raise HTTPException(status_code=408, detail=str(ex)) from ex
+    except httpx.TimeoutException as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=f"Request to analysis server timed out: {ex}",
+        ) from ex
+    except httpx.RequestError as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Could not connect to analysis server: {ex}",
+        ) from ex
 
     try:
         LOGGER.debug(
@@ -541,8 +560,10 @@ async def _call_analyze_api(
         )
         response.raise_for_status()
     except httpx.HTTPError as ex:
-        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
-        raise HTTPException(status_code=response.status_code, detail=detail) from ex
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_extract_error_detail_from_response(response),
+        ) from ex
 
     return _process_server_data(response.content)
 
@@ -704,18 +725,24 @@ async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
     """Download content of the log file and returns it."""
 
     try:
-        response = await fetch_text(url, client=client, timeout=600)
-    except (
-        httpx.ConnectError,
-        httpx.TimeoutException,
-        httpx.RequestError,
-    ) as ex:
-        raise HTTPException(status_code=408, detail=str(ex)) from ex
+        response = await fetch_text(url, client=client)
+    except httpx.TimeoutException as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=f"Request to download log file timed out: {ex}",
+        ) from ex
+    except httpx.RequestError as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Could not connect to log file URL: {ex}",
+        ) from ex
     try:
         response.raise_for_status()
     except httpx.HTTPError as ex:
-        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
-        raise HTTPException(status_code=response.status_code, detail=detail) from ex
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_extract_error_detail_from_response(response),
+        ) from ex
 
     return response.text
 

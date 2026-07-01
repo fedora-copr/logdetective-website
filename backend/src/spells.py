@@ -30,7 +30,11 @@ from src.log_cleaning import (
     html_careful_unescape,
     log_schema_redaction,
 )
-from src.constants import DEFAULT_ROBOTS, STATIC_SOURCE_DIR
+from src.constants import (
+    DEFAULT_ROBOTS,
+    STATIC_SOURCE_DIR,
+    FETCH_TIMEOUT,
+)
 
 
 @contextmanager
@@ -132,19 +136,21 @@ def read_text_file(path: Path | str) -> str:
         return fp.read()
 
 
-async def fetch_text(url: str, client: httpx.AsyncClient, **kwargs) -> httpx.Response:
+async def fetch_text(
+    url: str, client: httpx.AsyncClient, timeout: float = FETCH_TIMEOUT, **kwargs
+) -> httpx.Response:
     """
     Fetch text content from URL with consistent UTF-8 encoding.
 
     Args:
         url: The URL to fetch
+        timeout (default=FETCH_TIMEOUT): Request timeout in seconds to override httpx 5sec default
         **kwargs: Additional arguments passed to AsyncClient.get()
 
     Returns:
         httpx.Response with encoding set to UTF-8
     """
-
-    response = await client.get(url, **kwargs)
+    response = await client.get(url, timeout=timeout, **kwargs)
     response.encoding = "utf-8"
     return response
 

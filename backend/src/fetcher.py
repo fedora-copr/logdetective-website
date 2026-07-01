@@ -14,7 +14,11 @@ import koji
 import httpx
 from fastapi import HTTPException
 
-from src.constants import COPR_RESULT_TEMPLATE, LOGGER_NAME
+from src.constants import (
+    COPR_RESULT_TEMPLATE,
+    LOGGER_NAME,
+    FETCH_TIMEOUT,
+)
 from src.exceptions import FetchError
 from src.spells import (
     get_temporary_dir,
@@ -37,6 +41,16 @@ def handle_errors(func):
     async def inner(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
+        except httpx.TimeoutException as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.GATEWAY_TIMEOUT,
+                detail=f"Request to the server timed out: {ex}",
+            ) from ex
+        except httpx.RequestError as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail=f"Could not connect to the server: {ex}",
+            ) from ex
         except HTTPException:
             raise
         except (copr.v3.exceptions.CoprNoResultException, koji.GenericError) as ex:
@@ -386,7 +400,7 @@ class KojiProvider(RPMProvider):
             srpm_url = self._get_srpm_url_from_task()
             if not srpm_url:
                 return None
-            resp = await self.http_client.get(srpm_url)
+            resp = await self.http_client.get(srpm_url, timeout=FETCH_TIMEOUT)
             if not resp.is_success:
                 LOGGER.error(
                     "SRPM %s for task %s not accessible: %s (%s)",
@@ -469,8 +483,9 @@ class PackitProvider(RPMProvider):
         self._provider = await self._resolve_provider()
         return self._provider
 
+    @handle_errors
     async def _resolve_provider(self) -> CoprProvider | KojiProvider:
-        resp = await self.http_client.get(self.copr_url)
+        resp = await self.http_client.get(self.copr_url, timeout=30)
         if resp.is_success:
             build = resp.json()
             return CoprProvider(
@@ -479,7 +494,7 @@ class PackitProvider(RPMProvider):
                 http_client=self.http_client,
             )
 
-        resp = await self.http_client.get(self.koji_url)
+        resp = await self.http_client.get(self.koji_url, timeout=30)
         if not resp.is_success:
             raise FetchError(
                 f"Couldn't find any build logs for Packit ID #{self.packit_id}."

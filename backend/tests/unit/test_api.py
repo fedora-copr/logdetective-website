@@ -240,7 +240,7 @@ class TestExplainEndpoint:
                 json={"prompt": "https://example.com/build.log"},
             )
 
-        assert resp.status_code == 408
+        assert resp.status_code == 504
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
@@ -262,7 +262,7 @@ class TestExplainEndpoint:
                 json={"prompt": "https://example.com/build.log"},
             )
 
-        assert resp.status_code == 408
+        assert resp.status_code == 502
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
@@ -514,7 +514,7 @@ class TestExplainProviderEndpoints:
         ) as client:
             resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
 
-        assert resp.status_code == 408
+        assert resp.status_code == 504
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api.CoprProvider")
