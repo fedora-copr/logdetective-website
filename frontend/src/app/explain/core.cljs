@@ -13,7 +13,9 @@
     [status
      error-description
      error-title
-     handle-backend-error]]))
+     handle-backend-error
+     handle-http-error]]
+))
 
 (def InputSchema
   [:map {:closed true}
@@ -48,11 +50,7 @@
           :response-format :json
           :keywords? true
 
-          :error-handler
-          (fn [error]
-            (handle-backend-error
-             (:error (:response error))
-             (:description (:response error))))
+          :error-handler handle-http-error
 
           :handler
           (fn [data]
@@ -293,11 +291,7 @@
     :response-format :json
     :keywords? true
 
-    :error-handler
-    (fn [error]
-      (handle-backend-error
-       (:error (:response error))
-       (:description (:response error))))
+    :error-handler handle-http-error
 
     :handler
     (fn [data]
