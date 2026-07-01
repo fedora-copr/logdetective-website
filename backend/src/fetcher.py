@@ -483,8 +483,9 @@ class PackitProvider(RPMProvider):
         self._provider = await self._resolve_provider()
         return self._provider
 
+    @handle_errors
     async def _resolve_provider(self) -> CoprProvider | KojiProvider:
-        resp = await self.http_client.get(self.copr_url)
+        resp = await self.http_client.get(self.copr_url, timeout=30)
         if resp.is_success:
             build = resp.json()
             return CoprProvider(
@@ -493,7 +494,7 @@ class PackitProvider(RPMProvider):
                 http_client=self.http_client,
             )
 
-        resp = await self.http_client.get(self.koji_url)
+        resp = await self.http_client.get(self.koji_url, timeout=30)
         if not resp.is_success:
             raise FetchError(
                 f"Couldn't find any build logs for Packit ID #{self.packit_id}."
