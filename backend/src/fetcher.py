@@ -521,7 +521,7 @@ class PackitProvider(RPMProvider):
         return _url.format(self.packit_id)
 
 
-class URLProvider(RPMProvider):
+class URLProvider(Provider):
     def __init__(self, url: str, http_client: httpx.AsyncClient) -> None:
         self.url = url
         self.http_client = http_client
@@ -546,12 +546,6 @@ class URLProvider(RPMProvider):
     @handle_errors
     async def fetch_log_urls(self) -> list[dict[str, str]]:
         return [{"name": "build.log", "url": self.url}]
-
-    @handle_errors
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
-        # FIXME: Please implement me!
-        #  raise NotImplementedError("Please implement me!")
-        return None  # type: ignore
 
 
 class ContainerProvider(Provider):

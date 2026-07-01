@@ -252,7 +252,7 @@ async def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
         build_id_title=BuildIdTitleEnum.url,
         build_url=build_url,
         logs=await provider.fetch_logs(),
-        spec_file=await provider.fetch_spec_file(),
+        spec_file=None,
     )
 
 
