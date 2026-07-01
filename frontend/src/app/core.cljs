@@ -6,26 +6,29 @@
             [app.review.core :refer [review init-data-review]]
             [app.explain.core :refer [explain-page init-explain]]))
 
+(def routes
+  [["app-homepage" explain-page init-explain]
+   ["app-contribute-landing" contribute-landing init-contribute-landing]
+   ["app-contribute" contribute init-data]
+   ["app-review" review init-data-review]
+   ["app-explain" explain-page init-explain]])
+
 (defn ^:dev/after-load render
-  "Render the toplevel component for this app."
+  "Re-render after hot-reload. Does NOT re-run init to avoid duplicate requests."
   []
-  ;; This is not the standard way of doing this, we should probably use some
-  ;; router. But it is good enough for now.
-  (let [routes [["app-homepage" explain-page init-explain]
-                ["app-contribute-landing" contribute-landing init-contribute-landing]
-                ["app-contribute" contribute init-data]
-                ["app-review" review init-data-review]
-                ["app-explain" explain-page init-explain]]
-        route (->> routes
+  (let [route (->> routes
                    (filter (fn [x] (.getElementById js/document (first x))))
                    first)
         name (nth route 0)
-        view (nth route 1)
-        init (nth route 2)]
-    (when init (init))
+        view (nth route 1)]
     (r/render [view] (.getElementById js/document name))))
 
 (defn ^:export main
   "Run application startup logic."
   []
+  (let [route (->> routes
+                   (filter (fn [x] (.getElementById js/document (first x))))
+                   first)
+        init (nth route 2)]
+    (when init (init)))
   (render))
