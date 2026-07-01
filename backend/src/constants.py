@@ -21,6 +21,11 @@ LOGDETECTIVE_DEFAULT_TIMEOUT = float(
     os.environ.get("LOGDETECTIVE_DEFAULT_TIMEOUT", 3.07)
 )
 
+# How long we wait for remote file servers to respond before giving up on fetching a file
+# Applies only to specfiles since logs are only submitted as URLS and
+# their download is handled as a part of the logdetective server's request
+FETCH_TIMEOUT = float(os.environ.get("FETCH_TIMEOUT", 600))
+
 COPR_RESULT_TEMPLATE = (
     "https://download.copr.fedorainfracloud.org" + "/results/{0}/{1}/srpm-builds/{2:08}"
 )

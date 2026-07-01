@@ -14,7 +14,11 @@ import koji
 import httpx
 from fastapi import HTTPException
 
-from src.constants import COPR_RESULT_TEMPLATE, LOGGER_NAME
+from src.constants import (
+    COPR_RESULT_TEMPLATE,
+    LOGGER_NAME,
+    FETCH_TIMEOUT,
+)
 from src.exceptions import FetchError
 from src.spells import (
     get_temporary_dir,
@@ -396,7 +400,7 @@ class KojiProvider(RPMProvider):
             srpm_url = self._get_srpm_url_from_task()
             if not srpm_url:
                 return None
-            resp = await self.http_client.get(srpm_url)
+            resp = await self.http_client.get(srpm_url, timeout=FETCH_TIMEOUT)
             if not resp.is_success:
                 LOGGER.error(
                     "SRPM %s for task %s not accessible: %s (%s)",

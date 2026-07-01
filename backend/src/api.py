@@ -725,7 +725,7 @@ async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
     """Download content of the log file and returns it."""
 
     try:
-        response = await fetch_text(url, client=client, timeout=600)
+        response = await fetch_text(url, client=client)
     except httpx.TimeoutException as ex:
         raise HTTPException(
             status_code=HTTPStatus.GATEWAY_TIMEOUT,
