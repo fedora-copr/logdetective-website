@@ -486,6 +486,17 @@ async def _check_log_urls(
         raise HTTPException(status_code=422, detail=f"Unreachable log files: {detail}")
 
 
+def _extract_error_detail_from_response(response: httpx.Response) -> str:
+    """Extract error detail from a httpx.Response object.
+    Note: logs at ERROR level as a side effect."""
+    try:
+        server_detail = response.json().get("detail", response.text)
+    except (json.JSONDecodeError, ValueError, AttributeError):
+        server_detail = response.text
+    LOGGER.error("Analysis server error %s: %s", response.status_code, server_detail)
+    return f"{response.status_code} {response.reason_phrase}\n{response.url}\n{server_detail}"
+
+
 async def _call_analyze_api(
     log_urls: list[dict[str, str]],
     http_client: httpx.AsyncClient,
@@ -549,8 +560,10 @@ async def _call_analyze_api(
         )
         response.raise_for_status()
     except httpx.HTTPError as ex:
-        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
-        raise HTTPException(status_code=response.status_code, detail=detail) from ex
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_extract_error_detail_from_response(response),
+        ) from ex
 
     return _process_server_data(response.content)
 
@@ -726,8 +739,10 @@ async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
     try:
         response.raise_for_status()
     except httpx.HTTPError as ex:
-        detail = f"{response.status_code} {response.reason_phrase}\n{response.url}"
-        raise HTTPException(status_code=response.status_code, detail=detail) from ex
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_extract_error_detail_from_response(response),
+        ) from ex
 
     return response.text
 
