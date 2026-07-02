@@ -135,6 +135,16 @@ def _custom_http_exception_handler(
 
     if isinstance(exc, HTTPException):
         description = exc.detail
+    elif isinstance(exc, RequestValidationError):
+        errors = exc.errors()
+        description = (
+            "\n".join(
+                e.get("msg", f"Failed to fetch validation error #{i + 1}")
+                for i, e in enumerate(errors)
+            )
+            if errors
+            else "The submitted data was invalid."
+        )
     else:
         description = str(exc)
 
