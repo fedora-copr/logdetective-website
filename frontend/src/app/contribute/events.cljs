@@ -1,7 +1,7 @@
 (ns app.contribute.events
   (:require
    [clojure.set :refer [rename-keys]]
-   [lambdaisland.fetch :as fetch]
+   [ajax.core :refer [POST]]
    [app.helpers :refer
     [current-path
      remove-trailing-slash
@@ -15,11 +15,10 @@
      ok-status]]
    [app.common.state :refer
     [status
-     error-title
-     error-description
      fail-reason
      how-to-fix
-     files]]))
+     files
+     handle-validation-error]]))
 
 (defn submit-form
   "Render annotation submission form with retrieved logs"
@@ -53,20 +52,15 @@
               :container_file @container}]
 
     (reset! status "submitting")
-    (-> (fetch/post url {:accept :json :content-type :json :body body})
-        (.then (fn [resp] (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data]
-                 (cond (:error data)
-                       (do
-                         (reset! error-title (:error data))
-                         (reset! error-description (:description data))
-                         ;; go back to "has files" state, let users fix
-                         ;; validation errors
-                         (reset! status nil))
-
-                       (= (:status data) "ok") ((reset! status "submitted")
-                                                (reset! ok-status data))
-                       :else nil))))))
+    (POST url
+      :params body
+      :format :json
+      :response-format :json
+      :keywords? true
+      :error-handler handle-validation-error
+      :handler (fn [data]
+                 (reset! status "submitted")
+                 (reset! ok-status data)))))
 
 (defn on-how-to-fix-textarea-change [target]
   (reset! how-to-fix (.-value target)))

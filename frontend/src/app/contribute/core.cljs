@@ -1,6 +1,6 @@
 (ns app.contribute.core
   (:require
-   [lambdaisland.fetch :as fetch]
+   [ajax.core :refer [GET]]
    ["html-entities" :as html-entities]
    [app.helpers :refer
     [current-path
@@ -46,7 +46,8 @@
      files
      error-description
      error-title
-     how-to-fix]]))
+     how-to-fix
+     handle-http-error]]))
 
 (defn set-atoms
   "Set atoms to contain fields from `data` map.
@@ -80,16 +81,11 @@
   []
 
   (let [url (remove-trailing-slash (str "/frontend" (current-path)))]
-    (-> (fetch/get url {:accept :json :content-type :json})
-        (.then (fn [resp]
-                 (-> resp :body (js->clj :keywordize-keys true))))
-        (.then (fn [data]
-                 (if (:error data)
-                   (do
-                     (reset! status "error")
-                     (reset! error-title (:error data))
-                     (reset! error-description (:description data)))
-                   (set-atoms data)))))))
+    (GET url
+      :response-format :json
+      :keywords? true
+      :error-handler handle-http-error
+      :handler set-atoms)))
 
 (defn fetch-logs-upload
   "Fetch logs and other associated data from direct upload to the website."

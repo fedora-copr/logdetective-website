@@ -3,7 +3,7 @@
             [clojure.string :as str]
             [cljs.core.match :refer-macros [match]]
             [app.validation :refer [validate]]
-            [lambdaisland.fetch :as fetch]
+            [ajax.core :refer [GET]]
             [app.components.jumbotron :refer [render-error]]
             [app.common.provider-forms :as pf]
             [app.helpers :refer
@@ -21,15 +21,13 @@
 (def error (r/atom nil))
 
 (defn fetch-stats-backend []
-  (-> (fetch/get "/stats" {:accept :json :content-type :json})
-      (.then (fn [resp]
-               (-> resp :body (js->clj :keywordize-keys true))))
-      (.then (fn [resp]
-               (reset! backend-stats resp)))
-      (.catch (fn [err]
-               (reset! error {
-                  :title "Error fetching server statistics"
-                  :description err })))))
+  (GET "/stats"
+    :response-format :json
+    :keywords? true
+    :handler (fn [data] (reset! backend-stats data))
+    :error-handler (fn [_]
+                     (reset! error {:title "Error fetching server statistics"
+                                    :description "Could not load statistics from the server."}))))
 
 (defn on-submit [event]
   (.preventDefault event)
