@@ -43,6 +43,7 @@
      status
      files
      handle-backend-error
+     handle-http-error
      handle-validation-error]]))
 
 (def InputSchema
@@ -131,11 +132,7 @@
     :response-format :json
     :keywords? true
 
-    :error-handler
-    (fn [error]
-      (handle-backend-error
-       (:error (:response error))
-       (:description (:response error))))
+    :error-handler handle-http-error
 
     :handler
     (fn [data]
@@ -171,11 +168,7 @@
        :format :json
        :keywords? true
 
-       :error-handler
-       (fn [error]
-         (handle-validation-error
-          (:error (:response error))
-          (:description (:response error))))
+       :error-handler handle-validation-error
 
        :handler
        (fn [_]

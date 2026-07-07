@@ -142,10 +142,7 @@ def _custom_http_exception_handler(
 
     return JSONResponse(
         status_code=status_code,
-        content={
-            "error": f"Server error: {status_code}",
-            "description": description,
-        },
+        content={"description": description},
     )
 
 
