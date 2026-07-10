@@ -34,7 +34,9 @@ from src.constants import (
     DEFAULT_ROBOTS,
     STATIC_SOURCE_DIR,
     FETCH_TIMEOUT,
+    LOG_DETECTIVE_MAX_ARTIFACT_SIZE,
 )
+from src.exceptions import MaximumArtifactSizeExceeded
 
 
 @contextmanager
@@ -140,18 +142,36 @@ async def fetch_text(
     url: str, client: httpx.AsyncClient, timeout: float = FETCH_TIMEOUT, **kwargs
 ) -> httpx.Response:
     """
-    Fetch text content from URL with consistent UTF-8 encoding.
+    Fetch text content from URL with consistent UTF-8 encoding,
+    while checking size.
 
     Args:
         url: The URL to fetch
         timeout (default=FETCH_TIMEOUT): Request timeout in seconds to override httpx 5sec default
-        **kwargs: Additional arguments passed to AsyncClient.get()
+        **kwargs: Additional arguments passed to AsyncClient.stream()
 
     Returns:
         httpx.Response with encoding set to UTF-8
     """
-    response = await client.get(url, timeout=timeout, **kwargs)
-    response.encoding = "utf-8"
+
+    response_data = bytearray()
+    async with client.stream("GET", url=url, timeout=timeout, **kwargs) as stream:
+        try:
+            async for chunk in stream.aiter_bytes():
+                response_data += chunk
+                if len(response_data) > LOG_DETECTIVE_MAX_ARTIFACT_SIZE * 1024:
+                    raise MaximumArtifactSizeExceeded
+        except MaximumArtifactSizeExceeded:
+            await stream.aclose()
+            raise
+
+    response = httpx.Response(
+        status_code=stream.status_code,
+        text=response_data.decode("utf-8", errors="replace"),
+        default_encoding="utf-8",
+        headers=stream.headers,
+        request=stream.request,
+    )
     return response
 
 

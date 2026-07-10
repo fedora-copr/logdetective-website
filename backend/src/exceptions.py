@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import HTTPException
+from src.constants import LOG_DETECTIVE_MAX_ARTIFACT_SIZE
 
 
 class FetchError(HTTPException):
@@ -14,3 +15,13 @@ class FetchError(HTTPException):
 
 class NoDataFound(FetchError):
     pass
+
+
+class MaximumArtifactSizeExceeded(HTTPException):
+    """Artifacts exceeding maximum size can not be uploaded"""
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=HTTPStatus.CONTENT_TOO_LARGE,
+            detail=f"Artifact exceeded maximum allowed size {LOG_DETECTIVE_MAX_ARTIFACT_SIZE} KB",
+        )

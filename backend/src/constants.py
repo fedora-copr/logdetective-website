@@ -43,6 +43,11 @@ LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS = int(
     os.environ.get("LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS", 50)
 )
 
+# Direct upload size limit in Kilobytes
+LOG_DETECTIVE_MAX_ARTIFACT_SIZE = int(
+    os.environ.get("LOG_DETECTIVE_MAX_UPLOAD_SIZE", 10240)
+)
+
 
 class ProvidersEnum(StrEnum):
     packit = "packit"

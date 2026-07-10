@@ -1,6 +1,8 @@
 from unittest.mock import patch
 import httpx
+import pytest
 from src.constants import DEFAULT_ROBOTS
+from src.exceptions import MaximumArtifactSizeExceeded
 from src.spells import (
     ensure_text,
     fetch_text,
@@ -51,9 +53,63 @@ class TestFetchText:
         transport = httpx.MockTransport(_handler)
         client = httpx.AsyncClient(transport=transport)
         response = await fetch_text(url, client=client)
-
         assert response.encoding == "utf-8"
         assert response.text == czech_text
+
+    @pytest.mark.filterwarnings("ignore::RuntimeWarning")
+    async def test_raises_on_oversized_response(self):
+        """Response exceeding size limit should raise MaximumArtifactSizeExceeded."""
+        url = "http://example.com/huge.log"
+        oversized_content = b"x" * 2048
+
+        def _handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=oversized_content,
+                headers={"content-type": "text/plain"},
+            )
+
+        transport = httpx.MockTransport(_handler)
+        client = httpx.AsyncClient(transport=transport)
+        with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
+            with pytest.raises(MaximumArtifactSizeExceeded):
+                await fetch_text(url, client=client)
+
+    async def test_accepts_response_within_limit(self):
+        """Response within size limit should not raise."""
+        url = "http://example.com/small.log"
+        small_content = "x" * 512
+
+        def _handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=small_content.encode("utf-8"),
+                headers={"content-type": "text/plain"},
+            )
+
+        transport = httpx.MockTransport(_handler)
+        client = httpx.AsyncClient(transport=transport)
+        with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
+            response = await fetch_text(url, client=client)
+            assert response.text == small_content
+
+    async def test_accepts_response_at_exact_limit(self):
+        """Response exactly at the size limit should not raise."""
+        url = "http://example.com/exact.log"
+        exact_content = "x" * 1024
+
+        def _handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=exact_content.encode("utf-8"),
+                headers={"content-type": "text/plain"},
+            )
+
+        transport = httpx.MockTransport(_handler)
+        client = httpx.AsyncClient(transport=transport)
+        with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
+            response = await fetch_text(url, client=client)
+            assert response.text == exact_content
 
 
 class TestJsonFileIO:
