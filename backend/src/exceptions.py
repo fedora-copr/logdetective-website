@@ -22,6 +22,6 @@ class MaximumArtifactSizeExceeded(HTTPException):
 
     def __init__(self) -> None:
         super().__init__(
-            status_code=HTTPStatus.CONTENT_TOO_LARGE,
+            status_code=HTTPStatus.CONTENT_TOO_LARGE,  # pylint: disable=E1101
             detail=f"Artifact exceeded maximum allowed size {LOG_DETECTIVE_MAX_ARTIFACT_SIZE} KB",
         )
