@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: VCS Diff Lint
-        uses: fedora-copr/vcs-diff-lint-action@3fe529c95a55cf7d25d1ef73d53f790710c9a352 # v1.10.0
+        uses: fedora-copr/vcs-diff-lint-action@58d42564182d60919f728e8428d5858ca7ffcc05 # v1.19.0
         id: VCS_Diff_Lint
         with:
           subdirectory: backend
