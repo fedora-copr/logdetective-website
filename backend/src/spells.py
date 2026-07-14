@@ -6,8 +6,10 @@ import json
 import logging
 import os
 import shutil
+import tarfile
 import tempfile
 from contextlib import contextmanager
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterator, Optional
@@ -277,6 +279,51 @@ def sanitize_uploaded_schema(input_schema: FeedbackSchema) -> FeedbackSchema:
         )
 
     return result
+
+
+def _try_parse_date(name: str) -> date | None:
+    try:
+        return date.fromisoformat(name)
+    except ValueError:
+        return None
+
+
+def build_filtered_archive(feedback_dir: str, since_date: date) -> Path | None:
+    """
+    Build a tar.gz archive containing only result date-folders from since_date onward.
+
+    Returns the path to the temporary archive file, or None if no data matched.
+    The caller is responsible for deleting the file after use.
+    """
+    feedback_path = Path(feedback_dir)
+    if not feedback_path.is_dir():
+        return None
+
+    result_dirs = sorted(
+        d
+        for d in feedback_path.iterdir()
+        if d.is_dir()
+        and (parsed := _try_parse_date(d.name)) is not None
+        and parsed >= since_date
+        and any(f.is_file() for f in d.rglob("*.json"))
+    )
+
+    if not result_dirs:
+        return None
+
+    fd, tmp_name = tempfile.mkstemp(suffix=".tar.gz")
+    os.close(fd)
+    success = False
+    try:
+        with tarfile.open(tmp_name, "w:gz") as tar:
+            for d in result_dirs:
+                tar.add(d, arcname=f"results/results/{d.name}")
+        success = True
+    finally:
+        if not success:
+            os.unlink(tmp_name)
+
+    return Path(tmp_name)
 
 
 @lru_cache(maxsize=1)

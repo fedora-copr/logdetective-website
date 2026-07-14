@@ -4,7 +4,7 @@ import uuid
 from asyncio import create_task, gather
 from base64 import b64decode
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 from pathlib import Path
 from typing import Optional
@@ -20,10 +20,12 @@ from fastapi.responses import (
     FileResponse,
     RedirectResponse,
     PlainTextResponse,
+    Response,
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
 from src.constants import (
@@ -61,6 +63,7 @@ from src.schema import (
     schema_inp_to_out,
 )
 from src.spells import (
+    build_filtered_archive,
     find_file_by_name,
     get_logger,
     start_sentry,
@@ -823,16 +826,30 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
 
 
 @app.get("/download")
-def download_results():
+def download_results(since: date | None = None):
     """
-    Download all results we have as a tar.gz archive.
+    Download results as a tar.gz archive.
 
-    The archive is pre-built daily by the create-archive CronJob and stored at
-    /persistent/results-YYYY-MM-DD.tar.gz. This endpoint just serves the most
-    recent one directly, avoiding a long blocking tar creation on each request.
+    Without ``since``, serves the most recent pre-built daily archive.
+    With ``since=YYYY-MM-DD``, dynamically creates an archive containing
+    only result date-folders on or after that date.  Returns 204 when the
+    filtered archive would be empty.
     """
     if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
+
+    if since is not None:
+        archive_path = build_filtered_archive(FEEDBACK_DIR, since)
+        if archive_path is None:
+            return Response(status_code=HTTPStatus.NO_CONTENT)
+
+        filename = f"results-since-{since.isoformat()}.tar.gz"
+        LOGGER.info("Serving filtered dataset archive: %s", filename)
+        return FileResponse(
+            archive_path,
+            filename=filename,
+            background=BackgroundTask(os.unlink, archive_path),
+        )
 
     storage_dir = Path(FEEDBACK_DIR).parent
     archives = sorted(
