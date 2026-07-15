@@ -12,7 +12,7 @@ from urllib import parse
 
 import httpx
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import (
     HTMLResponse,
@@ -32,6 +32,7 @@ from src.constants import (
     COPR_BUILD_URL,
     KOJI_BUILD_URL,
     OBS_BUILD_URL,
+    DOWNLOAD_SINCE_MAX_DAYS,
     FEEDBACK_DIR,
     REVIEWS_DIR,
     SERVER_URL,
@@ -825,8 +826,18 @@ async def store_random_review(feedback_input: Request) -> OkResponse:
     return OkResponse.from_id(file_name, our_server)
 
 
+def _validated_since(since: date | None = None) -> date | None:
+    if since is not None and (date.today() - since).days > DOWNLOAD_SINCE_MAX_DAYS:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"The 'since' date must be within the last"
+            f" {DOWNLOAD_SINCE_MAX_DAYS} days",
+        )
+    return since
+
+
 @app.get("/download")
-def download_results(since: date | None = None):
+def download_results(since: date | None = Depends(_validated_since)):
     """
     Download results as a tar.gz archive.
 

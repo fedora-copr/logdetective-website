@@ -6,6 +6,7 @@ import json
 import os
 import tarfile
 from base64 import b64encode
+from datetime import date
 from unittest.mock import patch, AsyncMock, MagicMock
 
 import httpx
@@ -645,8 +646,14 @@ class TestDownloadEndpoint:
         resp = client.get("/download")
         assert resp.status_code == 404
 
-    def test_download_since_returns_filtered_archive(self, tmp_path, monkeypatch):
+    @patch("src.api.date")
+    def test_download_since_returns_filtered_archive(
+        self, mock_date, tmp_path, monkeypatch
+    ):
         """Return a filtered archive for /download?since=<date> and valid date."""
+
+        mock_date.today.return_value = date(2026, 7, 15)
+        mock_date.fromisoformat = date.fromisoformat
 
         results_dir = tmp_path / "results"
         (results_dir / "2026-07-10" / "copr" / "123").mkdir(parents=True)
@@ -669,8 +676,14 @@ class TestDownloadEndpoint:
         assert any("2026-07-12" in n for n in names)
         assert not any("2026-07-05" in n for n in names)
 
-    def test_download_since_includes_boundary_date(self, tmp_path, monkeypatch):
+    @patch("src.api.date")
+    def test_download_since_includes_boundary_date(
+        self, mock_date, tmp_path, monkeypatch
+    ):
         """Make sure that results from `since` date are included."""
+
+        mock_date.today.return_value = date(2026, 7, 15)
+        mock_date.fromisoformat = date.fromisoformat
 
         results_dir = tmp_path / "results"
         (results_dir / "2026-07-10" / "copr" / "123").mkdir(parents=True)
@@ -690,8 +703,14 @@ class TestDownloadEndpoint:
         assert any("2026-07-10" in n for n in names)
         assert not any("2026-07-09" in n for n in names)
 
-    def test_download_since_skips_empty_and_non_json_dirs(self, tmp_path, monkeypatch):
+    @patch("src.api.date")
+    def test_download_since_skips_empty_and_non_json_dirs(
+        self, mock_date, tmp_path, monkeypatch
+    ):
         """Return 204 when matching date dirs exist but contain no JSON files."""
+
+        mock_date.today.return_value = date(2026, 7, 15)
+        mock_date.fromisoformat = date.fromisoformat
 
         results_dir = tmp_path / "results"
         # Empty directory
@@ -705,9 +724,13 @@ class TestDownloadEndpoint:
         resp = client.get("/download", params={"since": "2026-07-10"})
         assert resp.status_code == 204
 
-    def test_download_since_empty_returns_204(self, tmp_path, monkeypatch):
+    @patch("src.api.date")
+    def test_download_since_empty_returns_204(self, mock_date, tmp_path, monkeypatch):
         """Return 204 for /download?since=<date> if no results exist since that date.
         This also applies if the date is in the future."""
+
+        mock_date.today.return_value = date(2026, 7, 15)
+        mock_date.fromisoformat = date.fromisoformat
 
         results_dir = tmp_path / "results"
         (results_dir / "2026-07-01" / "copr" / "123").mkdir(parents=True)
@@ -726,6 +749,16 @@ class TestDownloadEndpoint:
         client = TestClient(app)
         resp = client.get("/download", params={"since": "not-a-date"})
         assert resp.status_code == 422
+
+    def test_download_since_too_old_returns_400(self, tmp_path, monkeypatch):
+        """Return 400 if the since date is older than DOWNLOAD_SINCE_MAX_DAYS."""
+
+        monkeypatch.setattr("src.api.FEEDBACK_DIR", str(tmp_path / "results"))
+
+        client = TestClient(app)
+        resp = client.get("/download", params={"since": "2020-01-01"})
+        assert resp.status_code == 400
+        assert "The 'since' date must be within" in resp.json()["description"]
 
 
 def test_our_server_url(tmp_path):
