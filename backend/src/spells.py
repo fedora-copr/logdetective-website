@@ -155,7 +155,6 @@ async def fetch_text(
     Returns:
         httpx.Response with encoding set to UTF-8
     """
-
     response_data = bytearray()
     async with client.stream("GET", url=url, timeout=timeout, **kwargs) as stream:
         try:
@@ -167,11 +166,19 @@ async def fetch_text(
             await stream.aclose()
             raise
 
+    headers = dict(stream.headers)
+    # aiter_bytes() already decompresses; drop the header so the Response
+    # constructor doesn't attempt to decompress again.
+    headers.pop("content-encoding", None)
+    # removing content-length forces recalculation during Response creation,
+    # otherwise we have the incomplete length (of last chunk)
+    headers.pop("content-length", None)
+
     response = httpx.Response(
         status_code=stream.status_code,
         text=response_data.decode("utf-8", errors="replace"),
         default_encoding="utf-8",
-        headers=stream.headers,
+        headers=headers,
         request=stream.request,
     )
     return response
