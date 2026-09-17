@@ -128,6 +128,8 @@ metadata:
     cert-manager.io/issuer: "letsencrypt-production"
     # Redirect all HTTP traffic to HTTPS
     ingress.kubernetes.io/ssl-redirect: "true"
+    # default is 30s, server worker timeout is 600s, most requests finish in 60s
+    haproxy.router.openshift.io/timeout: 600s
 spec:
   tls:
     - hosts:
