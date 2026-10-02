@@ -1,9 +1,9 @@
 import json
 import os
 import uuid
-from asyncio import create_task, gather
+from asyncio import create_task, gather, sleep, timeout
 from base64 import b64decode
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import date, datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -508,6 +508,89 @@ def _extract_error_detail_from_response(response: httpx.Response) -> str:
     return f"{response.status_code} {response.reason_phrase}\n{response.url}\n{server_detail}"
 
 
+@contextmanager
+def handle_httpx_errors():
+    """Custom handler for errors during communication with Log Detective server."""
+    try:
+        yield
+    except httpx.TimeoutException as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=f"Request to analysis server timed out: {ex}",
+        ) from ex
+    except httpx.RequestError as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Could not connect to analysis server: {ex}",
+        ) from ex
+    except httpx.HTTPStatusError as ex:
+        raise HTTPException(
+            status_code=ex.response.status_code,
+            detail=_extract_error_detail_from_response(ex.response),
+        ) from ex
+
+
+async def _poll_for_analysis_task(
+    task_url: str,
+    polling_timeout: float,
+    http_client: httpx.AsyncClient,
+    headers: dict,
+    request_timeout: httpx.Timeout,
+) -> dict | None:
+    """Poll /tasks/{id} for task envelopes.
+
+    Return the result (None, if not ready).
+
+    Raise HTTPException if task failed or was cancelled.
+    """
+    await sleep(polling_timeout)
+
+    with handle_httpx_errors():
+        task_response = await http_client.get(
+            task_url,
+            headers=headers,
+            timeout=request_timeout,
+        )
+        task_response.raise_for_status()
+
+    try:
+        task = task_response.json()
+        if not isinstance(task, dict):
+            raise TypeError("task response is not an object")
+        status = task["status"]
+    except (KeyError, TypeError, ValueError) as ex:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="Analysis server returned an invalid task response",
+        ) from ex
+
+    if status in {"scheduled", "in_progress", "cancelling"}:
+        return None
+    if status == "done":
+        return _process_server_data(task.get("result"))
+    if status == "error":
+        try:
+            error_message = task["error"]["message"]
+        except (KeyError, TypeError, ValueError) as ex:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail="Analysis server returned an invalid task error response",
+            ) from ex
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail=f"Analysis failed: {error_message}",
+        )
+    if status == "cancelled":
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="Analysis task was cancelled",
+        )
+    raise HTTPException(
+        status_code=HTTPStatus.BAD_GATEWAY,
+        detail=f"Analysis server returned unknown task status: {status}",
+    )
+
+
 async def _call_analyze_api(
     log_urls: list[dict[str, str]],
     http_client: httpx.AsyncClient,
@@ -530,53 +613,71 @@ async def _call_analyze_api(
     data = {
         "files": [{"name": f["name"], "url": f["url"]} for f in log_urls],
         "build_metadata": {
-            "specfile": spec_content,
-            "last_patch": None,
+            "specfile": spec_content,  # unused, might be removed
+            "last_patch": None,  # unused, might be removed
             "commentary": commentary,
             "infra_status": None,
         },
     }
-    headers = {"Content-Type": "application/json"}
+    request_headers = {"Content-Type": "application/json"}
 
     if LOG_DETECTIVE_TOKEN:
-        headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
+        request_headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
 
     server_url = f"{SERVER_URL}/analyze"
 
-    try:
+    request_timeout = httpx.Timeout(
+        LOGDETECTIVE_DEFAULT_TIMEOUT,
+        connect=LOGDETECTIVE_CONNECT_TIMEOUT,
+        read=LOGDETECTIVE_READ_TIMEOUT,
+    )
+    with handle_httpx_errors():
         response = await http_client.post(
             server_url,
-            headers=headers,
+            headers=request_headers,
             json=data,
-            timeout=httpx.Timeout(
-                LOGDETECTIVE_DEFAULT_TIMEOUT,
-                connect=LOGDETECTIVE_CONNECT_TIMEOUT,
-                read=LOGDETECTIVE_READ_TIMEOUT,
-            ),
+            timeout=request_timeout,
         )
-    except httpx.TimeoutException as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail=f"Request to analysis server timed out: {ex}",
-        ) from ex
-    except httpx.RequestError as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail=f"Could not connect to analysis server: {ex}",
-        ) from ex
-
-    try:
         LOGGER.debug(
             "headers: %s data: %s", response.request.headers, response.request.content
         )
-        response.raise_for_status()
-    except httpx.HTTPError as ex:
+        if response.status_code != HTTPStatus.ACCEPTED:
+            response.raise_for_status()
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY,
+                detail="Analysis server did not accept the analysis task",
+            )
+
+    try:
+        task_url = str(response.headers["Location"])
+        polling_timeout = float(response.headers.get("Retry-After", 5))
+    except (KeyError, ValueError) as ex:
         raise HTTPException(
-            status_code=response.status_code,
-            detail=_extract_error_detail_from_response(response),
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="Analysis server returned invalid task headers",
         ) from ex
 
-    return _process_server_data(response.content)
+    try:
+        async with timeout(LOGDETECTIVE_READ_TIMEOUT):
+            while True:
+                result = await _poll_for_analysis_task(
+                    task_url,
+                    polling_timeout,
+                    http_client,
+                    request_headers,
+                    request_timeout,
+                )
+                if result is not None:
+                    return result
+    except TimeoutError as ex:
+        task_id = parse.urlparse(task_url).path.rstrip("/").rsplit("/", 1)[-1]
+        raise HTTPException(
+            status_code=HTTPStatus.GATEWAY_TIMEOUT,
+            detail=(
+                f"Timed out waiting for analysis task {task_id} after "
+                f"{LOGDETECTIVE_READ_TIMEOUT} seconds"
+            ),
+        ) from ex
 
 
 async def _explain_with_provider(
@@ -709,22 +810,34 @@ def _process_server_data(data) -> dict:
     }
     """
     try:
-        parsed_data = json.loads(data)
-    except json.JSONDecodeError as ex:
+        parsed_data = json.loads(data) if isinstance(data, (bytes, str)) else data
+        explanation = parsed_data["explanation"]
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as ex:
+        LOGGER.error("Invalid response from Log Detective server: %s", ex)
         raise HTTPException(
-            status_code=500, detail="Received invalid data from server"
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="Could not obtain explanation from the server's response.",
         ) from ex
 
-    explanation = parsed_data["explanation"]["text"]
-    extracted_snippets = []
-    for snippet in parsed_data["snippets"]:
-        extracted_snippets.append(
-            {
-                "snippet": snippet["text"],
-                "source_file": snippet["source_file"],
-                "line_number": snippet["line_number"],
-            }
-        )
+    try:
+        extracted_snippets = []
+        snippets = parsed_data.get("snippets")
+        if snippets is None:
+            snippets = []
+        for snippet in snippets:
+            extracted_snippets.append(
+                {
+                    "snippet": snippet["text"],
+                    "source_file": snippet["source_file"],
+                    "line_number": snippet["line_number"],
+                }
+            )
+    except (AttributeError, KeyError, TypeError) as ex:
+        LOGGER.error("Invalid response from Log Detective server: %s", ex)
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_GATEWAY,
+            detail="Could not obtain snippet data from the server's response.",
+        ) from ex
 
     return {
         "explanation": explanation,
