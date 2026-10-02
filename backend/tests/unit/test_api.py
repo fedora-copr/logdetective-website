@@ -2,12 +2,11 @@
 Test the API endpoints.
 """
 
-import json
 import os
 import tarfile
 from base64 import b64encode
 from datetime import date
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import call, patch, AsyncMock, MagicMock
 
 import httpx
 import pytest
@@ -15,30 +14,52 @@ from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException
 
 from src.api import app
+from src.constants import LOGDETECTIVE_READ_TIMEOUT
 
 
 @pytest.fixture(autouse=True)
 def _provide_app_http_client():
     """Ensure app.state.http_client exists for tests that bypass lifespan."""
     app.state.http_client = MagicMock()
-    yield
+    with patch("src.api.sleep", new_callable=AsyncMock):
+        yield
 
 
 FAKE_LOG_CONTENT = "mock build log content"
 FAKE_SPEC = {"name": "test.spec", "content": "spec content"}
 
-FAKE_SERVER_RESPONSE = json.dumps(
-    {
-        "explanation": {"text": "The build failed due to missing dependency."},
-        "snippets": [
-            {
-                "text": "error: package not found",
-                "source_file": "build.log",
-                "line_number": 42,
-            }
-        ],
-    }
-).encode()
+FAKE_SERVER_RESPONSE = {
+    "explanation": "The build failed due to missing dependency.",
+    "snippets": [
+        {
+            "text": "error: package not found",
+            "source_file": "build.log",
+            "line_number": 42,
+        }
+    ],
+}
+
+FAKE_PROCESSED_RESPONSE = {
+    "explanation": "The build failed due to missing dependency.",
+    "extracted_snippets": [
+        {
+            "snippet": "error: package not found",
+            "source_file": "build.log",
+            "line_number": 42,
+        }
+    ],
+}
+
+
+def _server_response(status_code, *, url, headers=None, json_data=None):
+    request = httpx.Request("GET" if status_code == 200 else "POST", url)
+    return httpx.Response(
+        status_code,
+        headers=headers,
+        json=json_data,
+        request=request,
+    )
+
 
 RealAsyncClient = httpx.AsyncClient
 
@@ -193,19 +214,30 @@ class TestContributeEndpoints:
 
 
 class TestExplainEndpoint:
+    @patch("src.api._poll_for_analysis_task", new_callable=AsyncMock)
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
-    async def test_explain_success(self, mock_download, _mock_check):
+    async def test_explain_success(self, mock_download, _mock_check, mock_poll):
         mock_download.return_value = FAKE_LOG_CONTENT
+        mock_poll.return_value = FAKE_PROCESSED_RESPONSE
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = FAKE_SERVER_RESPONSE
-        mock_response.raise_for_status = MagicMock()
-        mock_response.request = MagicMock(headers={}, content=b"")
+        submit_response = _server_response(
+            202,
+            url="http://127.0.0.1:8000/analyze",
+            headers={
+                "Location": "http://127.0.0.1:8000/tasks/task-id",
+                "Retry-After": "0",
+            },
+        )
+        task_response = _server_response(
+            200,
+            url="http://127.0.0.1:8000/tasks/task-id",
+            json_data={"status": "done", "result": FAKE_SERVER_RESPONSE},
+        )
 
         mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_client.post = AsyncMock(return_value=submit_response)
+        mock_client.get = AsyncMock(return_value=task_response)
         app.state.http_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
@@ -224,6 +256,308 @@ class TestExplainEndpoint:
         assert "logs" in data
         assert len(data["logs"]) == 1
         assert data["logs"][0]["content"] == FAKE_LOG_CONTENT
+
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    @patch("src.api.sleep", new_callable=AsyncMock)
+    async def test_explain_polls_until_task_is_done(
+        self, mock_sleep, mock_download, _mock_check
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        submit_response = _server_response(
+            202,
+            url="http://127.0.0.1:8000/analyze",
+            headers={
+                "Location": "http://127.0.0.1:8000/tasks/task-id",
+                "Retry-After": "2",
+            },
+        )
+        active_response = _server_response(
+            200,
+            url="http://127.0.0.1:8000/tasks/task-id",
+            json_data={"status": "in_progress"},
+        )
+        done_response = _server_response(
+            200,
+            url="http://127.0.0.1:8000/tasks/task-id",
+            json_data={"status": "done", "result": FAKE_SERVER_RESPONSE},
+        )
+
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(return_value=submit_response)
+        mock_client.get = AsyncMock(side_effect=[active_response, done_response])
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["explanation"] == FAKE_SERVER_RESPONSE["explanation"]
+        polled_urls = [request.args[0] for request in mock_client.get.await_args_list]
+        assert polled_urls == [
+            "http://127.0.0.1:8000/tasks/task-id",
+            "http://127.0.0.1:8000/tasks/task-id",
+        ]
+        mock_sleep.assert_has_awaits([call(2.0), call(2.0)])
+
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_submission_missing_location(
+        self, mock_download, _mock_check
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(
+            return_value=_server_response(
+                202, url="http://127.0.0.1:8000/analyze", headers={}
+            )
+        )
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == 502
+        assert "invalid task headers" in resp.json()["description"]
+
+    @pytest.mark.parametrize(
+        ("result", "expected_status"),
+        [
+            (None, 502),
+            ({}, 502),
+            ({"snippets": []}, 502),
+            ({"snippets": None}, 502),
+            ({"explanation": "text", "snippets": "invalid"}, 502),
+            ({"explanation": "text", "snippets": [{"invalid_key": "text"}]}, 502),
+            ({"explanation": "text"}, 200),
+            ({"explanation": "text", "snippets": None}, 200),
+        ],
+    )
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_result_validation(
+        self, mock_download, _mock_check, result, expected_status
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(
+            return_value=_server_response(
+                202,
+                url="http://127.0.0.1:8000/analyze",
+                headers={"Location": "http://127.0.0.1:8000/tasks/task-id"},
+            )
+        )
+        mock_client.get = AsyncMock(
+            return_value=_server_response(
+                200,
+                url="http://127.0.0.1:8000/tasks/task-id",
+                json_data={"status": "done", "result": result},
+            )
+        )
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == expected_status
+        if expected_status == 200:
+            assert resp.json()["extracted_snippets"] == []
+        else:
+            assert "Could not obtain" in resp.json()["description"]
+
+    @pytest.mark.parametrize(
+        ("failure", "expected_status"),
+        [
+            (httpx.ReadTimeout("read timed out"), 504),
+            (httpx.ConnectError("connection refused"), 502),
+            (
+                _server_response(
+                    500,
+                    url="http://127.0.0.1:8000/tasks/task-id",
+                    json_data={"detail": "poll failed"},
+                ),
+                500,
+            ),
+        ],
+    )
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_polling_get_failure(
+        self, mock_download, _mock_check, failure, expected_status
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(
+            return_value=_server_response(
+                202,
+                url="http://127.0.0.1:8000/analyze",
+                headers={"Location": "http://127.0.0.1:8000/tasks/task-id"},
+            )
+        )
+        if isinstance(failure, Exception):
+            mock_client.get = AsyncMock(side_effect=failure)
+        else:
+            mock_client.get = AsyncMock(return_value=failure)
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == expected_status
+
+    @patch("src.api._poll_for_analysis_task", new_callable=AsyncMock)
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_polling_timeout(self, mock_download, _mock_check, mock_poll):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        mock_poll.side_effect = TimeoutError
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(
+            return_value=_server_response(
+                202,
+                url="http://127.0.0.1:8000/analyze",
+                headers={"Location": "http://127.0.0.1:8000/tasks/task-id"},
+            )
+        )
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == 504
+        detail = resp.json()["description"]
+        assert "task-id" in detail
+        assert f"{LOGDETECTIVE_READ_TIMEOUT} seconds" in detail
+
+    @patch("src.api.LOG_DETECTIVE_TOKEN", "test-token")
+    @patch("src.api._poll_for_analysis_task", new_callable=AsyncMock)
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_forwards_authorization_on_submission_and_poll(
+        self, mock_download, _mock_check, mock_poll
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        mock_poll.return_value = FAKE_PROCESSED_RESPONSE
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(
+            return_value=_server_response(
+                202,
+                url="http://127.0.0.1:8000/analyze",
+                headers={"Location": "http://127.0.0.1:8000/tasks/task-id"},
+            )
+        )
+        mock_client.get = AsyncMock(
+            return_value=_server_response(
+                200,
+                url="http://127.0.0.1:8000/tasks/task-id",
+                json_data={"status": "done", "result": FAKE_SERVER_RESPONSE},
+            )
+        )
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == 200
+        expected_headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer test-token",
+        }
+        assert mock_client.post.await_args.kwargs["headers"] == expected_headers
+        assert mock_poll.await_args.args[3] == expected_headers
+
+    @pytest.mark.parametrize(
+        ("status", "task", "expected_detail"),
+        [
+            (
+                "error",
+                {"status": "error", "error": {"message": "Inference failed"}},
+                "Inference failed",
+            ),
+            (
+                "cancelled",
+                {"status": "cancelled"},
+                "Analysis task was cancelled",
+            ),
+        ],
+    )
+    @patch("src.api._check_log_urls", new_callable=AsyncMock)
+    @patch("src.api._download_log_content", new_callable=AsyncMock)
+    async def test_explain_terminal_task_failure(
+        self,
+        mock_download,
+        _mock_check,
+        status,
+        task,
+        expected_detail,
+    ):
+        mock_download.return_value = FAKE_LOG_CONTENT
+        submit_response = _server_response(
+            202,
+            url="http://127.0.0.1:8000/analyze",
+            headers={
+                "Location": "http://127.0.0.1:8000/tasks/task-id",
+                "Retry-After": "0",
+            },
+        )
+        task_response = _server_response(
+            200,
+            url="http://127.0.0.1:8000/tasks/task-id",
+            json_data=task,
+        )
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(return_value=submit_response)
+        mock_client.get = AsyncMock(return_value=task_response)
+        app.state.http_client = mock_client
+
+        transport = httpx.ASGITransport(app=app)
+        async with RealAsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/frontend/explain/",
+                json={"prompt": "https://example.com/build.log"},
+            )
+
+        assert resp.status_code == 502
+        assert task["status"] == status
+        assert expected_detail in resp.json()["description"]
 
     @patch("src.api._check_log_urls", new_callable=AsyncMock)
     @patch("src.api._download_log_content", new_callable=AsyncMock)
@@ -272,17 +606,10 @@ class TestExplainEndpoint:
     async def test_explain_server_500(self, mock_download, _mock_check):
         mock_download.return_value = FAKE_LOG_CONTENT
 
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.reason_phrase = "Internal Server Error"
-        mock_response.url = "http://127.0.0.1:8000/analyze"
-        mock_response.request = MagicMock(headers={}, content=b"")
-        mock_response.raise_for_status = MagicMock(
-            side_effect=httpx.HTTPStatusError(
-                "Server Error",
-                request=httpx.Request("POST", "http://127.0.0.1:8000/analyze"),
-                response=httpx.Response(500),
-            )
+        mock_response = _server_response(
+            500,
+            url="http://127.0.0.1:8000/analyze",
+            json_data={"detail": "Server Error"},
         )
 
         mock_client = AsyncMock()
@@ -531,17 +858,10 @@ class TestExplainProviderEndpoints:
         )
         mock_provider.fetch_spec_file = AsyncMock(return_value=None)
 
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.reason_phrase = "Internal Server Error"
-        mock_response.url = "http://127.0.0.1:8000/analyze"
-        mock_response.request = MagicMock(headers={}, content=b"")
-        mock_response.raise_for_status = MagicMock(
-            side_effect=httpx.HTTPStatusError(
-                "Server Error",
-                request=httpx.Request("POST", "http://127.0.0.1:8000/analyze"),
-                response=httpx.Response(500),
-            )
+        mock_response = _server_response(
+            500,
+            url="http://127.0.0.1:8000/analyze",
+            json_data={"detail": "Server Error"},
         )
 
         mock_client = AsyncMock()
