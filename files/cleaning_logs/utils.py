@@ -2,20 +2,20 @@
 Some utility functions for preparing/cleaning json files before sanitization.
 """
 
-import os
+import glob
 import html
 import logging
-import glob
-from typing import Iterator, Iterable, Any, Callable, Optional
+import os
+from collections.abc import Callable, Iterable, Iterator
+from typing import Any
 
 import regex as re
-
 from resources import (
-    UNICODE_ESCAPE_BY_BYTE_UTF8,
-    DEFAULT_MARGIN_FOR_NEWLINE_SNAP,
-    SNIPPET_LENGTH_THRESHOLD,
-    DEFAULT_RATIO,
     DEFAULT_ABSOLUTE,
+    DEFAULT_MARGIN_FOR_NEWLINE_SNAP,
+    DEFAULT_RATIO,
+    SNIPPET_LENGTH_THRESHOLD,
+    UNICODE_ESCAPE_BY_BYTE_UTF8,
 )
 
 from src.sanitization import FALSE_POSITIVES_PARENTHESISED_NAMES, NAME_PLACEHOLDER
@@ -162,9 +162,9 @@ def add_text_to_snippets(
         for i, snippet in enumerate(snippet_list):
             if not isinstance(snippet, dict):
                 continue
-            start_index: Optional[int] = snippet.get("start_index")
-            end_index: Optional[int] = snippet.get("end_index")
-            text: Optional[str] = snippet.get("text", None)
+            start_index: int | None = snippet.get("start_index")
+            end_index: int | None = snippet.get("end_index")
+            text: str | None = snippet.get("text", None)
             if start_index is None or end_index is None:
                 logger.error("%s[%d]: Missing some index", log_name, i + 1)
                 continue

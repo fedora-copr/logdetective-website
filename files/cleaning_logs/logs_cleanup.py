@@ -7,35 +7,32 @@ A local 'dry run' is recommended before running on the persistent storage on the
 You can look what was redacted based on the files in --output_dir OUTDIR.
 """
 
-import logging
 import argparse
 import json
+import logging
 import os
 from typing import cast
-
-
-from resources import (
-    DataCleaningStats,
-    DEFAULT_OUTPUTS_PATH,
-    DEFAULT_SANITIZATION_OUTPUT,
-    DEFAULT_LOGGING_OUTPUT,
-)
-
-from utils import (
-    check_all_snippets_in_file,
-    snap_indexes_to_text,
-    add_text_to_snippets,
-    files_in_dirs,
-    on_all_strings_in_json,
-    html_careful_unescape,
-    convert_mojibake_to_utf8,
-    check_for_broken_escapes,
-)
 
 from json_sanitization import (
     GlobalAuditor,
     sanitize_json_file,
     sanitize_normal_file_raw,
+)
+from resources import (
+    DEFAULT_LOGGING_OUTPUT,
+    DEFAULT_OUTPUTS_PATH,
+    DEFAULT_SANITIZATION_OUTPUT,
+    DataCleaningStats,
+)
+from utils import (
+    add_text_to_snippets,
+    check_all_snippets_in_file,
+    check_for_broken_escapes,
+    convert_mojibake_to_utf8,
+    files_in_dirs,
+    html_careful_unescape,
+    on_all_strings_in_json,
+    snap_indexes_to_text,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import HTTPException
+
 from src.constants import LOG_DETECTIVE_MAX_ARTIFACT_SIZE
 
 

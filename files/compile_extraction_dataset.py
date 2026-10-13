@@ -3,14 +3,15 @@
 # You need to have access to the HF dataset repo
 # Set it in the HF_TOKEN env var
 
-from datasets import load_dataset
-import json
 import glob
-import requests
-import tarfile
-import tempfile
+import json
 import os
 import shutil
+import tarfile
+import tempfile
+
+import requests
+from datasets import load_dataset
 
 LOG_DETECTIVE_DOWNLOAD_API = "https://www.logdetective.com/download"
 LOG_DETECTIVE_DATA_FILE = "log_detective_data.tar.gz"
@@ -21,8 +22,7 @@ r = requests.get(LOG_DETECTIVE_DOWNLOAD_API, stream=True)
 tmp_dir = tempfile.mkdtemp("_log_detective")
 
 with open(os.path.join(tmp_dir, LOG_DETECTIVE_DATA_FILE), "wb") as fd:
-    for chunk in r.iter_content(chunk_size=128):
-        fd.write(chunk)
+    fd.writelines(r.iter_content(chunk_size=128))
 
 print("Reports from Log Detective downloaded")
 
@@ -43,7 +43,7 @@ try:
     parsed = []
 
     for e in data:
-        for k, v in e["logs"].items():
+        for v in e["logs"].values():
             for s in v["snippets"]:
                 parsed.append(
                     {

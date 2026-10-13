@@ -2,15 +2,14 @@
 Class definitions, constants and other resources used all across the data cleaning/redactions.
 """
 
-import os
-import sys
 import json
 import logging
-
-from typing import Callable, NamedTuple
+import os
+import sys
+from collections.abc import Callable
+from typing import NamedTuple
 
 import regex as re
-
 
 logger = logging.getLogger(__name__)
 

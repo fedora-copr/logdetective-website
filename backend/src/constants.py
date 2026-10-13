@@ -2,7 +2,6 @@ import os
 from enum import StrEnum
 from pathlib import Path
 
-
 COPR_BUILD_URL = "https://copr.fedorainfracloud.org/coprs/build/{0}"
 KOJI_BUILD_URL = "https://koji.fedoraproject.org/koji/buildinfo?buildID={0}"
 OBS_BUILD_URL = "https://build.opensuse.org/package/show/{0}/{1}"
@@ -15,20 +14,20 @@ DOWNLOAD_SINCE_MAX_DAYS = 90
 
 # Gunicorn worker timeout (files/gunicorn.conf.py) must be > this value.
 # Note: > 90 % analysis requests finish within 30 seconds as of June 2026.
-LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", 600))
+LOGDETECTIVE_READ_TIMEOUT = float(os.environ.get("LOGDETECTIVE_READ_TIMEOUT", "600"))
 # Set to slightly more than retransmission window of 3s from RFC2988
 # https://datatracker.ietf.org/doc/html/rfc2988
 LOGDETECTIVE_CONNECT_TIMEOUT = float(
-    os.environ.get("LOGDETECTIVE_CONNECT_TIMEOUT", 3.07)
+    os.environ.get("LOGDETECTIVE_CONNECT_TIMEOUT", "3.07")
 )
 LOGDETECTIVE_DEFAULT_TIMEOUT = float(
-    os.environ.get("LOGDETECTIVE_DEFAULT_TIMEOUT", 3.07)
+    os.environ.get("LOGDETECTIVE_DEFAULT_TIMEOUT", "3.07")
 )
 
 # How long we wait for remote file servers to respond before giving up on fetching a file
 # Applies only to specfiles since logs are only submitted as URLS and
 # their download is handled as a part of the logdetective server's request
-FETCH_TIMEOUT = float(os.environ.get("FETCH_TIMEOUT", 600))
+FETCH_TIMEOUT = float(os.environ.get("FETCH_TIMEOUT", "600"))
 
 COPR_RESULT_TEMPLATE = (
     "https://download.copr.fedorainfracloud.org" + "/results/{0}/{1}/srpm-builds/{2:08}"
@@ -41,15 +40,15 @@ LOG_DETECTIVE_TOKEN = os.environ.get("LOG_DETECTIVE_TOKEN")
 
 # Connection limits for fetcher client
 LOGDETECTIVE_MAX_CONNECTION_LIMIT = int(
-    os.environ.get("LOGDETECTIVE_MAX_CONNECTION_LIMIT", 250)
+    os.environ.get("LOGDETECTIVE_MAX_CONNECTION_LIMIT", "250")
 )
 LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS = int(
-    os.environ.get("LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS", 50)
+    os.environ.get("LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS", "50")
 )
 
 # Direct upload size limit in Kilobytes
 LOG_DETECTIVE_MAX_ARTIFACT_SIZE = int(
-    os.environ.get("LOG_DETECTIVE_MAX_UPLOAD_SIZE", 10240)
+    os.environ.get("LOG_DETECTIVE_MAX_UPLOAD_SIZE", "10240")
 )
 
 

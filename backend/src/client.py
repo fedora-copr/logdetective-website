@@ -2,14 +2,14 @@
 HTTP client utility module
 """
 
-from httpx import AsyncClient, Timeout, Limits
+from httpx import AsyncClient, Limits, Timeout
 
 from src.constants import (
     LOGDETECTIVE_CONNECT_TIMEOUT,
     LOGDETECTIVE_DEFAULT_TIMEOUT,
-    LOGDETECTIVE_READ_TIMEOUT,
     LOGDETECTIVE_MAX_CONNECTION_LIMIT,
     LOGDETECTIVE_MAX_KEEPALIVE_CONNECTIONS,
+    LOGDETECTIVE_READ_TIMEOUT,
 )
 
 
