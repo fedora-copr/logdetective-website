@@ -25,7 +25,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: d2823d321df3af8f878f7ee3414dc94d037145b9  # frozen: v2.1.0
+    rev: 2834ec6639549dd6796205c8f011dedcd587288b  # frozen: v2.4.0
     hooks:
       - id: mypy
         additional_dependencies:
@@ -45,9 +45,14 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: c59bba8fb259db0fec2bbb77ad8ba51ea7341b56  # frozen: v0.15.20
+    rev: 44b5042edab9382aba712eed4f9c7bab7a3d6a3e  # frozen: v0.17.0
     hooks:
       # Run the linter.
+      # Adding isort.known-first-party to sort src imports from other dirs
+      # (backend/tests, files/) properly. Without it, `from src.* import ...`
+      # is treated as a 3rd-party import and would be reordered wrong.
+      # Relevant for ruff >= 0.17, where they added acheck for import ordering.
       - id: ruff
+        args: ["--config", "lint.isort.known-first-party=['src']"]
       # Run the formatter.
       - id: ruff-format
