@@ -1,86 +1,53 @@
-import json
+"""FastAPI application setup and small application-level routes."""
+
 import os
-import uuid
-from asyncio import create_task, gather, sleep, timeout
-from base64 import b64decode
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
-from urllib import parse
-
-import httpx
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import (
+    FileResponse,
     HTMLResponse,
     JSONResponse,
-    FileResponse,
-    RedirectResponse,
     PlainTextResponse,
+    RedirectResponse,
     Response,
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
+from src.api_contribute import OkResponse
+from src.api_contribute import router as contribute_router
+from src.api_explain import router as explain_router
+from src.client import get_http_client
 from src.constants import (
-    COPR_BUILD_URL,
-    KOJI_BUILD_URL,
-    OBS_BUILD_URL,
     DOWNLOAD_SINCE_MAX_DAYS,
     FEEDBACK_DIR,
-    REVIEWS_DIR,
-    SERVER_URL,
-    LOGDETECTIVE_READ_TIMEOUT,
-    LOGDETECTIVE_CONNECT_TIMEOUT,
-    LOGDETECTIVE_DEFAULT_TIMEOUT,
-    BuildIdTitleEnum,
-    PROVIDER_COMMENTARY,
-    ProvidersEnum,
     LOGGER_NAME,
-    LOG_DETECTIVE_TOKEN,
+    REVIEWS_DIR,
     STATIC_SOURCE_DIR,
 )
-from src.fetcher import (
-    ContainerProvider,
-    CoprProvider,
-    KojiProvider,
-    OBSProvider,
-    PackitProvider,
-    URLProvider,
-    RPMProvider,
-    Provider,
-)
-from src.schema import (
-    ContributeResponseSchema,
-    FeedbackInputSchema,
-    FeedbackSchema,
-    FeedbackLogSchema,
-    schema_inp_to_out,
-)
+from src.exceptions import NoDataFound
+from src.schema import FeedbackLogSchema, FeedbackSchema
 from src.spells import (
     build_filtered_archive,
     find_file_by_name,
     get_logger,
-    start_sentry,
-    read_json_file,
-    write_json_file,
-    fetch_text,
-    sanitize_uploaded_schema,
     get_robots,
+    read_json_file,
+    start_sentry,
+    write_json_file,
 )
 from src.store import Storator3000
-from src.exceptions import NoDataFound
-from src.client import get_http_client
 
 LOGGER = get_logger(LOGGER_NAME)
 
-# Attempt to initialize sentry and log the result
 if start_sentry():
     LOGGER.info("Sentry initialized.")
 else:
@@ -109,9 +76,7 @@ app = FastAPI(
     },
 )
 
-
 app.mount("/static", StaticFiles(directory=STATIC_SOURCE_DIR), name="static")
-# blame scarlette for not being able to mount directories recursively
 for root, directories, _ in os.walk(STATIC_SOURCE_DIR):
     for directory in directories:
         app.mount(
@@ -128,70 +93,57 @@ template_response = templates.TemplateResponse
 @app.exception_handler(HTTPException)
 @app.exception_handler(RequestValidationError)
 def _custom_http_exception_handler(
-    request: Request, exc: HTTPException | RequestValidationError | Exception
+    _request: Request, exc: HTTPException | RequestValidationError | Exception
 ) -> JSONResponse:
     if isinstance(exc, HTTPException):
-        status_code = exc.status_code
+        status_code, description = exc.status_code, exc.detail
     elif isinstance(exc, RequestValidationError):
         status_code = HTTPStatus.UNPROCESSABLE_ENTITY
-    else:
-        status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-
-    if isinstance(exc, HTTPException):
-        description = exc.detail
-    elif isinstance(exc, RequestValidationError):
         errors = exc.errors()
         description = (
             "\n".join(
-                e.get("msg", f"Failed to fetch validation error #{i + 1}")
-                for i, e in enumerate(errors)
+                error.get("msg", f"Failed to fetch validation error #{index + 1}")
+                for index, error in enumerate(errors)
             )
             if errors
             else "The submitted data was invalid."
         )
     else:
-        description = str(exc)
-
+        status_code, description = HTTPStatus.INTERNAL_SERVER_ERROR, str(exc)
     LOGGER.error("Exception %s encountered returing %s", exc, status_code)
-
-    return JSONResponse(
-        status_code=status_code,
-        content={"description": description},
-    )
+    return JSONResponse(status_code=status_code, content={"description": description})
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
+    """Render homepage."""
     return template_response("index.html", {"request": request, "name": "app-homepage"})
 
 
 @app.get("/contribute", response_class=HTMLResponse)
 def contribute_landing(request: Request):
-    """
-    Submission dialog for log annotation contributions
-    """
-    mapping = {"name": "app-contribute-landing", "request": request}
-    return template_response("app.html", mapping)
+    """Render the contribution landing page."""
+    return template_response(
+        "app.html", {"name": "app-contribute-landing", "request": request}
+    )
 
 
 @app.get("/contribute/{args:path}", response_class=HTMLResponse)
 def contribute(request: Request, args: str):
-    # TODO: once ready for production, drop path and use proper paths
+    """Render a specific contribute page."""
     _ = args
-    mapping = {"name": "app-contribute", "request": request}
-    return template_response("app.html", mapping)
+    return template_response("app.html", {"name": "app-contribute", "request": request})
 
 
 @app.get("/documentation", response_class=HTMLResponse)
 def documentation(request: Request):
+    """Render the documentation landing page."""
     return template_response("documentation.html", {"request": request})
 
 
 @app.get("/review", response_class=RedirectResponse)
 def review_redirect():
-    """
-    Redirect to a review URL that contains some result ID
-    """
+    """Redirect to a randomly selected review."""
     result = Storator3000.get_random()
     LOGGER.info("Opening %s for review", result)
     return f"/review/{result.stem}"
@@ -199,682 +151,37 @@ def review_redirect():
 
 @app.get("/review/{result_id}", response_class=HTMLResponse)
 def review(request: Request):
-    mapping = {"name": "app-review", "request": request}
-    return template_response("app.html", mapping)
+    """Render the review page for a specific result."""
+    return template_response("app.html", {"name": "app-review", "request": request})
 
 
 @app.get("/explain/{args:path}", response_class=HTMLResponse)
 @app.get("/explain", response_class=HTMLResponse)
-def explain(request: Request, args: str = "", url: Optional[str] = None):
-    # the URL is parsed by frontend, but having it mentioned here
-    # means we have it documented
-    _ = url
+def explain(request: Request, args: str = "", url: str | None = None):
+    """Render the log explanation page."""
     _ = args
-    mapping = {"name": "app-explain", "request": request}
-    return template_response("app.html", mapping)
-
-
-# Frontend API routes
-# These are called from JavaScript to asynchronously fetch or post data
-
-
-@app.get("/frontend/contribute/copr/{build_id}/{chroot}")
-@app.get("/frontend/contribute/koji/{build_id}/{chroot}")
-async def get_build_logs_with_chroot(
-    request: Request, build_id: int, chroot: str
-) -> ContributeResponseSchema:
-    provider_name = request.url.path.lstrip("/").split("/")[2]
-    prov_kls = CoprProvider if provider_name == ProvidersEnum.copr else KojiProvider
-    provider = prov_kls(build_id, chroot, http_client=app.state.http_client)
-    if provider_name == ProvidersEnum.copr:
-        build_title = BuildIdTitleEnum.copr
-        build_url = COPR_BUILD_URL.format(build_id)
-    else:
-        build_title = BuildIdTitleEnum.koji
-        build_url = KOJI_BUILD_URL.format(build_id)
-
-    return ContributeResponseSchema(
-        build_id=build_id,
-        build_id_title=build_title,
-        build_url=build_url,
-        logs=await provider.fetch_logs(),
-        spec_file=await provider.fetch_spec_file(),
-    )
-
-
-@app.get("/frontend/contribute/packit/{packit_id}")
-async def get_packit_build_logs(packit_id: int) -> ContributeResponseSchema:
-    provider = PackitProvider(packit_id, http_client=app.state.http_client)
-    return ContributeResponseSchema(
-        build_id=packit_id,
-        build_id_title=BuildIdTitleEnum.packit,
-        build_url=await provider.get_url(),
-        logs=await provider.fetch_logs(),
-        spec_file=await provider.fetch_spec_file(),
-    )
-
-
-@app.get("/frontend/contribute/url/{base64}")
-async def get_build_logs_from_url(base64: str) -> ContributeResponseSchema:
-    build_url = b64decode(base64).decode("utf-8")
-    provider = URLProvider(build_url, http_client=app.state.http_client)
-    return ContributeResponseSchema(
-        build_id=None,
-        build_id_title=BuildIdTitleEnum.url,
-        build_url=build_url,
-        logs=await provider.fetch_logs(),
-        spec_file=None,
-    )
-
-
-@app.get("/frontend/contribute/container/{base64}")
-async def get_logs_from_container(base64: str) -> ContributeResponseSchema:
-    build_url = b64decode(base64).decode("utf-8")
-    provider = ContainerProvider(build_url, http_client=app.state.http_client)
-    return ContributeResponseSchema(
-        build_id=None,
-        build_id_title=BuildIdTitleEnum.container,
-        build_url=build_url,
-        logs=await provider.fetch_logs(),
-    )
-
-
-@app.get("/frontend/contribute/obs/{project}/{repository}/{architecture}/{package}")
-async def get_obs_build_logs(
-    project: str, repository: str, architecture: str, package: str
-) -> ContributeResponseSchema:
-    """Return logs and spec file for an OBS build."""
-    provider = OBSProvider(
-        project, repository, architecture, package, http_client=app.state.http_client
-    )
-    return ContributeResponseSchema(
-        build_id=None,
-        build_id_title=BuildIdTitleEnum.obs,
-        build_url=OBS_BUILD_URL.format(project, package),
-        logs=await provider.fetch_logs(),
-        spec_file=await provider.fetch_spec_file(),
-    )
-
-
-# TODO: some reasonable ok response would be better
-class OkResponse(BaseModel):
-    """Response on successful annotation submission, containing sumbission id and relative URLs
-    pointing to posted annotation and review tooling.
-    """
-
-    status: str = "ok"
-    review_id: str | uuid.UUID
-    review_url_website: str
-    review_url_json: str
-
-    @staticmethod
-    def from_id(id_: str | uuid.UUID, our_server: str) -> "OkResponse":
-        """Constructs an OkResponse object from a review/contribution ID.
-
-        Args:
-            id (str | uuid.UUID): the review/contribution ID
-
-        Returns:
-            OkResponse: The OkResponse object with all required fields filled out.
-        """
-        return OkResponse(
-            review_id=id_,
-            review_url_json=f"{our_server}/frontend/review/{id_}",
-            review_url_website=f"{our_server}/review/{id_}",
-        )
-
-
-def _store_data_for_providers(
-    feedback_input: FeedbackInputSchema,
-    provider: str,
-    id_: int | str,
-    *args,
-    our_server: str = "https://logdetective.com",
-) -> OkResponse:
-    storator = Storator3000(ProvidersEnum[provider], str(id_))
-
-    if provider == ProvidersEnum.container:
-        result_to_store = schema_inp_to_out(feedback_input, is_with_spec=False)
-    else:
-        result_to_store = schema_inp_to_out(feedback_input)
-
-    sanitized_result_to_store = sanitize_uploaded_schema(result_to_store)
-    contribution_id = storator.store(sanitized_result_to_store)
-    if len(args) > 0:
-        rest = f"/{args[0]}"
-    else:
-        rest = ""
-
-    LOGGER.info(
-        "Submitted data for %s: #%s(submission ID: %s) Additional args: %s",
-        provider,
-        id_,
-        contribution_id,
-        rest,
-    )
-    return OkResponse.from_id(contribution_id, our_server)
-
-
-@app.post("/frontend/contribute/copr/{build_id}/{chroot}")
-def contribute_review_copr(
-    feedback_input: FeedbackInputSchema,
-    build_id: int,
-    chroot: str,
-    request: Request,
-) -> OkResponse:
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.copr,
-        build_id,
-        chroot,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/koji/{build_id}/{arch}")
-def contribute_review_koji(
-    feedback_input: FeedbackInputSchema,
-    build_id: int,
-    arch: str,
-    request: Request,
-) -> OkResponse:
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.koji,
-        build_id,
-        arch,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/packit/{packit_id}")
-def contribute_review_packit(
-    feedback_input: FeedbackInputSchema, packit_id: int, request: Request
-) -> OkResponse:
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.packit,
-        packit_id,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/upload")
-def contribute_upload_file(
-    feedback_input: FeedbackInputSchema, request: Request
-) -> OkResponse:
-    dirname = int(datetime.now().timestamp())
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.upload,
-        dirname,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/url/{url}")
-def contribute_review_url(
-    feedback_input: FeedbackInputSchema, url: str, request: Request
-) -> OkResponse:
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.url,
-        url,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/container/{url}")
-def contribute_review_container_logs(
-    feedback_input: FeedbackInputSchema, url: str, request: Request
-) -> OkResponse:
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.container,
-        url,
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
-
-
-@app.post("/frontend/contribute/obs/{project}/{repository}/{architecture}/{package}")
-# pylint: disable=too-many-arguments,too-many-positional-arguments
-def contribute_review_obs(
-    feedback_input: FeedbackInputSchema,
-    project: str,
-    repository: str,
-    architecture: str,
-    package: str,
-    request: Request,
-) -> OkResponse:
-    """Contributor feedback for an OBS build log."""
-    return _store_data_for_providers(
-        feedback_input,
-        ProvidersEnum.obs,
-        f"{project}/{repository}/{architecture}/{package}",
-        our_server=f"{request.url.scheme}://{request.url.netloc}",
-    )
+    _ = url
+    return template_response("app.html", {"name": "app-explain", "request": request})
 
 
 @app.get("/frontend/review/{result_id}")
 def frontend_review_random(result_id):
-    if result_id == "random":
-        feedback_file = Storator3000.get_random()
-    else:
-        feedback_file = Storator3000.get_by_id(result_id)
-
+    """Return stored review data by ID, or select a random review."""
+    feedback_file = (
+        Storator3000.get_random()
+        if result_id == "random"
+        else Storator3000.get_by_id(result_id)
+    )
     LOGGER.info("Opening annotation: %s for review", result_id)
-
     if not feedback_file:
         raise NoDataFound(f"No result with ID {result_id}")
-
-    content = read_json_file(feedback_file)
-    return FeedbackSchema(**content).model_dump() | {
+    return FeedbackSchema(**read_json_file(feedback_file)).model_dump() | {
         "id": feedback_file.name.rstrip(".json")
     }
 
 
-async def _check_log_urls(
-    log_urls: list[dict[str, str]], http_client: httpx.AsyncClient
-) -> None:
-    """Verify all log URLs are reachable using HEAD requests."""
-    results = await gather(
-        *(http_client.head(f["url"], timeout=10) for f in log_urls),
-        return_exceptions=True,
-    )
-    unreachable = []
-    for file_info, result in zip(log_urls, results):
-        if isinstance(result, BaseException):
-            unreachable.append((file_info["name"], file_info["url"], str(result)))
-        elif result.status_code >= 400:
-            unreachable.append(
-                (file_info["name"], file_info["url"], str(result.status_code))
-            )
-    if unreachable:
-        detail = "; ".join(
-            f"{name} ({url}): {reason}" for name, url, reason in unreachable
-        )
-        LOGGER.error("Unreachable log URLs: %s", detail)
-        raise HTTPException(status_code=422, detail=f"Unreachable log files: {detail}")
-
-
-def _extract_error_detail_from_response(response: httpx.Response) -> str:
-    """Extract error detail from a httpx.Response object.
-    Note: logs at ERROR level as a side effect."""
-    try:
-        server_detail = response.json().get("detail", response.text)
-    except (json.JSONDecodeError, ValueError, AttributeError):
-        server_detail = response.text
-    LOGGER.error("Analysis server error %s: %s", response.status_code, server_detail)
-    return f"{response.status_code} {response.reason_phrase}\n{response.url}\n{server_detail}"
-
-
-@contextmanager
-def handle_httpx_errors():
-    """Custom handler for errors during communication with Log Detective server."""
-    try:
-        yield
-    except httpx.TimeoutException as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail=f"Request to analysis server timed out: {ex}",
-        ) from ex
-    except httpx.RequestError as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail=f"Could not connect to analysis server: {ex}",
-        ) from ex
-    except httpx.HTTPStatusError as ex:
-        raise HTTPException(
-            status_code=ex.response.status_code,
-            detail=_extract_error_detail_from_response(ex.response),
-        ) from ex
-
-
-async def _poll_for_analysis_task(
-    task_url: str,
-    polling_timeout: float,
-    http_client: httpx.AsyncClient,
-    headers: dict,
-    request_timeout: httpx.Timeout,
-) -> dict | None:
-    """Poll /tasks/{id} for task envelopes.
-
-    Return the result (None, if not ready).
-
-    Raise HTTPException if task failed or was cancelled.
-    """
-    await sleep(polling_timeout)
-
-    with handle_httpx_errors():
-        task_response = await http_client.get(
-            task_url,
-            headers=headers,
-            timeout=request_timeout,
-        )
-        task_response.raise_for_status()
-
-    try:
-        task = task_response.json()
-        if not isinstance(task, dict):
-            raise TypeError("task response is not an object")
-        status = task["status"]
-    except (KeyError, TypeError, ValueError) as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="Analysis server returned an invalid task response",
-        ) from ex
-
-    if status in {"scheduled", "in_progress", "cancelling"}:
-        return None
-    if status == "done":
-        return _process_server_data(task.get("result"))
-    if status == "error":
-        try:
-            error_message = task["error"]["message"]
-        except (KeyError, TypeError, ValueError) as ex:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="Analysis server returned an invalid task error response",
-            ) from ex
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail=f"Analysis failed: {error_message}",
-        )
-    if status == "cancelled":
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="Analysis task was cancelled",
-        )
-    raise HTTPException(
-        status_code=HTTPStatus.BAD_GATEWAY,
-        detail=f"Analysis server returned unknown task status: {status}",
-    )
-
-
-async def _call_analyze_api(
-    log_urls: list[dict[str, str]],
-    http_client: httpx.AsyncClient,
-    spec_content: str | None = None,
-    provider_name: Optional[str] = None,
-) -> dict:
-    """Send log URLs to the logdetective analyze API and return processed results."""
-    commentary = ""
-    if provider_name:
-        commentary = PROVIDER_COMMENTARY.get(provider_name, "")
-
-    LOGGER.info(
-        "Log files to analyze: %s with commentary: %s",
-        [(f["name"], f["url"]) for f in log_urls],
-        commentary,
-    )
-
-    await _check_log_urls(log_urls, http_client=http_client)
-
-    data = {
-        "files": [{"name": f["name"], "url": f["url"]} for f in log_urls],
-        "build_metadata": {
-            "specfile": spec_content,  # unused, might be removed
-            "last_patch": None,  # unused, might be removed
-            "commentary": commentary,
-            "infra_status": None,
-        },
-    }
-    request_headers = {"Content-Type": "application/json"}
-
-    if LOG_DETECTIVE_TOKEN:
-        request_headers["Authorization"] = f"Bearer {LOG_DETECTIVE_TOKEN}"
-
-    server_url = f"{SERVER_URL}/analyze"
-
-    request_timeout = httpx.Timeout(
-        LOGDETECTIVE_DEFAULT_TIMEOUT,
-        connect=LOGDETECTIVE_CONNECT_TIMEOUT,
-    )
-    with handle_httpx_errors():
-        response = await http_client.post(
-            server_url,
-            headers=request_headers,
-            json=data,
-            timeout=request_timeout,
-        )
-        LOGGER.debug(
-            "headers: %s data: %s", response.request.headers, response.request.content
-        )
-        if response.status_code != HTTPStatus.ACCEPTED:
-            response.raise_for_status()
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="Analysis server did not accept the analysis task",
-            )
-
-    try:
-        task_url = str(response.headers["Location"])
-        polling_timeout = float(response.headers.get("Retry-After", 5))
-    except (KeyError, ValueError) as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="Analysis server returned invalid task headers",
-        ) from ex
-
-    try:
-        async with timeout(LOGDETECTIVE_READ_TIMEOUT):
-            while True:
-                result = await _poll_for_analysis_task(
-                    task_url,
-                    polling_timeout,
-                    http_client,
-                    request_headers,
-                    request_timeout,
-                )
-                if result is not None:
-                    return result
-    except TimeoutError as ex:
-        task_id = parse.urlparse(task_url).path.rstrip("/").rsplit("/", 1)[-1]
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail=(
-                f"Timed out waiting for analysis task {task_id} after "
-                f"{LOGDETECTIVE_READ_TIMEOUT} seconds"
-            ),
-        ) from ex
-
-
-async def _explain_with_provider(
-    provider: Provider, provider_name: str, http_client: httpx.AsyncClient
-) -> dict:
-    """Fetch log URLs, analyze them, fetch log content, return combined result."""
-
-    LOGGER.info("Received request for analysis from: %s", provider_name)
-    log_urls = await provider.fetch_log_urls()
-
-    spec_content = None
-    if isinstance(provider, RPMProvider):
-        spec = await provider.fetch_spec_file()
-        spec_content = spec["content"] if spec else None
-
-    analyze_task = create_task(
-        _call_analyze_api(
-            log_urls,
-            http_client=http_client,
-            spec_content=spec_content,
-            provider_name=provider_name,
-        )
-    )
-    content_task = create_task(provider.fetch_logs())
-    result, logs = await gather(analyze_task, content_task)
-
-    result["logs"] = [{"name": log["name"], "content": log["content"]} for log in logs]
-    return result
-
-
-@app.post("/frontend/explain/")
-async def frontend_explain_post(request: Request) -> dict:
-    """Communicate with the logdetective server and process data.
-
-    :returns: {
-        "explanation": str,
-        "extracted_snippets": [...],
-        "logs": [{"name": str, "content": str}, ...]
-    }
-    """
-    data = await request.json()
-    log_url = data["prompt"]
-
-    LOGGER.info("Asking server to analyze log '%s'", log_url)
-
-    file_name = Path(parse.urlparse(url=log_url).path).name
-    log_urls = [{"name": file_name, "url": log_url}]
-
-    download_log_task = _download_log_content(log_url, client=app.state.http_client)
-    analyze_task = _call_analyze_api(
-        log_urls, provider_name=ProvidersEnum.url, http_client=app.state.http_client
-    )
-
-    result, log_data = await gather(analyze_task, download_log_task)
-
-    result["logs"] = [{"name": file_name, "content": log_data}]
-
-    return result
-
-
-@app.post("/frontend/explain/copr/{build_id}/{chroot}")
-async def explain_copr(build_id: int, chroot: str) -> dict:
-    provider = CoprProvider(build_id, chroot, http_client=app.state.http_client)
-    return await _explain_with_provider(
-        provider, ProvidersEnum.copr, http_client=app.state.http_client
-    )
-
-
-@app.post("/frontend/explain/koji/{build_id}/{chroot}")
-async def explain_koji(build_id: int, chroot: str) -> dict:
-    provider = KojiProvider(build_id, chroot, http_client=app.state.http_client)
-    return await _explain_with_provider(
-        provider, ProvidersEnum.koji, http_client=app.state.http_client
-    )
-
-
-@app.post("/frontend/explain/packit/{packit_id}")
-async def explain_packit(packit_id: int) -> dict:
-    provider = PackitProvider(packit_id, http_client=app.state.http_client)
-    return await _explain_with_provider(
-        provider, ProvidersEnum.packit, http_client=app.state.http_client
-    )
-
-
-@app.post("/frontend/explain/url/{base64}")
-async def explain_url(base64: str) -> dict:
-    url = b64decode(base64).decode("utf-8")
-    provider = URLProvider(url, http_client=app.state.http_client)
-    return await _explain_with_provider(
-        provider, ProvidersEnum.url, http_client=app.state.http_client
-    )
-
-
-@app.post("/frontend/explain/container/{base64}")
-async def explain_container(base64: str) -> dict:
-    url = b64decode(base64).decode("utf-8")
-    provider = ContainerProvider(url, http_client=app.state.http_client)
-    return await _explain_with_provider(
-        provider, ProvidersEnum.container, http_client=app.state.http_client
-    )
-
-
-@app.post("/frontend/explain/obs/{project}/{repository}/{architecture}/{package}")
-async def explain_obs(
-    project: str, repository: str, architecture: str, package: str
-) -> dict:
-    """Forward an OBS build log to the logdetective server for explanation."""
-    provider = OBSProvider(
-        project, repository, architecture, package, http_client=app.state.http_client
-    )
-    return await _explain_with_provider(
-        provider, ProvidersEnum.obs, http_client=app.state.http_client
-    )
-
-
-def _process_server_data(data) -> dict:
-    """Process data received from logdetective server.
-
-    Return them in format:
-    {
-        "explanation": str,
-        "extracted_snippets": [
-            {
-                "snippet": str,
-                "source_file": str,
-                "line_number": int
-            },
-            ...
-        ]
-    }
-    """
-    try:
-        parsed_data = json.loads(data) if isinstance(data, (bytes, str)) else data
-        explanation = parsed_data["explanation"]
-    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as ex:
-        LOGGER.error("Invalid response from Log Detective server: %s", ex)
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="Could not obtain explanation from the server's response.",
-        ) from ex
-
-    try:
-        extracted_snippets = []
-        snippets = parsed_data.get("snippets")
-        if snippets is None:
-            snippets = []
-        for snippet in snippets:
-            extracted_snippets.append(
-                {
-                    "snippet": snippet["text"],
-                    "source_file": snippet["source_file"],
-                    "line_number": snippet["line_number"],
-                }
-            )
-    except (AttributeError, KeyError, TypeError) as ex:
-        LOGGER.error("Invalid response from Log Detective server: %s", ex)
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail="Could not obtain snippet data from the server's response.",
-        ) from ex
-
-    return {
-        "explanation": explanation,
-        "extracted_snippets": extracted_snippets,
-    }
-
-
-async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
-    """Download content of the log file and returns it."""
-
-    try:
-        response = await fetch_text(url, client=client)
-    except httpx.TimeoutException as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail=f"Request to download log file timed out: {ex}",
-        ) from ex
-    except httpx.RequestError as ex:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_GATEWAY,
-            detail=f"Could not connect to log file URL: {ex}",
-        ) from ex
-    try:
-        response.raise_for_status()
-    except httpx.HTTPError as ex:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=_extract_error_detail_from_response(response),
-        ) from ex
-
-    return response.text
-
-
 def _get_text_from_feedback(item: dict) -> str:
-    if item["vote"] != 1:
-        return ""
-
-    return item["text"]
+    return item["text"] if item["vote"] == 1 else ""
 
 
 def _parse_logs(
@@ -884,7 +191,6 @@ def _parse_logs(
         item.snippets = []
         for snippet in review_snippets:
             if snippet["file"] == name and snippet["vote"] == 1:
-                # mypy can't see this far and hinting to it is messy
                 item.snippets.append(snippet)  # type: ignore[arg-type]
 
 
@@ -895,9 +201,7 @@ def _parse_feedback(review_d: dict, origin_id: int) -> dict:
             status_code=HTTPStatus.NOT_FOUND,
             detail=f"Original feedback file for ID {origin_id} not found",
         )
-
-    original_content = read_json_file(original_file_path)
-    schema = FeedbackSchema(**original_content)
+    schema = FeedbackSchema(**read_json_file(original_file_path))
     schema.fail_reason = _get_text_from_feedback(review_d["fail_reason"])
     schema.how_to_fix = _get_text_from_feedback(review_d["how_to_fix"])
     _parse_logs(schema.logs, review_d["snippets"])
@@ -906,66 +210,44 @@ def _parse_feedback(review_d: dict, origin_id: int) -> dict:
 
 @app.post("/frontend/review")
 async def store_random_review(feedback_input: Request) -> OkResponse:
-    """
-    Store review from frontend.
-    """
-    # TODO: temporary silly solution until database is created
-    #  (missing provider but we can dig it from original feedback file)
+    """Store submitted review data and return its public URLs."""
     reviews_dir = Path(REVIEWS_DIR)
     parsed_reviews_dir = reviews_dir / "parsed"
     parsed_reviews_dir.mkdir(parents=True, exist_ok=True)
     content = await feedback_input.json()
     original_file_id = content.pop("id")
-    # avoid duplicates - same ID can be reviewed multiple times
     file_name = f"{original_file_id}-{int(datetime.now().timestamp())}"
-
     LOGGER.info("Storing review for %s as %s", original_file_id, file_name)
-
     write_json_file(
-        reviews_dir / f"{file_name}.json",
-        content | {"id": original_file_id},
+        reviews_dir / f"{file_name}.json", content | {"id": original_file_id}
     )
-
-    parsed_feedback = _parse_feedback(content, original_file_id) | {
-        "id": original_file_id
-    }
     write_json_file(
         parsed_reviews_dir / f"{file_name}.json",
-        parsed_feedback,
+        _parse_feedback(content, original_file_id) | {"id": original_file_id},
     )
-
-    our_server = f"{feedback_input.url.scheme}://{feedback_input.url.netloc}"
-    return OkResponse.from_id(file_name, our_server)
+    return OkResponse.from_id(
+        file_name, f"{feedback_input.url.scheme}://{feedback_input.url.netloc}"
+    )
 
 
 def _validated_since(since: date | None = None) -> date | None:
     if since is not None and (date.today() - since).days > DOWNLOAD_SINCE_MAX_DAYS:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"The 'since' date must be within the last"
-            f" {DOWNLOAD_SINCE_MAX_DAYS} days",
+            detail=f"The 'since' date must be within the last {DOWNLOAD_SINCE_MAX_DAYS} days",
         )
     return since
 
 
 @app.get("/download")
-def download_results(since: date | None = Depends(_validated_since)):
-    """
-    Download results as a tar.gz archive.
-
-    Without ``since``, serves the most recent pre-built daily archive.
-    With ``since=YYYY-MM-DD``, dynamically creates an archive containing
-    only result date-folders on or after that date.  Returns 204 when the
-    filtered archive would be empty.
-    """
+def download_results(since: Annotated[date | None, Depends(_validated_since)]):
+    """Download the annotated dataset, optionally filtered by date."""
     if not FEEDBACK_DIR:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No data found")
-
     if since is not None:
         archive_path = build_filtered_archive(FEEDBACK_DIR, since)
         if archive_path is None:
             return Response(status_code=HTTPStatus.NO_CONTENT)
-
         filename = f"results-since-{since.isoformat()}.tar.gz"
         LOGGER.info("Serving filtered dataset archive: %s", filename)
         return FileResponse(
@@ -973,10 +255,12 @@ def download_results(since: date | None = Depends(_validated_since)):
             filename=filename,
             background=BackgroundTask(os.unlink, archive_path),
         )
-
-    storage_dir = Path(FEEDBACK_DIR).parent
     archives = sorted(
-        [f for f in storage_dir.glob("results-*-*-*.tar.gz") if f.is_file()],
+        [
+            archive
+            for archive in Path(FEEDBACK_DIR).parent.glob("results-*-*-*.tar.gz")
+            if archive.is_file()
+        ],
         reverse=True,
     )
     if not archives:
@@ -984,26 +268,23 @@ def download_results(since: date | None = Depends(_validated_since)):
             status_code=HTTPStatus.NOT_FOUND,
             detail="No archive available yet, please try again later",
         )
-
     tar_path = archives[0]
     LOGGER.info("Starting download of the annotated dataset: %s", tar_path.name)
-
-    # https://fastapi.tiangolo.com/advanced/custom-response/?h=fileresponse#fileresponse
-    return FileResponse(
-        tar_path,
-        filename=tar_path.name,
-    )
+    return FileResponse(tar_path, filename=tar_path.name)
 
 
 @app.get("/stats")
 def get_report_stats() -> dict:
-    """Produce basic information about submitted annotations."""
+    """Return statistics about stored annotations."""
     LOGGER.info("Retrieving annotation statistics")
-
     return Storator3000.get_stats()
 
 
 @app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
 def robots() -> str:
-    """Return robots.txt"""
+    """Return the site's robots.txt contents."""
     return get_robots()
+
+
+app.include_router(contribute_router)
+app.include_router(explain_router)
