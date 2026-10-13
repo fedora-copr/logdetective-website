@@ -7,25 +7,24 @@ from abc import ABC, abstractmethod
 from functools import cached_property, wraps
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
 
 import copr.v3
-import koji
 import httpx
+import koji
 from fastapi import HTTPException
 
 from src.constants import (
     COPR_RESULT_TEMPLATE,
-    LOGGER_NAME,
     FETCH_TIMEOUT,
+    LOGGER_NAME,
 )
 from src.exceptions import FetchError
 from src.spells import (
-    get_temporary_dir,
-    get_logger,
-    read_text_file,
-    fetch_text,
     ensure_text,
+    fetch_text,
+    get_logger,
+    get_temporary_dir,
+    read_text_file,
 )
 
 LOGGER = get_logger(LOGGER_NAME)
@@ -114,7 +113,7 @@ class RPMProvider(Provider):
     """
 
     @abstractmethod
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+    async def fetch_spec_file(self) -> dict[str, str] | None:
         """
         Fetches spec file with its content and name.
 
@@ -141,7 +140,7 @@ class CoprProvider(RPMProvider):
         logs = []
         responses = await asyncio.gather(
             *[
-                fetch_text("{}/{}".format(baseurl, name), client=self.http_client)
+                fetch_text(f"{baseurl}/{name}", client=self.http_client)
                 for name in log_names
             ]
         )
@@ -171,21 +170,19 @@ class CoprProvider(RPMProvider):
             log_names.append("build.log.gz")
 
         if not baseurl:
-            raise FetchError(
-                "There are no results for {}/{}".format(self.build_id, self.chroot)
-            )
+            raise FetchError(f"There are no results for {self.build_id}/{self.chroot}")
         return baseurl, log_names
 
     @handle_errors
     async def fetch_log_urls(self) -> list[dict[str, str]]:
         baseurl, log_names = self._get_baseurl_and_log_names()
         return [
-            {"name": name.removesuffix(".gz"), "url": "{}/{}".format(baseurl, name)}
+            {"name": name.removesuffix(".gz"), "url": f"{baseurl}/{name}"}
             for name in log_names
         ]
 
     @handle_errors
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+    async def fetch_spec_file(self) -> dict[str, str] | None:
         build = self.client.build_proxy.get(self.build_id)
         name = build.source_package["name"]
         if self.chroot == "srpm-builds":
@@ -209,13 +206,13 @@ class CoprProvider(RPMProvider):
 class KojiProvider(RPMProvider):
     koji_url = "https://koji.fedoraproject.org"
     # checkout.log - for dist-git repo cloning problems
-    logs_to_look_for = [
+    logs_to_look_for = (
         "build.log",
         "root.log",
         "mock_output.log",
         "checkout.log",
         "flatpak.log",
-    ]
+    )
     koji_pkgs_url = "https://kojipkgs.fedoraproject.org/work"
 
     task_id: int
@@ -223,7 +220,7 @@ class KojiProvider(RPMProvider):
     def __init__(
         self, build_or_task_id: int, arch: str, http_client: httpx.AsyncClient
     ) -> None:
-        api_url = "{}/kojihub".format(self.koji_url)
+        api_url = f"{self.koji_url}/kojihub"
         self.client = koji.ClientSession(api_url)
 
         self.arch = arch
@@ -277,7 +274,7 @@ class KojiProvider(RPMProvider):
     def task_request(self) -> list:
         return self.client.getTaskRequest(self.task_id)
 
-    def get_task_request_url(self) -> Optional[str]:
+    def get_task_request_url(self) -> str | None:
         """
         We need this:
             'git+https://src.fedoraproject.org/rpms/libphonenumber.git#c88bd3...
@@ -374,7 +371,7 @@ class KojiProvider(RPMProvider):
             )
         return urls
 
-    def _get_srpm_url_from_task(self) -> Optional[str]:
+    def _get_srpm_url_from_task(self) -> str | None:
         # example: 'cli-build/1705395313.3717997.mjCDejui/sqlite-3.45.0-1.fc40.src.rpm'
         request_endpoint = self.task_request[0]
         if not request_endpoint.endswith(".src.rpm"):
@@ -385,9 +382,9 @@ class KojiProvider(RPMProvider):
     @staticmethod
     def _get_spec_file_content_from_srpm(
         srpm_path: Path, temp_dir: Path
-    ) -> Optional[dict[str, str]]:
+    ) -> dict[str, str] | None:
         # extract spec file from srpm
-        cmd = f"rpm2archive -n < {str(srpm_path)} | tar xf - '*.spec'"
+        cmd = f"rpm2archive -n < {srpm_path!s} | tar xf - '*.spec'"
         subprocess.run(cmd, shell=True, check=True, cwd=temp_dir, capture_output=True)
         fst_spec_file = next(temp_dir.glob("*.spec"), None)
         if fst_spec_file is None:
@@ -395,7 +392,7 @@ class KojiProvider(RPMProvider):
 
         return {"name": fst_spec_file.name, "content": read_text_file(fst_spec_file)}
 
-    async def _fetch_spec_file_from_task_id(self) -> Optional[dict[str, str]]:
+    async def _fetch_spec_file_from_task_id(self) -> dict[str, str] | None:
         with get_temporary_dir() as temp_dir:
             srpm_url = self._get_srpm_url_from_task()
             if not srpm_url:
@@ -412,13 +409,12 @@ class KojiProvider(RPMProvider):
                 return None
 
             destination = Path(f"{temp_dir}/{srpm_url.split('/')[-1]}")
-            with open(destination, "wb") as srpm_f:
-                srpm_f.write(resp.content)
+            await asyncio.to_thread(destination.write_bytes, resp.content)
 
             return self._get_spec_file_content_from_srpm(destination, temp_dir)
 
     @handle_errors
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+    async def fetch_spec_file(self) -> dict[str, str] | None:
         """
         Fetch spec file from dist-git if possible.
 
@@ -469,7 +465,7 @@ class PackitProvider(RPMProvider):
     """
 
     packit_api_url = "https://prod.packit.dev/api"
-    _provider: Optional[CoprProvider | KojiProvider] = None
+    _provider: CoprProvider | KojiProvider | None = None
 
     def __init__(self, packit_id: int, http_client: httpx.AsyncClient) -> None:
         self.packit_id = packit_id
@@ -526,7 +522,7 @@ class PackitProvider(RPMProvider):
         return await provider.fetch_log_urls()
 
     @handle_errors
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+    async def fetch_spec_file(self) -> dict[str, str] | None:
         provider = await self._get_provider()
         return await provider.fetch_spec_file()
 
@@ -649,7 +645,7 @@ class OBSProvider(RPMProvider):
         return [{"name": "build.log", "url": self.log_url}]
 
     @handle_errors
-    async def fetch_spec_file(self) -> Optional[dict[str, str]]:
+    async def fetch_spec_file(self) -> dict[str, str] | None:
         spec_name = f"{self.package}.spec"
         url = self.obs_spec_url.format(
             project=self.project, package=self.package, filename=spec_name

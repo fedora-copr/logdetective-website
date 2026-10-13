@@ -10,10 +10,9 @@ import logging
 
 import regex as re
 
-from src.schema import SnippetSchema, FeedbackLogSchema
 from src.constants import LOGGER_NAME
 from src.sanitization import SchemaRedactionPipelineStep
-
+from src.schema import FeedbackLogSchema, SnippetSchema
 
 LOGGER = logging.getLogger(LOGGER_NAME)
 

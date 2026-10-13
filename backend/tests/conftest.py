@@ -7,7 +7,6 @@ from src.constants import ProvidersEnum
 from src.schema import FeedbackInputSchema, FeedbackSchema
 from src.store import Storator3000
 
-
 FAKE_BUILD_LOG = """
 Mock Version: 5.5
 ...

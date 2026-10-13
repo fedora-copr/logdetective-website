@@ -8,37 +8,38 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any
 
 import httpx
 import sentry_sdk
 
-from src.schema import (
-    FeedbackSchema,
-    NameContentSchema,
-    FeedbackLogSchema,
-)
-from src.sanitization import (
-    SchemaRedactionPipeline,
-    SANITIZATION_PIPELINE,
-)
-from src.log_cleaning import (
-    SNIPPET_LENGTH_THRESHOLD,
-    snap_indexes_to_text,
-    html_careful_unescape,
-    log_schema_redaction,
-)
 from src.constants import (
     DEFAULT_ROBOTS,
-    STATIC_SOURCE_DIR,
     FETCH_TIMEOUT,
     LOG_DETECTIVE_MAX_ARTIFACT_SIZE,
+    STATIC_SOURCE_DIR,
 )
 from src.exceptions import MaximumArtifactSizeExceeded
+from src.log_cleaning import (
+    SNIPPET_LENGTH_THRESHOLD,
+    html_careful_unescape,
+    log_schema_redaction,
+    snap_indexes_to_text,
+)
+from src.sanitization import (
+    SANITIZATION_PIPELINE,
+    SchemaRedactionPipeline,
+)
+from src.schema import (
+    FeedbackLogSchema,
+    FeedbackSchema,
+    NameContentSchema,
+)
 
 
 @contextmanager
@@ -50,7 +51,7 @@ def get_temporary_dir() -> Iterator[Path]:
         shutil.rmtree(temp_dir)
 
 
-def find_file_by_name(name: str, path: Path) -> Optional[Path]:
+def find_file_by_name(name: str, path: Path) -> Path | None:
     """
     Find file by name in the path.
 

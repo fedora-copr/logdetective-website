@@ -1,22 +1,24 @@
 from unittest.mock import patch
+
 import httpx
 import pytest
+
 from src.constants import DEFAULT_ROBOTS
 from src.exceptions import MaximumArtifactSizeExceeded
 from src.spells import (
     ensure_text,
     fetch_text,
+    get_robots,
     read_json_file,
     read_text_file,
     write_json_file,
-    get_robots,
 )
 
 
 class TestEnsureText:
     def test_bytes_decoded_as_utf8(self):
         """Bytes should be decoded as UTF-8."""
-        utf8_bytes = "Příliš žluťoučký kůň".encode("utf-8")
+        utf8_bytes = "Příliš žluťoučký kůň".encode()
         result = ensure_text(utf8_bytes)
         assert result == "Příliš žluťoučký kůň"
         assert isinstance(result, str)
@@ -71,9 +73,11 @@ class TestFetchText:
 
         transport = httpx.MockTransport(_handler)
         client = httpx.AsyncClient(transport=transport)
-        with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
-            with pytest.raises(MaximumArtifactSizeExceeded):
-                await fetch_text(url, client=client)
+        with (
+            patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1),
+            pytest.raises(MaximumArtifactSizeExceeded),
+        ):
+            await fetch_text(url, client=client)
 
     async def test_accepts_response_within_limit(self):
         """Response within size limit should not raise."""

@@ -1,20 +1,20 @@
-import koji
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import httpx
-from copr.v3 import BuildProxy, BuildChrootProxy
+import koji
+import pytest
+from copr.v3 import BuildChrootProxy, BuildProxy
 from fastapi import HTTPException
 
 from src.constants import COPR_RESULT_TEMPLATE
 from src.exceptions import FetchError
 from src.fetcher import (
+    ContainerProvider,
     CoprProvider,
     KojiProvider,
-    URLProvider,
-    PackitProvider,
-    ContainerProvider,
     OBSProvider,
+    PackitProvider,
+    URLProvider,
 )
 from tests.spells import sort_by_name
 
@@ -638,9 +638,11 @@ class TestContainerProvider:
             )
 
         provider = ContainerProvider(url, http_client=MagicMock())
-        with patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text):
-            with pytest.raises(FetchError):
-                await provider.fetch_logs()
+        with (
+            patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text),
+            pytest.raises(FetchError),
+        ):
+            await provider.fetch_logs()
 
     async def test_fetch_logs_http_error(self):
         url = "https://example.com/missing.log"
@@ -655,8 +657,6 @@ class TestContainerProvider:
 
         provider = ContainerProvider(url, http_client=MagicMock())
         with patch("src.fetcher.fetch_text", side_effect=_fake_fetch_text):
-            from fastapi import HTTPException
-
             with pytest.raises(HTTPException) as exc_info:
                 await provider.fetch_logs()
             assert exc_info.value.status_code == 500

@@ -8,12 +8,12 @@ The second versions is used on the backend also for sanitization during log uplo
 """
 
 import logging
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import regex as re
 
 from src.constants import LOGGER_NAME
-
 
 LOGGER = logging.getLogger(LOGGER_NAME)
 
@@ -129,35 +129,33 @@ GPG_FINGERPRINT_REGEX = re.compile(
 # When dealing with capitalized fullnames in parentheses in specfile changelog,
 # e.g. "- some change made (John Doe)\n", after auditing there were some false positives found,
 # which we should not redact, since they (in some special case) might contain useful information
-FALSE_POSITIVES_PARENTHESISED_NAMES = set(
-    [
-        "HTOP Quit",
-        "C API",
-        "NFS Homedirs",
-        "Native Method",
-        "MIT OR Unlicense",
-        "Unconfiguring CA",
-        "Unlicense OR MIT",
-        "Not Run",
-        "A. S...",
-        "AM S..U",
-        "AM S.M.",
-        "AM S.MU",
-        "AM SC..",
-        "Tree Builder",
-        "Parser Generator",
-        "Amazon Linux",
-        "Rawhide Prerelease",
-        "Heapbuffer Overflow",
-        "Forty One",
-        "Thirty Nine",
-        "Module Device",
-        "Processor Device",
-        "Processor Aggregator Device",
-        "Power Button",
-        "Sleep Button",
-    ]
-)
+FALSE_POSITIVES_PARENTHESISED_NAMES = {
+    "HTOP Quit",
+    "C API",
+    "NFS Homedirs",
+    "Native Method",
+    "MIT OR Unlicense",
+    "Unconfiguring CA",
+    "Unlicense OR MIT",
+    "Not Run",
+    "A. S...",
+    "AM S..U",
+    "AM S.M.",
+    "AM S.MU",
+    "AM SC..",
+    "Tree Builder",
+    "Parser Generator",
+    "Amazon Linux",
+    "Rawhide Prerelease",
+    "Heapbuffer Overflow",
+    "Forty One",
+    "Thirty Nine",
+    "Module Device",
+    "Processor Device",
+    "Processor Aggregator Device",
+    "Power Button",
+    "Sleep Button",
+}
 
 # Unicode-specific regexes
 # - when reading strings before dumping into json (non-escaped unicode)

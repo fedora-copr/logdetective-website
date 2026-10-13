@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import AnyUrl, BaseModel, model_validator
 
 from src.constants import BuildIdTitleEnum
@@ -61,12 +59,12 @@ class ContributeResponseSchema(BaseModel):
      build failed.
     """
 
-    build_id: Optional[int]
+    build_id: int | None
     build_id_title: BuildIdTitleEnum
     build_url: AnyUrl
     logs: list[NameContentSchema]
-    spec_file: Optional[NameContentSchema] = None
-    container_file: Optional[NameContentSchema] = None
+    spec_file: NameContentSchema | None = None
+    container_file: NameContentSchema | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -84,7 +82,7 @@ class SnippetSchema(BaseModel):
     start_index: int
     end_index: int
     user_comment: str
-    text: Optional[str] = None
+    text: str | None = None
 
     # def _splitter(self, return_lines: bool) -> tuple[int, int]:
     #     fst, snd = self.log_part.split("-")
@@ -111,8 +109,8 @@ class FeedbackLogSchema(NameContentSchema):
 class _WithoutLogsSchema(BaseModel):
     fail_reason: str
     how_to_fix: str
-    spec_file: Optional[NameContentSchema] = None
-    container_file: Optional[NameContentSchema] = None
+    spec_file: NameContentSchema | None = None
+    container_file: NameContentSchema | None = None
 
     @model_validator(mode="before")
     @classmethod
