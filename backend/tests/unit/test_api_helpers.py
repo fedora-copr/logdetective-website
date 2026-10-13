@@ -2,13 +2,16 @@
 Test the API helper functions.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException
 
 from src.analysis import _check_log_urls
+from src.api import app
+from src.store import Storator3000
 
 
 class TestCheckLogUrls:
@@ -64,3 +67,10 @@ class TestCheckLogUrls:
             )
         assert exc_info.value.status_code == 422
         assert "connection refused" in exc_info.value.detail
+
+
+@patch.object(Storator3000, "ensure_directories")
+def test_lifespan_initializes_storage(mock_ensure_directories):
+    """Initialize storage when the application lifespan starts."""
+    with TestClient(app):
+        mock_ensure_directories.assert_called_once()

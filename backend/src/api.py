@@ -57,6 +57,7 @@ else:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Manage application-wide resources."""
+    Storator3000.ensure_directories()
     _app.state.http_client = get_http_client()
     yield
     await _app.state.http_client.aclose()

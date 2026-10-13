@@ -5,7 +5,7 @@ from datetime import datetime
 from itertools import chain
 from pathlib import Path
 
-from src.constants import FEEDBACK_DIR, ProvidersEnum
+from src.constants import FEEDBACK_DIR, REVIEWS_DIR, ProvidersEnum
 from src.exceptions import NoDataFound
 from src.schema import FeedbackSchema
 from src.spells import write_json_file
@@ -43,6 +43,12 @@ class Storator3000:
         feedback_result_dict = feedback_result.model_dump(exclude_unset=True)
         write_json_file(file_name, feedback_result_dict)
         return contribution_id
+
+    @staticmethod
+    def ensure_directories() -> None:
+        """Create persistent storage directories when they are absent."""
+        for directory in (FEEDBACK_DIR, REVIEWS_DIR):
+            Path(directory).mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def get_logs(cls) -> list:
@@ -84,8 +90,8 @@ class Storator3000:
     @classmethod
     def get_stats(cls) -> dict:
         """Retrieve basic statistics about submitted reports."""
-        files = cls.get_logs()
-        stats = {
-            "total_reports": len(files),
-        }
-        return stats
+        try:
+            log_count = len(cls.get_logs())
+        except NoDataFound:
+            log_count = 0
+        return {"total_reports": log_count}
