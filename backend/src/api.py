@@ -629,7 +629,6 @@ async def _call_analyze_api(
     request_timeout = httpx.Timeout(
         LOGDETECTIVE_DEFAULT_TIMEOUT,
         connect=LOGDETECTIVE_CONNECT_TIMEOUT,
-        read=LOGDETECTIVE_READ_TIMEOUT,
     )
     with handle_httpx_errors():
         response = await http_client.post(
