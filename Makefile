@@ -26,7 +26,7 @@ test-backend-in-container:
 	$(CONTAINER_ENGINE) build --rm --tag $(TEST_IMAGE_NAME) \
 		-f docker/backend/Dockerfile \
 		-f docker/backend/Dockerfile.tests
-	$(CONTAINER_ENGINE) run -t -i \
+	$(CONTAINER_ENGINE) run --rm -t -i \
 		-e PYTHONPATH="$(PYTHONPATH)" \
 		-e FEEDBACK_DIR="$(FEEDBACK_DIR)" \
 		-e REVIEWS_DIR="$(REVIEWS_DIR)" \
