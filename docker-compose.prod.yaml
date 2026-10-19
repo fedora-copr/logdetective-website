@@ -8,10 +8,29 @@ services:
     hostname: logdetective
     stdin_open: true
     tty: true
-    ports:
-      - 8080:8080
     volumes:
       - persistent:/persistent:z
+  anubis:
+    image: ghcr.io/techarohq/anubis@sha256:8b9efd1e3387a0ea5b53433209064ef3e9eef1e3d9d4c62a7470c08f36f3a8f3
+    depends_on:
+      - website
+    environment:
+      BIND: ":8923"
+      METRICS_BIND: ":9090"
+      TARGET: "http://website:8080"
+      USE_REMOTE_ADDRESS: "true"
+      OG_PASSTHROUGH: "true"
+      OG_EXPIRY_TIME: 24h
+      POLICY_FNAME: /data/anubis_policy.yaml
+    volumes:
+      - ./openshift/anubis_policy.yaml:/data/anubis_policy.yaml:ro
+    ports:
+      - "8080:8923"
+    healthcheck:
+      test: ["CMD", "anubis", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   persistent:

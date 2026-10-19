@@ -16,6 +16,9 @@ spec:
         - name: persistent
           persistentVolumeClaim:
             claimName: persistent
+        - name: anubis-policy
+          configMap:
+            name: anubis-policy
       containers:
         - name: logdetective-website
           image: quay.io/logdetective/website:latest
@@ -88,6 +91,70 @@ spec:
             "-c",
            "/src/gunicorn.conf.py",
            "api:app"]
+        - name: anubis
+          image: ghcr.io/techarohq/anubis@sha256:8b9efd1e3387a0ea5b53433209064ef3e9eef1e3d9d4c62a7470c08f36f3a8f3
+          imagePullPolicy: Always
+          ports:
+            - name: anubis-http
+              containerPort: 8923
+              protocol: TCP
+            - name: anubis-metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: POLICY_FNAME
+              value: /data/anubis_policy.yaml
+            - name: BIND
+              value: ":8923"
+            - name: METRICS_BIND
+              value: ":9090"
+            - name: TARGET
+              value: "http://localhost:8080"
+            # The router replaces X-Forwarded-For, so overwrite any client-supplied X-Real-IP.
+            - name: CUSTOM_REAL_IP_HEADER
+              value: X-Forwarded-For
+            - name: ED25519_PRIVATE_KEY_HEX
+              valueFrom:
+                secretKeyRef:
+                  name: anubis-key
+                  key: ED25519_PRIVATE_KEY_HEX
+            - name: OG_PASSTHROUGH
+              value: "true"
+            - name: OG_EXPIRY_TIME
+              value: 24h
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          volumeMounts:
+            - name: anubis-policy
+              mountPath: /data/
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: anubis-metrics
+            timeoutSeconds: 2
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: anubis-metrics
+            timeoutSeconds: 2
+            periodSeconds: 30
+            failureThreshold: 5
   replicas: 1
   strategy:
     type: Recreate
@@ -115,7 +182,7 @@ spec:
     - name: logdetective-website
       port: 8080
       protocol: TCP
-      targetPort: 8080
+      targetPort: anubis-http
   selector:
     component: log-detective-website
 ---
@@ -130,6 +197,8 @@ metadata:
     ingress.kubernetes.io/ssl-redirect: "true"
     # default is 30s, server worker timeout is 600s, most requests finish in 60s
     haproxy.router.openshift.io/timeout: 600s
+    # Replace client-supplied X-Forwarded-For before Anubis copies it to X-Real-IP.
+    haproxy.router.openshift.io/set-forwarded-headers: replace
 spec:
   tls:
     - hosts:
