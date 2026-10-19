@@ -102,6 +102,35 @@ docker pull quay.io/logdetective/website:latest
 
 Images are build and pushed with every new tag by a github action.
 
+## Request protection with Anubis
+
+The website pod runs Anubis as a sidecar. The public Ingress sends requests
+to the website Service, which forwards them to Anubis on port `8923`. After a
+request passes Anubis's bot policy, Anubis forwards it to Gunicorn on
+`localhost:8080`. This keeps public requests from bypassing the check.
+
+The Ingress sets `haproxy.router.openshift.io/set-forwarded-headers: replace`
+so Anubis receives a router-generated `X-Forwarded-For` value instead of a
+client-supplied one. The sidecar sets `CUSTOM_REAL_IP_HEADER=X-Forwarded-For`,
+which makes Anubis overwrite any client-supplied `X-Real-IP` with that trusted
+value for bot rules and challenge cookies. These settings must be used together.
+This assumes the OpenShift router sees the original client address; if another
+proxy sits in front of it, the cluster's trusted forwarded header configuration
+must preserve the real client address.
+
+The `anubis-policy` ConfigMap supplies `anubis_policy.yaml` to the sidecar at
+`/data/`, where Anubis loads it through `POLICY_FNAME`. The file places the
+rules from `robots2policy` under `bots:` and imports Anubis's default bot rules
+after them. Requests outside the generated rules remain subject to those defaults.
+Regenerate the complete policy when `frontend/public/robots.txt` changes:
+
+```bash
+robots2policy -input frontend/public/robots.txt |
+  awk 'BEGIN { print "bots:" } { print } END { print "- import: (data)/meta/default-config.yaml" }' \
+  > openshift/anubis_policy.yaml
+```
+
+The production Compose file uses the same proxy flow.
 
 ## Deploy
 
@@ -111,11 +140,19 @@ Make sure you are using the correct OpenShift project
 oc project communishift-log-detective
 ```
 
+Update the existing `anubis-policy` ConfigMap before applying the deployment:
+
+```bash
+oc create configmap anubis-policy \
+  --from-file=openshift/anubis_policy.yaml \
+  --dry-run=client -o yaml | oc apply -f -
+```
+
 If a Kubernetes/OpenShift configuration change needs to be applied,
 run the following command. Otherwise you can skip it.
 
 ```
-oc apply -f openshift/logdetective.yaml
+oc apply -f openshift/log-detective.yaml
 ```
 
 To kill the current deployment and start a fresh, up-to-date
@@ -158,6 +195,12 @@ Token for authentication with Log Detective must be set if the service demands i
 oc create secret generic log-detective-secret --from-literal=token=$TOKEN
 ```
 
+Anubis token to preserve challenge cookies across pod restarts:
+
+```bash
+oc create secret generic anubis-key \
+  --from-literal=ED25519_PRIVATE_KEY_HEX="$(openssl rand -hex 32)"
+```
 
 ## TLS certificates
 We use the OpenShift `cert-manager` operator to automate the provisioning and renewal of our Let's Encrypt certificates.

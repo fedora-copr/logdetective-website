@@ -13,7 +13,7 @@ User-Agent: Meta-ExternalAgent
 User-Agent: Meta-ExternalFetcher
 User-Agent: diffbot
 User-Agent: PerplexityBot
-User-Agent: Perplexity‑User
+User-Agent: Perplexity-User
 User-Agent: Omgili
 User-Agent: Omgilibot
 User-Agent: webzio-extended

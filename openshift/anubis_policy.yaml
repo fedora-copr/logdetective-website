@@ -1,0 +1,902 @@
+bots:
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("GPTBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-2
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ClaudeBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-3
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-User")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-4
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-SearchBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-5
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("CCBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-6
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-Extended")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-7
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Applebot-Extended")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-8
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Facebookbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-9
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalAgent")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-10
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalFetcher")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-11
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("diffbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-12
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PerplexityBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-13
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Perplexity-User")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-14
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgili")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-15
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgilibot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-16
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("webzio-extended")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-17
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ImagesiftBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-18
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Bytespider")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-19
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TikTokSpider")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-20
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Amazonbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-21
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Youbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-22
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("SemrushBot-OCOB")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-23
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Petalbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-24
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("VelenPublicWebCrawler")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-25
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TurnitinBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-26
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Timpibot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-27
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("OAI-SearchBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-28
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ICC-Crawler")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-29
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-30
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot-Dolma")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-31
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DataForSeoBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-32
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-33
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioSmartBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-34
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioRssBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-35
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-CloudVertexBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-36
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PanguBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-37
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Kangaroo Bot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-38
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Sentibot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-39
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("img2dataset")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-40
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meltwater")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-41
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Seekr")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-42
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("peer39_crawler")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-43
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-ai")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-44
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-training-data-crawler")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-45
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DuckAssistBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-46
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Scrapy")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-47
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Cotoyogi")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-48
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("aiHitBot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-49
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Factset_spyderbot")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-50
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("FirecrawlAgent")
+    - path.startsWith("/review")
+  name: robots-txt-policy-disallow-51
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("GPTBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-53
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ClaudeBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-54
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-User")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-55
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-SearchBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-56
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("CCBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-57
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-Extended")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-58
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Applebot-Extended")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-59
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Facebookbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-60
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalAgent")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-61
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalFetcher")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-62
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("diffbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-63
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PerplexityBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-64
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Perplexity-User")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-65
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgili")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-66
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgilibot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-67
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("webzio-extended")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-68
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ImagesiftBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-69
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Bytespider")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-70
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TikTokSpider")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-71
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Amazonbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-72
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Youbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-73
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("SemrushBot-OCOB")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-74
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Petalbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-75
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("VelenPublicWebCrawler")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-76
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TurnitinBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-77
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Timpibot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-78
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("OAI-SearchBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-79
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ICC-Crawler")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-80
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-81
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot-Dolma")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-82
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DataForSeoBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-83
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-84
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioSmartBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-85
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioRssBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-86
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-CloudVertexBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-87
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PanguBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-88
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Kangaroo Bot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-89
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Sentibot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-90
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("img2dataset")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-91
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meltwater")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-92
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Seekr")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-93
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("peer39_crawler")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-94
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-ai")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-95
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-training-data-crawler")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-96
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DuckAssistBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-97
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Scrapy")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-98
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Cotoyogi")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-99
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("aiHitBot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-100
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Factset_spyderbot")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-101
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("FirecrawlAgent")
+    - path.startsWith("/contribute")
+  name: robots-txt-policy-disallow-102
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("GPTBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-104
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ClaudeBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-105
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-User")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-106
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Claude-SearchBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-107
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("CCBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-108
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-Extended")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-109
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Applebot-Extended")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-110
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Facebookbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-111
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalAgent")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-112
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meta-ExternalFetcher")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-113
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("diffbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-114
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PerplexityBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-115
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Perplexity-User")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-116
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgili")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-117
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Omgilibot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-118
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("webzio-extended")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-119
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ImagesiftBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-120
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Bytespider")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-121
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TikTokSpider")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-122
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Amazonbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-123
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Youbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-124
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("SemrushBot-OCOB")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-125
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Petalbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-126
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("VelenPublicWebCrawler")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-127
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("TurnitinBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-128
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Timpibot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-129
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("OAI-SearchBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-130
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("ICC-Crawler")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-131
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-132
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AI2Bot-Dolma")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-133
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DataForSeoBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-134
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-135
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioSmartBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-136
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("AwarioRssBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-137
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Google-CloudVertexBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-138
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("PanguBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-139
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Kangaroo Bot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-140
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Sentibot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-141
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("img2dataset")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-142
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Meltwater")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-143
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Seekr")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-144
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("peer39_crawler")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-145
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-ai")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-146
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("cohere-training-data-crawler")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-147
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("DuckAssistBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-148
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Scrapy")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-149
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Cotoyogi")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-150
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("aiHitBot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-151
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("Factset_spyderbot")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-152
+- action: CHALLENGE
+  expression:
+    all:
+    - userAgent.contains("FirecrawlAgent")
+    - path.startsWith("/explain")
+  name: robots-txt-policy-disallow-153
+- import: (data)/meta/default-config.yaml
