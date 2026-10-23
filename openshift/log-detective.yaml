@@ -32,10 +32,10 @@ spec:
           resources:
             requests:
               memory: "1600Mi"
-              cpu: "50m"
+              cpu: "250m"
             limits:
               memory: "3200Mi"
-              cpu: "500m"
+              cpu: "600m"
           startupProbe:
             httpGet:
               path: /docs
@@ -125,10 +125,10 @@ spec:
           resources:
             requests:
               memory: "512Mi"
-              cpu: "250m"
+              cpu: "150m"
             limits:
               memory: "1Gi"
-              cpu: "500m"
+              cpu: "250m"
           volumeMounts:
             - name: anubis-policy
               mountPath: /data/
