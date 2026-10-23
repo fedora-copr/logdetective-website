@@ -5,6 +5,8 @@ metadata:
   name: hf-upload-dataset
 spec:
   schedule: "22 2 * * *"
+  # Keep the job definition and resources available while scheduled runs are paused.
+  suspend: true
   concurrencyPolicy: "Replace"
   jobTemplate:
     spec:
@@ -41,6 +43,8 @@ metadata:
   name: create-archive
 spec:
   schedule: "45 23 * * *"
+  # Keep the job definition and resources available while scheduled runs are paused.
+  suspend: true
   concurrencyPolicy: "Replace"
   jobTemplate:
     spec:
