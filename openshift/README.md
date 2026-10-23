@@ -38,7 +38,7 @@ so commit and push your changes.
 
 Build the container image:
 
-```
+```bash
 docker-compose -f docker-compose.prod.yaml build --no-cache
 ```
 
@@ -51,7 +51,7 @@ make build-prod
 Push the image to quay.io
 [quay.io/logdetective][quay-organization]:
 
-```
+```bash
 docker-compose -f docker-compose.prod.yaml push
 ```
 
@@ -83,7 +83,7 @@ When you see the image in the listing, continue with the regular Deploy process
 described below.
 
 You can then verify based on the Image digest what we are running production:
-```
+```bash
 oc describe pod logdetective-website-xxxxxxxx-xxxxx | grep 'Image ID'
    Image ID:       quay.io/logdetective/website@sha256:71a5cf95568e593df8a0723081b4bd17506d2236bdb431d9149f00337add3376
 ```
@@ -132,11 +132,18 @@ robots2policy -input frontend/public/robots.txt |
 
 The production Compose file uses the same proxy flow.
 
+## CPU budget and scheduled jobs
+
+Both CronJobs in `dataset-cron.yaml` are suspended. Their schedules, commands,
+and resource settings remain, but suspension prevents new scheduled Jobs from running.
+
+Before resuming either CronJob, check the combined CPU limits against the CPU quota.
+
 ## Deploy
 
 Make sure you are using the correct OpenShift project
 
-```
+```bash
 oc project communishift-log-detective
 ```
 
@@ -151,20 +158,20 @@ oc create configmap anubis-policy \
 If a Kubernetes/OpenShift configuration change needs to be applied,
 run the following command. Otherwise you can skip it.
 
-```
+```bash
 oc apply -f openshift/log-detective.yaml
 ```
 
 To kill the current deployment and start a fresh, up-to-date
 container, run
 
-```
+```bash
 oc rollout restart deploy/logdetective-website
 ```
 
 You can debug the instance using
 
-```
+```bash
 oc logs -f deploy/logdetective-website
 # or
 oc rsh deploy/logdetective-website
@@ -178,20 +185,20 @@ oc rsh deploy/logdetective-website
 ### Secrets
 
 Hugging Face token:
-```
+```bash
 $ oc create secret generic hf-secret --from-literal=token=$TOKEN
 ```
 
 Sentry token must be taken from sentry configuration, if it is setup.
 Otherwise the reporting won't work.
 
-```
+```bash
 oc create secret generic sentry-secret --from-literal=token=$TOKEN
 ```
 
 Token for authentication with Log Detective must be set if the service demands it.
 
-```
+```bash
 oc create secret generic log-detective-secret --from-literal=token=$TOKEN
 ```
 
