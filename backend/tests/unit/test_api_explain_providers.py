@@ -9,6 +9,7 @@ from base64 import b64encode
 from unittest.mock import AsyncMock, patch
 
 import httpx
+import pytest
 
 from src.api import app
 
@@ -27,6 +28,13 @@ def _server_response(status_code, *, url, headers=None, json_data=None):
 
 
 RealAsyncClient = httpx.AsyncClient
+
+
+@pytest.fixture(autouse=True)
+def _clients(monkeypatch):
+    """ASGITransport does not run the application lifespan."""
+    monkeypatch.setattr(app.state, "http_client", AsyncMock(), raising=False)
+    monkeypatch.setattr(app.state, "analysis_client", AsyncMock(), raising=False)
 
 
 class TestExplainProviderEndpoints:
@@ -241,9 +249,7 @@ class TestExplainProviderEndpoints:
         )
         mock_provider.fetch_spec_file = AsyncMock(return_value=None)
 
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("read timed out"))
-        app.state.http_client = mock_client
+        app.state.analysis_client.post.side_effect = httpx.ReadTimeout("read timed out")
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -251,6 +257,8 @@ class TestExplainProviderEndpoints:
         ) as client:
             resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
 
+        app.state.analysis_client.post.assert_awaited_once()
+        app.state.http_client.post.assert_not_awaited()
         assert resp.status_code == 504
 
     @patch("src.analysis._check_log_urls", new_callable=AsyncMock)
@@ -272,9 +280,7 @@ class TestExplainProviderEndpoints:
             json_data={"detail": "Server Error"},
         )
 
-        mock_client = AsyncMock()
-        mock_client.post = AsyncMock(return_value=mock_response)
-        app.state.http_client = mock_client
+        app.state.analysis_client.post.return_value = mock_response
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -282,4 +288,6 @@ class TestExplainProviderEndpoints:
         ) as client:
             resp = await client.post("/frontend/explain/copr/123/fedora-39-x86_64")
 
+        app.state.analysis_client.post.assert_awaited_once()
+        app.state.http_client.post.assert_not_awaited()
         assert resp.status_code == 500

@@ -52,6 +52,8 @@ RUN dnf -y install python3-fastapi \
                    python3-sentry-sdk+fastapi \
                    python3-regex \
                    rsync \
+                   python3-aiohttp \
+                   python3-yarl \
                    python3-httpx \
     && dnf clean all \
     && pip3 --no-cache-dir install datasets \

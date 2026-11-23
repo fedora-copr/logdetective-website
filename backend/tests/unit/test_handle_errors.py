@@ -1,10 +1,11 @@
 import binascii
 import subprocess
 from http import HTTPStatus
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import aiohttp
 import copr.v3
-import httpx
 import koji
 import pytest
 from fastapi import HTTPException
@@ -13,15 +14,16 @@ from src.fetcher import handle_errors
 
 
 class TestHandleErrorsAsync:
-    async def test_httpx_status_error(self):
+    async def test_remote_status_error(self):
+        """Preserve the upstream HTTP status and URL in the API error."""
+
         @handle_errors
         async def failing():
-            response = httpx.Response(
-                502,
-                request=httpx.Request("GET", "https://example.com/log"),
-            )
-            raise httpx.HTTPStatusError(
-                "Bad Gateway", request=response.request, response=response
+            raise aiohttp.ClientResponseError(
+                SimpleNamespace(real_url="https://example.com/log"),
+                (),
+                status=502,
+                message="Bad Gateway",
             )
 
         with pytest.raises(HTTPException) as exc_info:

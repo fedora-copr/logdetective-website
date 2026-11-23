@@ -9,4 +9,6 @@ copr
 regex
 sentry-sdk[fastapi]
 datasets
+aiohttp>=3.10
+yarl
 httpx

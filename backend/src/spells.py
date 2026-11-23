@@ -10,14 +10,16 @@ import tarfile
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import httpx
+import aiohttp
 import sentry_sdk
 
+from src.client import RemoteResourceClient, remote_timeout
 from src.constants import (
     DEFAULT_ROBOTS,
     FETCH_TIMEOUT,
@@ -141,48 +143,44 @@ def read_text_file(path: Path | str) -> str:
         return fp.read()
 
 
+@dataclass
+class TextDownload:
+    """Decoded artifact plus its final response metadata (no open connection)."""
+
+    response: aiohttp.ClientResponse
+    text: str
+
+    def raise_for_status(self) -> None:
+        """Reject non-success responses, including a redirect without a Location."""
+        if 300 <= self.response.status < 400:
+            raise aiohttp.ClientResponseError(
+                self.response.request_info,
+                self.response.history,
+                status=self.response.status,
+                message=self.response.reason or "",
+                headers=self.response.headers,
+            )
+        self.response.raise_for_status()
+
+
 async def fetch_text(
-    url: str, client: httpx.AsyncClient, timeout: float = FETCH_TIMEOUT, **kwargs
-) -> httpx.Response:
-    """
-    Fetch text content from URL with consistent UTF-8 encoding,
-    while checking size.
-
-    Args:
-        url: The URL to fetch
-        timeout (default=FETCH_TIMEOUT): Request timeout in seconds to override httpx 5sec default
-        **kwargs: Additional arguments passed to AsyncClient.stream()
-
-    Returns:
-        httpx.Response with encoding set to UTF-8
-    """
-    response_data = bytearray()
-    async with client.stream("GET", url=url, timeout=timeout, **kwargs) as stream:
-        try:
-            async for chunk in stream.aiter_bytes():
-                response_data += chunk
-                if len(response_data) > LOG_DETECTIVE_MAX_ARTIFACT_SIZE * 1024:
-                    raise MaximumArtifactSizeExceeded
-        except MaximumArtifactSizeExceeded:
-            await stream.aclose()
-            raise
-
-    headers = dict(stream.headers)
-    # aiter_bytes() already decompresses; drop the header so the Response
-    # constructor doesn't attempt to decompress again.
-    headers.pop("content-encoding", None)
-    # removing content-length forces recalculation during Response creation,
-    # otherwise we have the incomplete length (of last chunk)
-    headers.pop("content-length", None)
-
-    response = httpx.Response(
-        status_code=stream.status_code,
-        text=response_data.decode("utf-8", errors="replace"),
-        default_encoding="utf-8",
-        headers=headers,
-        request=stream.request,
-    )
-    return response
+    url: str, client: RemoteResourceClient, timeout: float = FETCH_TIMEOUT
+) -> TextDownload:
+    """Read decompressed bytes incrementally and enforce the artifact size limit."""
+    data = bytearray()
+    async with client.get(url, timeout=remote_timeout(timeout)) as response:
+        # Older aiohttp versions leave stacked encodings compressed. Never
+        # count or return those bytes as decoded log text.
+        encodings = response.headers.getall("Content-Encoding", [])
+        if "," in ",".join(encodings):
+            raise aiohttp.ClientPayloadError(
+                "Stacked log content encodings are not supported"
+            )
+        async for chunk in response.content.iter_chunked(65536):
+            if len(data) + len(chunk) > LOG_DETECTIVE_MAX_ARTIFACT_SIZE * 1024:
+                raise MaximumArtifactSizeExceeded
+            data.extend(chunk)
+        return TextDownload(response, data.decode("utf-8", errors="replace"))
 
 
 def ensure_text(content: str | bytes) -> str:
