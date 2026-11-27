@@ -1,7 +1,9 @@
+from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from unittest.mock import patch
 
-import httpx
 import pytest
+from multidict import CIMultiDict
 
 from src.constants import DEFAULT_ROBOTS
 from src.exceptions import MaximumArtifactSizeExceeded
@@ -39,23 +41,29 @@ class TestEnsureText:
         assert ensure_text("") == ""
 
 
+def text_session(content):
+    """Provide an async response that yields the supplied bytes."""
+
+    async def chunks(_size):
+        yield content
+
+    @asynccontextmanager
+    async def get(_url, **_kwargs):
+        yield SimpleNamespace(
+            headers=CIMultiDict(), content=SimpleNamespace(iter_chunked=chunks)
+        )
+
+    return SimpleNamespace(get=get)
+
+
 class TestFetchText:
     async def test_encoding_set_to_utf8(self):
         """Response encoding should be set to UTF-8."""
         url = "http://example.com/log.txt"
         czech_text = "Příliš žluťoučký kůň"
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                content=czech_text.encode("utf-8"),
-                headers={"content-type": "text/plain"},
-            )
-
-        transport = httpx.MockTransport(_handler)
-        client = httpx.AsyncClient(transport=transport)
+        client = text_session(czech_text.encode("utf-8"))
         response = await fetch_text(url, client=client)
-        assert response.encoding == "utf-8"
         assert response.text == czech_text
 
     @pytest.mark.filterwarnings("ignore::RuntimeWarning")
@@ -64,15 +72,7 @@ class TestFetchText:
         url = "http://example.com/huge.log"
         oversized_content = b"x" * 2048
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                content=oversized_content,
-                headers={"content-type": "text/plain"},
-            )
-
-        transport = httpx.MockTransport(_handler)
-        client = httpx.AsyncClient(transport=transport)
+        client = text_session(oversized_content)
         with (
             patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1),
             pytest.raises(MaximumArtifactSizeExceeded),
@@ -84,15 +84,7 @@ class TestFetchText:
         url = "http://example.com/small.log"
         small_content = "x" * 512
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                content=small_content.encode("utf-8"),
-                headers={"content-type": "text/plain"},
-            )
-
-        transport = httpx.MockTransport(_handler)
-        client = httpx.AsyncClient(transport=transport)
+        client = text_session(small_content.encode("utf-8"))
         with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
             response = await fetch_text(url, client=client)
             assert response.text == small_content
@@ -102,15 +94,7 @@ class TestFetchText:
         url = "http://example.com/exact.log"
         exact_content = "x" * 1024
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                content=exact_content.encode("utf-8"),
-                headers={"content-type": "text/plain"},
-            )
-
-        transport = httpx.MockTransport(_handler)
-        client = httpx.AsyncClient(transport=transport)
+        client = text_session(exact_content.encode("utf-8"))
         with patch("src.spells.LOG_DETECTIVE_MAX_ARTIFACT_SIZE", 1):
             response = await fetch_text(url, client=client)
             assert response.text == exact_content

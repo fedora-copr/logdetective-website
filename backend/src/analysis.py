@@ -6,9 +6,11 @@ from contextlib import contextmanager
 from http import HTTPStatus
 from urllib import parse
 
+import aiohttp
 import httpx
 from fastapi import HTTPException
 
+from src.client import RemoteResourceClient, remote_timeout
 from src.constants import (
     LOG_DETECTIVE_TOKEN,
     LOGDETECTIVE_CONNECT_TIMEOUT,
@@ -24,21 +26,22 @@ LOGGER = get_logger(LOGGER_NAME)
 
 
 async def _check_log_urls(
-    log_urls: list[dict[str, str]], http_client: httpx.AsyncClient
+    log_urls: list[dict[str, str]], http_client: RemoteResourceClient
 ) -> None:
     """Verify all log URLs are reachable using HEAD requests."""
+
+    async def head_status(url):
+        async with http_client.head(url, timeout=remote_timeout(10)) as response:
+            return response.status
+
     results = await gather(
-        *(http_client.head(file_info["url"], timeout=10) for file_info in log_urls),
+        *(head_status(file_info["url"]) for file_info in log_urls),
         return_exceptions=True,
     )
     unreachable = []
     for file_info, result in zip(log_urls, results):
-        if isinstance(result, BaseException):
+        if isinstance(result, BaseException) or result >= 400:
             unreachable.append((file_info["name"], file_info["url"], str(result)))
-        elif result.status_code >= 400:
-            unreachable.append(
-                (file_info["name"], file_info["url"], str(result.status_code))
-            )
     if unreachable:
         detail = "; ".join(
             f"{name} ({url}): {reason}" for name, url, reason in unreachable
@@ -90,7 +93,9 @@ async def _poll_for_analysis_task(
     await sleep(polling_timeout)
     with handle_httpx_errors():
         task_response = await http_client.get(
-            task_url, headers=headers, timeout=request_timeout
+            task_url,
+            headers=headers,
+            timeout=request_timeout,
         )
         task_response.raise_for_status()
     try:
@@ -131,7 +136,8 @@ async def _poll_for_analysis_task(
 
 async def _call_analyze_api(
     log_urls: list[dict[str, str]],
-    http_client: httpx.AsyncClient,
+    http_client: RemoteResourceClient,
+    analysis_client: httpx.AsyncClient,
     spec_content: str | None = None,
     provider_name: str | None = None,
 ) -> dict:
@@ -163,7 +169,7 @@ async def _call_analyze_api(
         connect=LOGDETECTIVE_CONNECT_TIMEOUT,
     )
     with handle_httpx_errors():
-        response = await http_client.post(
+        response = await analysis_client.post(
             f"{SERVER_URL}/analyze",
             headers=request_headers,
             json=data,
@@ -192,7 +198,7 @@ async def _call_analyze_api(
                 result = await _poll_for_analysis_task(
                     task_url,
                     polling_timeout,
-                    http_client,
+                    analysis_client,
                     request_headers,
                     request_timeout,
                 )
@@ -239,25 +245,29 @@ def _process_server_data(data) -> dict:
     return {"explanation": explanation, "extracted_snippets": extracted_snippets}
 
 
-async def _download_log_content(url: str, client: httpx.AsyncClient) -> str:
+async def _download_log_content(url: str, client: RemoteResourceClient) -> str:
     """Download a log file for display with its analysis."""
     try:
-        response = await fetch_text(url, client=client)
-    except httpx.TimeoutException as ex:
+        download = await fetch_text(url, client=client)
+    except TimeoutError as ex:
         raise HTTPException(
             status_code=HTTPStatus.GATEWAY_TIMEOUT,
             detail=f"Request to download log file timed out: {ex}",
         ) from ex
-    except httpx.RequestError as ex:
+    except aiohttp.ClientError as ex:
         raise HTTPException(
             status_code=HTTPStatus.BAD_GATEWAY,
             detail=f"Could not connect to log file URL: {ex}",
         ) from ex
     try:
-        response.raise_for_status()
-    except httpx.HTTPError as ex:
+        download.raise_for_status()
+    except aiohttp.ClientResponseError as ex:
+        try:
+            detail = json.loads(download.text).get("detail", download.text)
+        except (ValueError, AttributeError):
+            detail = download.text
         raise HTTPException(
-            status_code=response.status_code,
-            detail=_extract_error_detail_from_response(response),
+            status_code=ex.status,
+            detail=f"{ex.status} {ex.message}\n{ex.request_info.real_url}\n{detail}",
         ) from ex
-    return response.text
+    return download.text

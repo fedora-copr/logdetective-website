@@ -81,6 +81,20 @@ services:
       - SERVER_URL=http://192.168.0.1:8080
 ```
 
+Analysis requests and task URLs that match the scheme, hostname, and port in
+`SERVER_URL` can use private addresses and honor proxy settings, including
+`NO_PROXY`. Logs and task or redirect URLs outside that service use only public
+addresses, bypass proxies, and never receive the analysis token or cookies.
+
+For remote downloads, the backend checks every DNS answer or IP address before
+connecting. It does not reuse DNS answers or connections. Redirects must use
+HTTP or HTTPS without embedded credentials. If a connection fails, the backend
+can try another checked address; HTTPS still verifies the original hostname.
+
+Log redirects preserve signed links, including existing escapes and repeated
+query parameters. Logs with multiple content encodings are rejected. If an
+analysis upload is redirected, its write timeout does not limit response reads.
+
 If you want to also run the logdetective server locally use docker compose on the [logdetective repository](https://github.com/fedora-copr/logdetective). And specify your local IP ("localhost" or 127.0.0.1 can't be used because of container networking).
 
 ## Deployment

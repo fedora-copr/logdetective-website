@@ -5,7 +5,6 @@ from base64 import b64decode
 from pathlib import Path
 from urllib import parse
 
-import httpx
 from fastapi import APIRouter, Request
 
 from src.analysis import (
@@ -30,7 +29,7 @@ router = APIRouter()
 
 
 async def _explain_with_provider(
-    provider: Provider, provider_name: str, http_client: httpx.AsyncClient
+    provider: Provider, provider_name: str, request: Request
 ) -> dict:
     """Fetch provider data, analyze the logs, and combine the results."""
     LOGGER.info("Received request for analysis from: %s", provider_name)
@@ -42,7 +41,8 @@ async def _explain_with_provider(
     analyze_task = create_task(
         _call_analyze_api(
             log_urls,
-            http_client=http_client,
+            http_client=request.app.state.http_client,
+            analysis_client=request.app.state.analysis_client,
             spec_content=spec_content,
             provider_name=provider_name,
         )
@@ -64,7 +64,10 @@ async def frontend_explain_post(request: Request) -> dict:
     http_client = request.app.state.http_client
     result, log_data = await gather(
         _call_analyze_api(
-            log_urls, provider_name=ProvidersEnum.url, http_client=http_client
+            log_urls,
+            provider_name=ProvidersEnum.url,
+            http_client=http_client,
+            analysis_client=request.app.state.analysis_client,
         ),
         _download_log_content(log_url, client=http_client),
     )
@@ -77,7 +80,7 @@ async def explain_copr(request: Request, build_id: int, chroot: str) -> dict:
     """Analyze logs from a Copr build."""
     client = request.app.state.http_client
     return await _explain_with_provider(
-        CoprProvider(build_id, chroot, http_client=client), ProvidersEnum.copr, client
+        CoprProvider(build_id, chroot, http_client=client), ProvidersEnum.copr, request
     )
 
 
@@ -86,7 +89,7 @@ async def explain_koji(request: Request, build_id: int, chroot: str) -> dict:
     """Analyze logs from a Koji build."""
     client = request.app.state.http_client
     return await _explain_with_provider(
-        KojiProvider(build_id, chroot, http_client=client), ProvidersEnum.koji, client
+        KojiProvider(build_id, chroot, http_client=client), ProvidersEnum.koji, request
     )
 
 
@@ -95,7 +98,7 @@ async def explain_packit(request: Request, packit_id: int) -> dict:
     """Analyze logs from a Packit build."""
     client = request.app.state.http_client
     return await _explain_with_provider(
-        PackitProvider(packit_id, http_client=client), ProvidersEnum.packit, client
+        PackitProvider(packit_id, http_client=client), ProvidersEnum.packit, request
     )
 
 
@@ -105,7 +108,7 @@ async def explain_url(request: Request, base64: str) -> dict:
     client = request.app.state.http_client
     url = b64decode(base64).decode("utf-8")
     return await _explain_with_provider(
-        URLProvider(url, http_client=client), ProvidersEnum.url, client
+        URLProvider(url, http_client=client), ProvidersEnum.url, request
     )
 
 
@@ -115,7 +118,7 @@ async def explain_container(request: Request, base64: str) -> dict:
     client = request.app.state.http_client
     url = b64decode(base64).decode("utf-8")
     return await _explain_with_provider(
-        ContainerProvider(url, http_client=client), ProvidersEnum.container, client
+        ContainerProvider(url, http_client=client), ProvidersEnum.container, request
     )
 
 
@@ -128,4 +131,4 @@ async def explain_obs(
     provider = OBSProvider(
         project, repository, architecture, package, http_client=client
     )
-    return await _explain_with_provider(provider, ProvidersEnum.obs, client)
+    return await _explain_with_provider(provider, ProvidersEnum.obs, request)

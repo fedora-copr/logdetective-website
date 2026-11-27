@@ -25,7 +25,7 @@ from starlette.exceptions import HTTPException
 from src.api_contribute import OkResponse
 from src.api_contribute import router as contribute_router
 from src.api_explain import router as explain_router
-from src.client import get_http_client
+from src.client import application_clients
 from src.constants import (
     DOWNLOAD_SINCE_MAX_DAYS,
     FEEDBACK_DIR,
@@ -58,9 +58,10 @@ else:
 async def lifespan(_app: FastAPI):
     """Manage application-wide resources."""
     Storator3000.ensure_directories()
-    _app.state.http_client = get_http_client()
-    yield
-    await _app.state.http_client.aclose()
+    async with application_clients() as (resource_client, analysis_client):
+        _app.state.http_client = resource_client
+        _app.state.analysis_client = analysis_client
+        yield
 
 
 app = FastAPI(

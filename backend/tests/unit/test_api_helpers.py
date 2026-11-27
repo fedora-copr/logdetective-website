@@ -2,9 +2,9 @@
 Test the API helper functions.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import httpx
+import aiohttp
 import pytest
 from fastapi.testclient import TestClient
 from starlette.exceptions import HTTPException
@@ -20,10 +20,10 @@ class TestCheckLogUrls:
     async def test_all_reachable(self):
         """Accept a set of reachable log URLs."""
         mock_response = MagicMock()
-        mock_response.status_code = 200
+        mock_response.status = 200
 
-        mock_client = AsyncMock()
-        mock_client.head = AsyncMock(return_value=mock_response)
+        mock_client = MagicMock()
+        mock_client.head.return_value.__aenter__.return_value = mock_response
 
         await _check_log_urls(
             [
@@ -36,10 +36,10 @@ class TestCheckLogUrls:
     async def test_unreachable_url_returns_404(self):
         """Reject log URLs that return a not-found response."""
         mock_response = MagicMock()
-        mock_response.status_code = 404
+        mock_response.status = 404
 
-        mock_client = AsyncMock()
-        mock_client.head = AsyncMock(return_value=mock_response)
+        mock_client = MagicMock()
+        mock_client.head.return_value.__aenter__.return_value = mock_response
 
         with pytest.raises(HTTPException) as exc_info:
             await _check_log_urls(
@@ -53,9 +53,9 @@ class TestCheckLogUrls:
 
     async def test_unreachable_url_connection_error(self):
         """Reject log URLs when the connection fails."""
-        mock_client = AsyncMock()
-        mock_client.head = AsyncMock(
-            side_effect=httpx.ConnectError("connection refused")
+        mock_client = MagicMock()
+        mock_client.head.side_effect = aiohttp.ClientConnectionError(
+            "connection refused"
         )
 
         with pytest.raises(HTTPException) as exc_info:

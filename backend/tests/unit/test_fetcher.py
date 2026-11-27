@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
-import httpx
+import aiohttp
 import koji
 import pytest
 from copr.v3 import BuildChrootProxy, BuildProxy
@@ -16,22 +18,45 @@ from src.fetcher import (
     PackitProvider,
     URLProvider,
 )
+from src.spells import TextDownload
 from tests.spells import sort_by_name
 
 
+def text_download(status_code, text, url, headers=None):
+    """Build a decoded artifact with HTTP status handling for provider tests."""
+    response = MagicMock(
+        status=status_code, headers=headers or {"Content-Type": "text/plain"}
+    )
+    if status_code >= 400:
+        response.raise_for_status.side_effect = aiohttp.ClientResponseError(
+            SimpleNamespace(real_url=url), (), status=status_code
+        )
+    return TextDownload(response, text)
+
+
 def _mock_fetch_text(url_to_response: dict[str, tuple[str, int]]):
-    """Create an AsyncMock for fetch_text that returns httpx.Response objects
+    """Create an AsyncMock for fetch_text that returns text downloads
     based on URL matching."""
 
     async def _fake_fetch_text(url, **kwargs):
         body, status_code = url_to_response[url]
-        return httpx.Response(
-            status_code=status_code,
-            text=body,
-            request=httpx.Request("GET", url),
-        )
+        return text_download(status_code, body, url)
 
     return _fake_fetch_text
+
+
+def metadata_session(records):
+    """Serve Packit metadata from records keyed by API path."""
+
+    @asynccontextmanager
+    async def get(url, **_kwargs):
+        for path, metadata in records.items():
+            if path in url:
+                yield SimpleNamespace(status=200, json=AsyncMock(return_value=metadata))
+                return
+        yield SimpleNamespace(status=404)
+
+    return SimpleNamespace(get=get)
 
 
 class TestCoprProvider:
@@ -497,18 +522,12 @@ class TestPackitProvider:
             for name in ["builder-live.log.gz", "backend.log.gz", "build.log.gz"]
         }
 
-        def _transport_handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                200,
-                json={"build_id": build_id, "chroot": chroot},
-            )
-
-        transport = httpx.MockTransport(_transport_handler)
+        client = metadata_session(
+            {"copr-builds": {"build_id": build_id, "chroot": chroot}}
+        )
 
         with patch("src.fetcher.fetch_text", side_effect=_mock_fetch_text(url_map)):
-            provider = PackitProvider(
-                self.packit_id, http_client=httpx.AsyncClient(transport=transport)
-            )
+            provider = PackitProvider(self.packit_id, http_client=client)
             logs = await provider.fetch_logs()
 
         for log in logs:
@@ -518,17 +537,10 @@ class TestPackitProvider:
         build_id = 456
         chroot = "fedora-39-x86_64"
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            if "copr-builds" in str(request.url):
-                return httpx.Response(
-                    200, json={"build_id": build_id, "chroot": chroot}
-                )
-            return httpx.Response(404)
-
-        transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(
-            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
+        client = metadata_session(
+            {"copr-builds": {"build_id": build_id, "chroot": chroot}}
         )
+        provider = PackitProvider(self.packit_id, http_client=client)
 
         correct_provider = await provider._resolve_provider()
 
@@ -546,30 +558,16 @@ class TestPackitProvider:
             getTaskInfo=MagicMock(return_value={"arch": arch}),
         )
 
-        def _handler(request: httpx.Request) -> httpx.Response:
-            if "copr-builds" in str(request.url):
-                return httpx.Response(404)
-            if "koji-builds" in str(request.url):
-                return httpx.Response(200, json={"task_id": task_id})
-            return httpx.Response(404)
-
-        transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(
-            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
-        )
+        client = metadata_session({"koji-builds": {"task_id": task_id}})
+        provider = PackitProvider(self.packit_id, http_client=client)
 
         correct_provider = await provider._resolve_provider()
 
         assert isinstance(correct_provider, KojiProvider)
 
     async def test_resolve_provider_with_no_provider(self):
-        def _handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(404)
-
-        transport = httpx.MockTransport(_handler)
-        provider = PackitProvider(
-            self.packit_id, http_client=httpx.AsyncClient(transport=transport)
-        )
+        client = metadata_session({})
+        provider = PackitProvider(self.packit_id, http_client=client)
 
         with pytest.raises(FetchError):
             await provider._resolve_provider()
@@ -614,11 +612,11 @@ class TestContainerProvider:
         content = "container build output"
 
         async def _fake_fetch_text(u, **kwargs):
-            return httpx.Response(
+            return text_download(
                 200,
                 text=content,
                 headers={"Content-Type": "text/plain"},
-                request=httpx.Request("GET", u),
+                url=u,
             )
 
         provider = ContainerProvider(url, http_client=MagicMock())
@@ -630,11 +628,11 @@ class TestContainerProvider:
         url = "https://example.com/page.html"
 
         async def _fake_fetch_text(u, **kwargs):
-            return httpx.Response(
+            return text_download(
                 200,
                 text="<html></html>",
                 headers={"Content-Type": "text/html"},
-                request=httpx.Request("GET", u),
+                url=u,
             )
 
         provider = ContainerProvider(url, http_client=MagicMock())
@@ -648,11 +646,11 @@ class TestContainerProvider:
         url = "https://example.com/missing.log"
 
         async def _fake_fetch_text(u, **kwargs):
-            return httpx.Response(
+            return text_download(
                 500,
                 text="Internal Server Error",
                 headers={"Content-Type": "text/plain"},
-                request=httpx.Request("GET", u),
+                url=u,
             )
 
         provider = ContainerProvider(url, http_client=MagicMock())

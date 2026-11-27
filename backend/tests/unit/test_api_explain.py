@@ -87,7 +87,7 @@ class TestExplainEndpoint:
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=submit_response)
         mock_client.get = AsyncMock(return_value=task_response)
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -136,7 +136,7 @@ class TestExplainEndpoint:
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=submit_response)
         mock_client.get = AsyncMock(side_effect=[active_response, done_response])
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -169,7 +169,7 @@ class TestExplainEndpoint:
                 202, url="http://127.0.0.1:8000/analyze", headers={}
             )
         )
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -218,7 +218,7 @@ class TestExplainEndpoint:
                 json_data={"status": "done", "result": result},
             )
         )
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -269,7 +269,7 @@ class TestExplainEndpoint:
             mock_client.get = AsyncMock(side_effect=failure)
         else:
             mock_client.get = AsyncMock(return_value=failure)
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -297,7 +297,7 @@ class TestExplainEndpoint:
                 headers={"Location": "http://127.0.0.1:8000/tasks/task-id"},
             )
         )
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -338,7 +338,7 @@ class TestExplainEndpoint:
                 json_data={"status": "done", "result": FAKE_SERVER_RESPONSE},
             )
         )
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -400,7 +400,7 @@ class TestExplainEndpoint:
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=submit_response)
         mock_client.get = AsyncMock(return_value=task_response)
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -423,7 +423,7 @@ class TestExplainEndpoint:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("read timed out"))
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -446,7 +446,7 @@ class TestExplainEndpoint:
         mock_client.post = AsyncMock(
             side_effect=httpx.ConnectError("connection refused")
         )
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
@@ -473,7 +473,7 @@ class TestExplainEndpoint:
 
         mock_client = AsyncMock()
         mock_client.post = AsyncMock(return_value=mock_response)
-        app.state.http_client = mock_client
+        app.state.http_client = app.state.analysis_client = mock_client
 
         transport = httpx.ASGITransport(app=app)
         async with RealAsyncClient(
